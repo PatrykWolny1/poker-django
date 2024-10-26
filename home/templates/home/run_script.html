@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Output</title>
+    <script>
+        async function getTaskResult(taskId) {
+            let response = await fetch(`/task_status/${taskId}/`);
+            let result = await response.json();
+            document.getElementById('output').innerText = result.output;
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const taskId = "{{ task_id }}";
+            getTaskResult(taskId);
+        });
+    </script>
+</head>
+<body>
+    <h1>Python Script Output</h1>
+    <pre id="output">Loading...</pre>
+</body>
+{% endblock content %}
+

@@ -5,18 +5,18 @@ import pstats
 from classes.Player import Player
 
 def main():
-    start_time = time.time()
+    # start_time = time.time()
     # cards_1, rand_int_1, all_comb_perm = Player().cards_permutations(combs_gen=True)
 
     Game()
         
-    end_time = time.time() - start_time
+    # end_time = time.time() - start_time
     
-    with open("time.txt", "w") as file:
-        file.write(str(end_time) + " sec\n")
+    # with open("time.txt", "w") as file:
+    #     file.write(str(end_time) + " sec\n")
     
-    print()    
-    print(end_time, " sec")
+    # print()    
+    # print(end_time, " sec")
     
 if __name__ == "__main__":
     #cProfile.run('main()', 'full_profiler.txt')

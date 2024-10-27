@@ -20,18 +20,18 @@ class LoadingBar(object):
                 self.str_1 += "#"
         # Tutaj nastepuje wyswietlanie paska ze znakow "#"
         if self.step_p:
-            print("[", end="")
-            print(self.str_1, end="]\n")
+            print("[", end="", flush=True)
+            print(self.str_1, end="]\n", flush=True)
             # os.system('cls')
             self.step_p = False
         # Zamiana znaku "#" na ".", co okreslona liczbe iteracji
         if self.step_p == False and (self.count_bar % self.step_bar_finished) == 0:
-            print("[", end="")
+            print("[", end="", flush=True)
             self.str_1 = self.str_1.replace("#", ".", 1)
-            print(self.str_1, end="]\n")
+            print(self.str_1, end="]\n", flush=True)
             # os.system('cls')
         # Ostatnia iteracja zamiana znaku
         if self.count_bar == self.n_bar - 1:
-            print("[", end="")
+            print("[", end="", flush=True)
             self.str_1 = self.str_1.replace("#", ".", 1)
-            print(self.str_1, end="]\n")
+            print(self.str_1, end="]\n", flush=True)

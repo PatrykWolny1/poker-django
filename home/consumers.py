@@ -19,9 +19,25 @@ class ScriptConsumer(AsyncWebsocketConsumer):
             ['python', 'hello.py', user_input],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            bufsize=1,  # Line-buffered
+            universal_newlines=True #Text mode
         )
-
-        for line in iter(process.stdout.readline, b''):
-            output_line = line.decode('utf-8')
-            await self.send(text_data=json.dumps({'output': output_line}))
-            print("Script output:", output_line)  # Log output for debugging
+        
+        # for line in iter(process.stdout.readline, ''):
+        #     output_line = line.strip()
+        #     # output_line = line.decode('utf-8')
+        #     await self.send(text_data=json.dumps({'output': output_line.strip()}))
+        #     print("Script output:", output_line)  # Log output for debugging
+        
+        # for output_line in iter(process.stdout.readline, ''):
+        #     if output_line.strip():
+        #         await self.send(text_data=json.dumps({'output': output_line.strip()}))
+        #         print("Script output:", output_line.strip())
+            
+        for line in iter(process.stdout.readline, ''):
+            output_line = line.strip()
+            if output_line:
+                await self.send(text_data=json.dumps({'output': output_line}))
+                print("Script output:", output_line)  # Log output for debugging
+            else:
+                break

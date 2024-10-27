@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -21,6 +21,7 @@
             const outputElement = document.getElementById('output');
             console.log("Output Element: ", outputElement);  // Log the element
             outputElement.innerText += data.output + "\n";  // Update the HTML element
+            outputElement.scrollTop = outputElement.scrollHeight;
         };
 
         socket.onerror = function(event) {
@@ -40,8 +41,67 @@
     <form onsubmit="sendInput(); return false;">
         {% csrf_token %}
         <input type="text" id="user_input" name="user_input">
-        <pre id="output">Waiting for script output...</pre>
         <button type="submit">Run Script</button>
     </form>
+    <pre id="output">Waiting for script output...</pre>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Form</title>
+    <style>
+        pre {
+            height: 300px;
+            overflow-y: scroll;
+            white-space: pre-wrap;
+            border: 1px solid #ccc; /* Optional: for better visualization */
+            padding: 10px; /* Optional: for better visualization */
+        }
+    </style>
+    <script>
+        const socket = new WebSocket('ws://127.0.0.1:8001/ws/run_script/');
+
+        socket.onopen = function(event) {
+            console.log("WebSocket is open now.");
+        };
+
+        socket.onclose = function(event) {
+            console.log("WebSocket is closed now.");
+        };
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log("Received data:", data);  // Log received data
+            const outputElement = document.getElementById("output");
+            outputElement.innerHTML += data.output + "<br>";  // Append output with newline
+
+            // Scroll to the bottom of the output to make new messages visible
+            outputElement.scrollTop = outputElement.scrollHeight;
+        };
+
+        socket.onerror = function(event) {
+            console.error("WebSocket error observed:", event);
+        };
+
+        function sendInput() {
+            const userInput = document.getElementById('user_input').value;
+            console.log("User input: ", userInput);  // Log user input for debugging
+            socket.send(JSON.stringify({'input': userInput}));
+        }
+    </script>
+</head>
+<body>
+    <h1>Enter Input for Python Script</h1>
+    <form onsubmit="sendInput(); return false;">
+        {% csrf_token %}
+        <input type="text" id="user_input" name="user_input">
+        <button type="submit">Run Script</button>
+    </form>
+    <pre id="output">Waiting for script output...
+        {{ output }}
+    </pre>
 </body>
 </html>

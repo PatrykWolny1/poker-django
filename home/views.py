@@ -19,6 +19,12 @@ def permutacje(request):
 #     return render(request, 'home/run_script.html', {'output': output})
 
 def run_script(request):
-    form = ScriptForm()
+    if request.method == 'POST':
+        form = ScriptForm(request.POST)
+        if form.is_valid():
+            input_value = form.cleaned_data['user_input']
+            # Pass the input_value to WebSocket consumer or handle accordingly
+    else:
+        form = ScriptForm()
     return render(request, 'home/input_form.html', {'form': form})
 

@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from .forms import ScriptForm
 import subprocess
-from .hello import my_function
 import json
 from django.http import JsonResponse
 

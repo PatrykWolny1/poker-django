@@ -1,9 +1,7 @@
-import asyncio
+import time
 
-async def my_function():
-    for i in range(5):  # Example of 5 steps
-        await asyncio.sleep(1)  # Simulate a delay (1 second)
-        yield f"Step {i + 1} completed"  # Yield the result for each step
+for i in range(1, 50):
+    print(f'Number: {i}')
 # user_input = sys.argv[1]
 # print(f"Received input: {user_input}")
 

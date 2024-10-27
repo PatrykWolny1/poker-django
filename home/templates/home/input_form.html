@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -20,7 +20,7 @@
             console.log("Received data:", data);  // Log received data
             const outputElement = document.getElementById('output');
             console.log("Output Element: ", outputElement);  // Log the element
-            outputElement.innerText += data.output + "\n";  // Update the HTML element
+            outputElement.innerHTML += data.output + "<br>";  // Update the HTML element
         };
 
         socket.onerror = function(event) {
@@ -43,5 +43,24 @@
         <pre id="output">Waiting for script output...</pre>
         <button type="submit">Run Script</button>
     </form>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-time Data</title>
+    <script>
+        const socket = new WebSocket('ws://127.0.0.1:8001/ws/data/');
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            document.getElementById('data').innerText = data.message;
+        };
+    </script>
+</head>
+<body>
+    <h1>Real-time Data</h1>
+    <div id="data">Waiting for data...</div>
 </body>
 </html>

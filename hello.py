@@ -1,5 +1,5 @@
 import time
-
+print("HELLO")
 for i in range(1, 5000):
     print(f'Number: {i}')
 # user_input = sys.argv[1]

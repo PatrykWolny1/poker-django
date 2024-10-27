@@ -118,7 +118,7 @@ class Player(object):
     def cards_permutations(self, rand_arr = False, combs_gen = False):
             if combs_gen == False:
                 print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
-                if_rand = input()
+                if_rand = '2'
                 if_combs = False
             else:
                 if_rand = "1"
@@ -145,7 +145,7 @@ class Player(object):
                 "(9 - WYSOKA KARTA)\n")
 
             # arrangement = input()
-            arrangement = "8"
+            arrangement = "1"
             
             # Gra jednym ukladem kart
             if combs_gen == True:

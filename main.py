@@ -2,9 +2,11 @@ from classes.Game import Game
 import time
 import cProfile
 import pstats
+from classes.Player import Player
 
 def main():
     start_time = time.time()
+    # cards_1, rand_int_1, all_comb_perm = Player().cards_permutations(combs_gen=True)
 
     Game()
         

@@ -37,7 +37,7 @@ class Game(object):
         self.Game()
         
     def Game(self): 
-        while(choice_1 := input("\n" + 
+        print("\n" + 
                 "(1)\n" +
                 "- Zbieranie rozgrywek do pliku\n" +
                 "- Gra (Ukladem Jedna Para) - AI vs Player, AI vs AI, Player vs Player)\n\n" + 
@@ -45,7 +45,8 @@ class Game(object):
                 "- Gra miedzy graczami (Wszystkie uklady)\n" +
                 "- Permutacje kart\n" +
                 "- Aktualizacja modelu ML\n" +
-                "- Uczenie maszynowe\n\n")):
+                "- Uczenie maszynowe\n\n")
+        while(choice_1 := sys.argv[1]):
             
             if choice_1 == '1':
                 # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far

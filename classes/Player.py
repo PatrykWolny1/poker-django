@@ -144,8 +144,8 @@ class Player(object):
                 "(8 - JEDNA PARA)\n"
                 "(9 - WYSOKA KARTA)\n")
 
-            arrangement = input()
-            #arrangement = "8"
+            # arrangement = input()
+            arrangement = "8"
             
             # Gra jednym ukladem kart
             if combs_gen == True:

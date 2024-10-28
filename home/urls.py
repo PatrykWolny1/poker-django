@@ -4,5 +4,5 @@ from . import views
 urlpatterns = [
     path('', views.index, name='home.index'),
     path('permutacje', views.permutacje, name='home.permutacje'),
-    path('run_script/', views.run_script, name='run_script'),
+    path('input_form/', views.data, name='home.input_form'),
 ]

@@ -1,43 +1,33 @@
 import json
-from channels.generic.websocket import AsyncWebsocketConsumer
+import asyncio
 import subprocess
+from channels.generic.websocket import AsyncWebsocketConsumer
 
-class ScriptConsumer(AsyncWebsocketConsumer):
+class MyConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         await self.accept()
-        print("WebSocket connected.")
+        await self.send_data_task()
 
     async def disconnect(self, close_code):
-        print("WebSocket disconnected.")
+        pass
 
-    async def receive(self, text_data):
-        print("Received data:", text_data)  # Log input received
-        data = json.loads(text_data)
-        user_input = data['input']
-
+    async def send_data_task(self):
+        # Replace 'your_script.py' with the path to your script
         process = subprocess.Popen(
-            ['python', 'hello.py', user_input],
+            ['python', 'C:/Users/patry/VSCode/poker-django/main.py'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            bufsize=1,  # Line-buffered
-            universal_newlines=True #Text mode
+            text=True,
+            bufsize=1,
+            universal_newlines=True
         )
-        
-        # for line in iter(process.stdout.readline, ''):
-        #     output_line = line.strip()
-        #     # output_line = line.decode('utf-8')
-        #     await self.send(text_data=json.dumps({'output': output_line.strip()}))
-        #     print("Script output:", output_line)  # Log output for debugging
-        
-        # for output_line in iter(process.stdout.readline, ''):
-        #     if output_line.strip():
-        #         await self.send(text_data=json.dumps({'output': output_line.strip()}))
-        #         print("Script output:", output_line.strip())
-            
-        for line in iter(process.stdout.readline, ''):
-            output_line = line.strip()
-            if output_line:
-                await self.send(text_data=json.dumps({'output': output_line}))
-                print("Script output:", output_line)  # Log output for debugging
-            else:
-                break
+
+        while True:
+            output = await asyncio.get_event_loop().run_in_executor(None, process.stdout.readline)
+            if output:
+                # Send the output to WebSocket clients
+                await self.send(text_data=json.dumps({'message': output.strip()}))
+            elif process.poll() is not None:
+                break  # Exit if the process has finished
+            await asyncio.sleep(0.1)  # Avoid busy waiting
+            print(output.strip())

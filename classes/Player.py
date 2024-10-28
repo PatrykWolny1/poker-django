@@ -118,8 +118,12 @@ class Player(object):
     def cards_permutations(self, rand_arr = False, combs_gen = False):
             if combs_gen == False:
                 print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
+<<<<<<< HEAD
                 sys.stdout.flush
                 if_rand = str(sys.argv[1])
+=======
+                if_rand = '2'
+>>>>>>> output_form_real_time
                 if_combs = False
             else:
                 if_rand = "1"
@@ -146,7 +150,7 @@ class Player(object):
                 "(9 - WYSOKA KARTA)\n", flush=True)
 
             # arrangement = input()
-            arrangement = "8"
+            arrangement = "1"
             
             # Gra jednym ukladem kart
             if combs_gen == True:

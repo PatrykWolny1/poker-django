@@ -2,5 +2,5 @@ from django.urls import re_path
 from . import consumers
 
 websocket_urlpatterns = [
-    re_path(r'ws/run_script/', consumers.ScriptConsumer.as_asgi()),
+    re_path(r'ws/data/', consumers.MyConsumer.as_asgi()),
 ]

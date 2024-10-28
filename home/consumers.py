@@ -2,32 +2,28 @@ import json
 import asyncio
 import subprocess
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.core.cache import cache
+import time
+import asyncio
 
-class MyConsumer(AsyncWebsocketConsumer):
+
+class TestConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.accept()
-        await self.send_data_task()
+        await self.accept()  # Accept the WebSocket connection
+
+        # Keep sending progress updates
+        while True:
+            # Simulate progress updates (for demonstration)
+            for i in range(101):
+                await self.send(text_data=json.dumps({'progress': i}))
+                await asyncio.sleep(1)  # Simulate delay for updates
+            
+            # Break after reaching 100% progress
+            break
 
     async def disconnect(self, close_code):
+        print("WebSocket connection closed")
+
+    async def receive(self, text_data):
+        # Handle messages received from the WebSocket if needed
         pass
-
-    async def send_data_task(self):
-        # Replace 'your_script.py' with the path to your script
-        process = subprocess.Popen(
-            ['python', 'C:/Users/patry/VSCode/poker-django/main.py'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
-
-        while True:
-            output = await asyncio.get_event_loop().run_in_executor(None, process.stdout.readline)
-            if output:
-                # Send the output to WebSocket clients
-                await self.send(text_data=json.dumps({'message': output.strip()}))
-            elif process.poll() is not None:
-                break  # Exit if the process has finished
-            await asyncio.sleep(0.1)  # Avoid busy waiting
-            print(output.strip())

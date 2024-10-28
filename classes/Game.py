@@ -45,23 +45,6 @@ class Game(object):
                 "- Gra miedzy graczami (Wszystkie uklady)\n" +
                 "- Permutacje kart\n" +
                 "- Aktualizacja modelu ML\n" +
-<<<<<<< HEAD
-                "- Uczenie maszynowe\n\n", flush=True)
-        sys.stdout.flush()
-        choice_1 = sys.argv[1]
-        
-        if choice_1 == '1':
-            # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far
-            cards_1, rand_int_1, all_comb_perm = Player().cards_permutations(combs_gen=True)
-        if choice_1 == '2':
-            all_comb_perm = []
-        
-        choice = '1'
-        
-        if choice == '1':
-            Player().cards_permutations()
-        
-=======
                 "- Uczenie maszynowe\n\n")
         choice_1 = '2'
         if choice_1 == '1':
@@ -88,7 +71,6 @@ class Game(object):
         if choice == '1':
             Player().cards_permutations()
         
->>>>>>> output_form_real_time
         if choice == '2':
             while(game_si_human := input("(1) - SI vs Czlowiek\n" +
                                 "(2) - SI vs SI\n" + 

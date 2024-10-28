@@ -20,12 +20,7 @@
             console.log("Received data:", data);  // Log received data
             const outputElement = document.getElementById('output');
             console.log("Output Element: ", outputElement);  // Log the element
-<<<<<<< HEAD
-            outputElement.innerText += data.output + "\n";  // Update the HTML element
-            outputElement.scrollTop = outputElement.scrollHeight;
-=======
             outputElement.innerHTML += data.output + "<br>";  // Update the HTML element
->>>>>>> output_form_real_time
         };
 
         socket.onerror = function(event) {
@@ -50,7 +45,7 @@
     <pre id="output">Waiting for script output...</pre>
 </body>
 </html> -->
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -134,20 +129,50 @@
 <head>
     <meta charset="UTF-8">
     <title>Real-time Data</title>
+    <style>
+        .progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+        }
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            border-radius: 5px;
+        }
+    </style>
     <script>
+        const progressBar = document.getElementById('progressBar');
         document.addEventListener("DOMContentLoaded", function () {
 
-            const socket = new WebSocket('ws://127.0.0.1:8001/ws/data/');
+            const socket = new WebSocket('ws://127.0.0.1:8001/ws/progress/');
 
             socket.onmessage = function(event) {
                 const data = JSON.parse(event.data);
-                document.getElementById('data').innerText += data.message + "\n";
+                console.log(data.message);  // Should print "WebSocket connection successful!"
+                // document.getElementById('data').innerText += data.message + "\n";
+                console.log("Received progress:", progress);  // Debug log
+
+                const progress = data.progress;
+                progressBar.style.width = progress + '%';
+                progressBar.innerHTML = progress + '%';
+
+                if (progress >= 100) {
+                    socket.close();  // Close connection when complete
+                }
             };
         });
     </script>
 </head>
 <body>
-    <h1>Real-time Data</h1>
-    <div id="data">Waiting for data...</div>
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+    <!-- <h1>Real-time Data</h1>
+    <div id="data">Waiting for data...</div> -->
 </body>
 </html>

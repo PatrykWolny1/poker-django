@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Bar</title>
+    <style>
+        .progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+        }
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar">0%A</div>
+    </div>
+
+    <script>
+        function connectWebSocket() {
+            const progressBar = document.getElementById('progressBar');
+            const socket = new WebSocket('wss://127.0.0.1:8001/ws/progress/');
+
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                console.log("Received message:", data.message);  // This should log "WebSocket connection successful!"
+                const progress = data.progress;
+                console.log("Received progress:", progress);  // Debug log
+                progressBar.style.width = progress + '%';
+                progressBar.innerHTML = progress + '%';
+
+                if (progress >= 100) {
+                    socket.close();
+                }
+            };
+        
+            socket.onclose = function(event) {
+                console.log("WebSocket connection closed");
+            };
+        }    
+        window.onload = connectWebSocket;
+
+    </script>
+</body>
+</html>

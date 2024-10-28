@@ -7,7 +7,8 @@ from django.http import JsonResponse
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import time
-import threading
+from .hello import long_running_task
+from django.core.cache import cache
 
 def index(request):
     template_data = {}
@@ -25,22 +26,15 @@ def permutacje(request):
 #     return render(request, 'home/run_script.html', {'output': output})
 
 def long_running_task():
-    channel_layer = get_channel_layer()
-    while True:
-        time.sleep(5)  # Simulate time-consuming work
-        async_to_sync(channel_layer.group_send)(
-            "data",
-            {
-                'type': 'send_update',
-                'data': 'Update at {}'.format(time.strftime('%X'))
-            }
-        )
+    for i in range(101):
+        time.sleep(0.1)
+        cache.set('task_progress', i)
+        print(f"Progress: {i}%")  # Check if this prints in the console
+        
+def start_task(request):
+    import threading
+    threading.Thread(target=long_running_task).start()
+    return render(request, 'home/progress.html')
 
-def start_long_running_task():
-    thread = threading.Thread(target=long_running_task)
-    thread.daemon = True
-    thread.start()
-
-
-def data(request):
-    return render(request, 'home/input_form.html')
+# def data(request):
+#     return render(request, 'home/input_form.html')

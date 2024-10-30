@@ -3,6 +3,7 @@ from arrangements.HelperArrangement import HelperArrangement
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 import itertools
+import time
 
 class Carriage(HelperArrangement):
     
@@ -48,9 +49,9 @@ class Carriage(HelperArrangement):
 
     def print_arrengement(self):
         if self.example == True:
-            print("Kareta: ", self.weight_arrangement, "Numer: ", self.rand_int)
+            print("Kareta: ", self.weight_arrangement)#, "Numer: ", self.rand_int)
         if self.random == False:
-            print("Kareta: ", self.weight_arrangement, "Numer: ", self.rand_int)
+            print("Kareta: ", self.weight_arrangement)#, "Numer: ", self.rand_int)
 
     def arrangement_recogn(self):
         # Sprawdzanie czy uklad kart to kareta oraz przypisanie wagi do ukladu
@@ -156,9 +157,9 @@ class Carriage(HelperArrangement):
                     for idx6 in range(0, len(self.cards_perm)):
                         if self.random == False:
                             for idx7 in range(0, len(self.cards_perm[idx6])):
-                                #self.cards_perm[idx6][idx7].print()
+                                # self.cards_perm[idx6][idx7].print()
                                 self.file.write(self.cards_perm[idx6][idx7].print_str() + " ")
-                            #print()
+                            # print()
                         if self.random == False:
                             self.file.write("\n")
                                 

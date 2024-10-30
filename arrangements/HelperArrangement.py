@@ -69,8 +69,8 @@ class HelperArrangement(object):
 
         for idx2 in range(0, len(self.weight_gen)):
             if (idx1 == len(self.weight_gen)):
-                print("Dlugosc tablicy: ", len(self.weight_gen))
-                print("Wszystkie liczby sprawdzone: ", count_all_weights)
+                # print("Dlugosc tablicy: ", len(self.weight_gen))
+                # print("Wszystkie liczby sprawdzone: ", count_all_weights)
                 break
             if (self.weight_gen[idx2] <= self.weight_gen[idx1]):
                 # print(self.weight_gen[idx2], "[", idx2, "]", "<=", self.weight_gen[idx1], "[", idx1, "]")
@@ -85,9 +85,10 @@ class HelperArrangement(object):
             # Wyswietlenie ukladow ktore nie pasuja
             for idx in range(0, len(indices)):
                 for idx1 in range(0, len(self.cards_all_permutations[indices[idx]])):
-                    print(self.cards_all_permutations[indices[idx]][idx1].print_str(), end=" ")
+                    # print(self.cards_all_permutations[indices[idx]][idx1].print_str(), end=" ")
                     if idx1 == 4:
-                        print(indices[idx])
+                        pass
+                        # print(indices[idx])
                 print()
 
     def random_arrangement(self, if_combs=True):
@@ -136,7 +137,7 @@ class HelperArrangement(object):
                         
                 iter_idx += 1               
                 
-        print("Wylosowany uklad: ", self.rand_int)
+        # print("Wylosowany uklad: ", self.rand_int)
         print("Ilosc ukladow: ", len(self.cards_all_permutations))
         print()
         

@@ -29,10 +29,84 @@
   font-size: calc(1.325rem + .9vw) !important;
 }
 
+#progressPage {
+  height: 100vh; /* Full viewport height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.container {
+  width: 80%; /* Set the container width to 40% of the page */
+  display: flex;
+  flex-direction: column; /* Stack elements vertically inside the container */
+  align-items: center; /* Center align children in the container */
+}
+
+.progress-container {
+  width: 80%; /* Set the progress bar width to 40% */
+  background-color: #f3f3f3;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  height: 30px;
+  width: 0; /* Initial width */
+  background-color: #4caf50;
+  color: white;
+  text-align: center;
+  line-height: 30px; /* Vertical centering */
+  border-radius: 10px;
+  transition: width 0.4s ease;
+}
+
+.data-script-container {
+  width: 50%; /* Match width with the container */
+  margin-top: 10px; /* Space above the data script */
+  display: flex;
+  flex-direction: column; /* Stack elements vertically inside the container */
+  align-items: center; /* Center align children in the container */
+}
+
+#dataScript {
+  display: inline-block; /* Allow the div to adjust based on content */
+  max-width: 100%; /* Prevent exceeding the container's width */
+  background-color: #f0f0f0; /* Example background color */
+  border: 1px solid #ccc; /* Optional border */
+  overflow-y: auto; /* Allow scrolling if content overflows */
+  padding: 10px; /* Optional padding */
+  border-radius: 5px; /* Rounded corners */
+  white-space: pre-wrap; /* Preserve whitespace and wrap long text */
+}
+
+.download-button {
+  background-color: #4caf50; /* Button color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  border-radius: 5px; /* Rounded corners */
+  padding: 10px 20px; /* Padding */
+  font-size: 16px; /* Font size */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: opacity 0.3s ease; /* Smooth transition for opacity */
+  opacity: 1; /* Default opacity */
+}
+
+/* Button hover and active styles */
+.download-button:hover {
+  opacity: 0.6; /* Change opacity on hover */
+}
+
+.download-button:active {
+  opacity: 0.4; /* Further change opacity when active */
+}
+
 body {
   background: radial-gradient(circle, #001628, #00101e);
 }
-
+  
 [data-bs-theme=dark] {
   color-scheme: dark;
   --bs-body-color: #dee2e6;

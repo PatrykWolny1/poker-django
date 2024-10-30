@@ -27,8 +27,8 @@ class Card(object):
     #     return self.weight
 
     def print(self):
-        print(self.name, end = "")
-        print(self.color, end = " ")
+        print(self.name, end = "", flush=True)
+        print(self.color, end = " ", flush=True)
 
     def print_str(self):
         str = self.name + self.color + ""

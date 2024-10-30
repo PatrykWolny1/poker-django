@@ -3,41 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
     <title>Progress Bar</title>
-    <style>
-        .progress-container {
-            width: 100%;
-            background-color: #f3f3f3;
-            border-radius: 5px;
-        }
-        .progress-bar {
-            width: 0;
-            height: 20px;
-            background-color: #4caf50;
-            text-align: center;
-            line-height: 20px;
-            color: white;
-            border-radius: 5px;
-        }
-    </style>
 </head>
 <body>
-    <div class="progress-container">
-        <div class="progress-bar" id="progressBar">0%A</div>
+    <div id="progressPage">
+        <div class="container">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            <div class="data-script-container">
+                <div class="data-script" id="dataScript"></div>
+            </div>
+            <button class="download-button" type="button" id="downloadButton">Download Data to File</button>
+            <!-- <button id="downloadButton">Download Data to File</button> -->
+        </div>
     </div>
 
     <script>
         function connectWebSocket() {
             const progressBar = document.getElementById('progressBar');
+            const dataScriptDiv = document.getElementById('dataScript');
+            const downloadButton = document.getElementById("downloadButton");
             const socket = new WebSocket('wss://127.0.0.1:8001/ws/progress/');
+
+            downloadButton.onclick = function () {
+                const userConfirmed = confirm("Are you sure you want to download the file?");
+            
+                if (userConfirmed) {
+                    // Redirect to the download view URL
+                    window.location.href = '/download_saved_file/';
+                } else {
+                    console.log("Download canceled by user.");
+                }
+            };
 
             socket.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 console.log("Received message:", data.message);  // This should log "WebSocket connection successful!"
-                const progress = data.progress;
-                console.log("Received progress:", progress);  // Debug log
-                progressBar.style.width = progress + '%';
-                progressBar.innerHTML = progress + '%';
+
+                if ('progress' in data) {
+                    const progress = data.progress;
+                    console.log("Received progress:", progress);  // Debug log
+                    progressBar.style.width = progress + '%';
+                    progressBar.innerHTML = progress + '%';
+                }
+                if ('data_script' in data) {
+                    const data_script = data.data_script
+                    console.log("Received data_script:", data_script);  // Debug log
+                    if (dataScriptDiv.style.display === "none") {
+                        dataScriptDiv.style.display = "block"; // Show data-script container
+                    }
+                    dataScriptDiv.innerHTML += data_script + "<br>";
+                }
 
                 if (progress >= 100) {
                     socket.close();

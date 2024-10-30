@@ -117,7 +117,7 @@ class Player(object):
 
     def cards_permutations(self, rand_arr = False, combs_gen = False):
             if combs_gen == False:
-                print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
+                # print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
                 if_rand = '2'
                 if_combs = False
             else:
@@ -133,19 +133,19 @@ class Player(object):
             elif if_rand == "3":
                 return 0
 
-            print(f"Wybierz uklad do wygenerowania:\n"
-                "(1 - POKER/POKER KROLEWSKI)\n"
-                "(2 - KARETA)\n"
-                "(3 - FULL)\n"
-                "(4 - KOLOR)\n"
-                "(5 - STRIT)\n"
-                "(6 - TROJKA\n"
-                "(7 - DWIE PARY)\n"
-                "(8 - JEDNA PARA)\n"
-                "(9 - WYSOKA KARTA)\n", flush=True)
+            # print(f"Wybierz uklad do wygenerowania:\n"
+            #     "(1 - POKER/POKER KROLEWSKI)\n"
+            #     "(2 - KARETA)\n"
+            #     "(3 - FULL)\n"
+            #     "(4 - KOLOR)\n"
+            #     "(5 - STRIT)\n"
+            #     "(6 - TROJKA\n"
+            #     "(7 - DWIE PARY)\n"
+            #     "(8 - JEDNA PARA)\n"
+            #     "(9 - WYSOKA KARTA)\n", flush=True)
 
             # arrangement = input()
-            arrangement = "1"
+            arrangement = "2"
             
             # Gra jednym ukladem kart
             if combs_gen == True:

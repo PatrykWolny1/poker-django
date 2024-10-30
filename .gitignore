@@ -1,6 +1,7 @@
 test.txt
 loop.bat
 */__pycache__/
+__pycache__/
 .vscode
 high_card.txt
 one_pair.txt

@@ -1,3 +1,5 @@
+from django.core.cache import cache
+import time
 class LoadingBar(object):
 
     def __init__(self, n_bar, points_step, points_finished):
@@ -7,6 +9,7 @@ class LoadingBar(object):
         self.step_bar:int = int(self.n_bar / points_step)               # Ilosc punktow ladowania (40 - dzielnik)
         self.step_bar_finished:int = int(self.n_bar / points_finished)  # Ilosc zaladowanych punktow (co jeden) [.####][..###]
         self.count_bar:int = 0
+        self.progress:int = 0
 
     def set_count_bar(self, count_bar):
         self.count_bar = count_bar
@@ -20,18 +23,27 @@ class LoadingBar(object):
                 self.str_1 += "#"
         # Tutaj nastepuje wyswietlanie paska ze znakow "#"
         if self.step_p:
-            print("[", end="", flush=True)
-            print(self.str_1, end="]\n", flush=True)
+            # print("[", end="")
+            # print(self.str_1, end="]\n")
+            cache.set('shared_variable', str(self.progress))
+            self.progress += 1
             # os.system('cls')
             self.step_p = False
+            time.sleep(0.1)
         # Zamiana znaku "#" na ".", co okreslona liczbe iteracji
         if self.step_p == False and (self.count_bar % self.step_bar_finished) == 0:
-            print("[", end="", flush=True)
+            # print("[", end="")
             self.str_1 = self.str_1.replace("#", ".", 1)
-            print(self.str_1, end="]\n", flush=True)
+            # print(self.str_1, end="]\n")
+            cache.set('shared_variable', str(self.progress))
+            self.progress += 1
             # os.system('cls')
+            # time.sleep(0.1)
         # Ostatnia iteracja zamiana znaku
         if self.count_bar == self.n_bar - 1:
-            print("[", end="", flush=True)
+            # print("[", end="")
             self.str_1 = self.str_1.replace("#", ".", 1)
-            print(self.str_1, end="]\n", flush=True)
+            # print(self.str_1, end="]\n")
+            cache.set('shared_variable', str(self.progress))
+            self.progress += 1
+            # time.sleep(0.1)

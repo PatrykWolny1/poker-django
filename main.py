@@ -3,13 +3,17 @@ import time
 import cProfile
 import pstats
 from classes.Player import Player
+import sys
+import time
+from home.redis_buffer_singleton import redis_buffer_instance
+from home.std_out_redirector import StdoutRedirector
 
 def main():
-    # start_time = time.time()
-    # cards_1, rand_int_1, all_comb_perm = Player().cards_permutations(combs_gen=True)
-    print("HELLO")
+    sys.stdout = StdoutRedirector(redis_buffer_instance)
+    
     Game()
-        
+
+
     # end_time = time.time() - start_time
     
     # with open("time.txt", "w") as file:

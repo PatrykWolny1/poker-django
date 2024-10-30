@@ -3,6 +3,8 @@ from arrangements.HelperArrangement import HelperArrangement
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import permutations
+from django.core.cache import cache
+import time
 
 class StraightRoyalFlush(HelperArrangement):
     
@@ -257,7 +259,7 @@ class StraightRoyalFlush(HelperArrangement):
                     
                     self.loading_bar.set_count_bar(self.num_arr)
                     self.loading_bar.display_bar()        
-        
+                    
         HelperArrangement().check_if_weights_larger()
 
         self.file.close()

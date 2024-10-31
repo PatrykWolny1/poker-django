@@ -1,5 +1,8 @@
 from django.core.cache import cache
+from arrangements.HelperArrangement import HelperArrangement
 import time
+import threading
+
 class LoadingBar(object):
 
     def __init__(self, n_bar, points_step, points_finished):
@@ -15,6 +18,12 @@ class LoadingBar(object):
         self.count_bar = count_bar
 
     def display_bar(self):
+        from home.views import stop_event
+        if stop_event.is_set():
+            print("Ilosc przetworzonych ukladow: ", len(self.cards_all_permutations))
+            HelperArrangement.weight_gen.clear()
+            HelperArrangement.cards_all_permutations.clear()
+            exit()
         # Pasek postepu
         # Pierwsza wartosc step_p to prawda
         # Tworzony jest pasek postepu stworzony ze znakow "#"

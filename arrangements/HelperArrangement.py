@@ -33,7 +33,8 @@ class HelperArrangement(object):
                 if card.name == cards[idx].name:
                     indices.append(index)
             self.indices_2d.append(indices)
-        #print(self.indices_2d)
+        # print(self.indices_2d)
+        return self.indices_2d
 
     def get_indices_color(self, cards, random = False, example = False):
         # if random == True and example == True:
@@ -138,7 +139,7 @@ class HelperArrangement(object):
                 iter_idx += 1               
                 
         # print("Wylosowany uklad: ", self.rand_int)
-        print("Ilosc ukladow: ", len(self.cards_all_permutations))
+        print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
         print()
         
         HelperArrangement.weight_gen.clear()

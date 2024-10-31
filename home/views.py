@@ -6,9 +6,16 @@ import threading
 import sys
 from home.redis_buffer_singleton import redis_buffer_instance
 from home.long_running_task import long_running_task
-sys.path.insert(0, '..') # Adds the project root to the system path
 from main import main
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse  # Import JsonResponse
+import config
 
+# from arrangements.LoadingBar import stop_event, task_thread
+
+stop_event = threading.Event()
+task_thread = None
+    
 def index(request):
     template_data = {}
     template_data['title'] = 'Poker Game'
@@ -28,19 +35,21 @@ def permutacje(request):
 #     aa = cache.get('shared_variable')
 #     print(f'Progress bar: {aa}')  #
         
-def start_task(request):
-    threading.Thread(target=main).start()
-    # threading.Thread(target=mock_writer).start()
-    # threading.Thread(target=mock_reader).start()
-
-
-    # threading.Thread(target=main).start()
+def start_task(request): ###################################
+    stop_event.clear()  # Clear the stop event if it was previously set
+    task_thread = threading.Thread(target=main)  # Create a new thread for the task
+    task_thread.start()  # Start the long-running task
     
-
     return render(request, 'home/progress.html')
 
-from django.http import HttpResponse
-
+@csrf_exempt
+def stop_task_view(request):
+    if stop_event is not None:
+        stop_event.set()  # Set the stop event to stop the thread
+    if task_thread is not None:
+        task_thread.join()  # Wait for the thread to finish
+    return JsonResponse({'status': 'Task stopped'})
+        
 from django.http import FileResponse, Http404
 import os
 def download_saved_file(request):

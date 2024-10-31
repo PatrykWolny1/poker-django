@@ -70,7 +70,7 @@ class Game(object):
             
         if choice == '1':
             Player().cards_permutations(combs_gen=True)
-        
+            return 0
         if choice == '2':
             while(game_si_human := input("(1) - SI vs Czlowiek\n" +
                                 "(2) - SI vs SI\n" + 

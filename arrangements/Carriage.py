@@ -80,49 +80,52 @@ class Carriage(HelperArrangement):
 
         # Waga ukladu
         self.weight_arrangement = 0
+        
+        try:
+            for i in range(0, len(HelperArrangement().get_indices_2d_1())):
+                # print("Rozmiar: ", len(self.indeksy_2d[i]))
+                # Jesli w wierszu tablicy znajduja sie 4 elementy | Indeksy powtorek, jesli jest kareta to dlugosc = 4
+                if (len(HelperArrangement().get_indices_2d_1()[i]) == 4):
+                    for j in range(0, len(HelperArrangement().get_indices_2d_1()[i])):
+                        weight_1 = pow(self.cards_perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][j]].weight, 4)
+                    if_carriage += 1
 
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
-            # print("Rozmiar: ", len(self.indeksy_2d[i]))
-            # Jesli w wierszu tablicy znajduja sie 4 elementy | Indeksy powtorek, jesli jest kareta to dlugosc = 4
-            if (len(HelperArrangement().get_indices_2d_1()[i]) == 4):
-                for j in range(0, len(HelperArrangement().get_indices_2d_1()[i])):
-                    weight_1 = pow(self.cards_perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][j]].weight, 4)
-                if_carriage += 1
+                # Ostatnia karta
+                if (len(HelperArrangement().get_indices_2d_1()[i]) == 1):
+                    for j in range(0, len(HelperArrangement().get_indices_2d_1()[i])):
+                        weight_2 = self.cards_perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][j]].weight * 1
 
-            # Ostatnia karta
-            if (len(HelperArrangement().get_indices_2d_1()[i]) == 1):
-                for j in range(0, len(HelperArrangement().get_indices_2d_1()[i])):
-                    weight_2 = self.cards_perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][j]].weight * 1
-
-                    self.weight_arrangement_part = self.cards_perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][j]].weight
-
-            if (i == len(HelperArrangement().get_indices_2d_1()) - 1) and (if_carriage == 4):
-                self.weight_arrangement = (weight_1 + weight_2) + 12415456
-                HelperArrangement().append_weight_gen(self.weight_arrangement)
+                        self.weight_arrangement_part = self.cards_perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][j]].weight
                 
-                if self.random == False:
-                    #self.print_arrengement()
+                if (i == len(HelperArrangement().get_indices_2d_1()) - 1) and (if_carriage == 4):
+                    self.weight_arrangement = (weight_1 + weight_2) + 12415456
+                    HelperArrangement().append_weight_gen(self.weight_arrangement)
                     
-                    self.file.write("Kareta: " + str(self.weight_arrangement) + " Numer: " + str(self.num_arr) + "\n")
-
-                if self.example == True:
-                    self.print_arrengement()
-                    
-                    for idx in range(0, len(self.cards_perm[self.c_idx6])):
-                        with open("permutations_data/carriage.txt", "a") as file:
-                            file.write(self.cards_perm[self.c_idx6][idx].print_str() + " ")
-                    with open("permutations_data/carriage.txt", "a") as file:
-                        file.write("\n")
-                    
-                    with open("permutations_data/carriage.txt", "a") as file:
-                        file.write("Kareta: " + str(self.weight_arrangement) + " Numer: " + str(self.rand_int) + "\n")
-                    
-                self.num_arr += 1
+                    if self.random == False:
+                        #self.print_arrengement()
                         
-                return 8
-            else:
-                self.weight_arrangement = 0
-                self.weight_arrangement_part = 0
+                        self.file.write("Kareta: " + str(self.weight_arrangement) + " Numer: " + str(self.num_arr) + "\n")
+
+                    if self.example == True:
+                        self.print_arrengement()
+                        
+                        for idx in range(0, len(self.cards_perm[self.c_idx6])):
+                            with open("permutations_data/carriage.txt", "a") as file:
+                                file.write(self.cards_perm[self.c_idx6][idx].print_str() + " ")
+                        with open("permutations_data/carriage.txt", "a") as file:
+                            file.write("\n")
+                        
+                        with open("permutations_data/carriage.txt", "a") as file:
+                            file.write("Kareta: " + str(self.weight_arrangement) + " Numer: " + str(self.rand_int) + "\n")
+                        
+                    self.num_arr += 1
+                            
+                    return 8
+                else:
+                    self.weight_arrangement = 0
+                    self.weight_arrangement_part = 0
+        except:
+            return
 
     def check_generate_cards(self, cards_2d):
         # Generowanie 5 kart oraz sprawdzanie jaki to uklad

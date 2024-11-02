@@ -1,8 +1,10 @@
 from arrangements.HelperArrangement import HelperArrangement
+from arrangements.HelperFileClass import HelperFileClass
 from classes.Card import Card
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import permutations, combinations
+from pathlib import Path
 import random
 import time
 import pickle
@@ -15,9 +17,13 @@ class OnePair(HelperArrangement):
         self.limit_rand:int = 1000             # Ograniczenie dla liczby obliczen  
         self.one_iter:int = 120
         self.n_combs = 1098240
-        self.loading_bar:LoadingBar = LoadingBar(self.one_iter * self.limit_rand - 1, 40, 40)          #Permutacje: 131 788 800
-        self.loading_bar_combs:LoadingBar = LoadingBar(self.n_combs - 1, 40, 40)          #Kombinacje: 1 098 240 2s -> 84480
-        self.file = open("permutations_data/one_pair.txt", "w")
+        self.file_path = Path("permutations_data/one_pair.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar:LoadingBar = LoadingBar(self.one_iter * self.limit_rand - 1, 40, 40, self.helper_arr) #Permutacje: 131 788 800
+        self.loading_bar_combs:LoadingBar = LoadingBar(self.n_combs - 1, 40, 40, self.helper_arr)              #Kombinacje: 1 098 240 2s -> 84480
 
         self.perm:list = []                      # Lista na permutacje
         self.weight_arrangement_part:list  = []   # Lista na wagi pozostalych kart   

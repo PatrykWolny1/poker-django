@@ -2,17 +2,25 @@ from classes.Card import Card
 from arrangements.HelperArrangement import HelperArrangement
 from arrangements.CardMarkings import CardMarkings
 from arrangements.LoadingBar import LoadingBar
+from arrangements.HelperFileClass import HelperFileClass
+from pathlib import Path
 from itertools import permutations, combinations
 from operator import itemgetter
 from itertools import chain
+
+
 
 class Color(HelperArrangement):
     
     def __init__(self):
         self.cardmarkings:CardMarkings = CardMarkings()  #Oznaczenia kart
-        self.loading_bar_1:LoadingBar = LoadingBar(611519, 40, 39)
-        self.loading_bar_2:LoadingBar = LoadingBar(5095, 40, 39)
-        self.file = open("permutations_data/color.txt", "w")
+        self.file_path = Path("permutations_data/color.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar_1:LoadingBar = LoadingBar(611519, 40, 39, self.helper_arr)
+        self.loading_bar_2:LoadingBar = LoadingBar(5095, 40, 39, self.helper_arr)
 
         self.cards_2d:list = []           # Przygotowanie listy do wstepnego przetwarzania
         self.perm:list = []               # Lista na permutacje

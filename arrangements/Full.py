@@ -1,16 +1,23 @@
 from classes.Card import Card
 from arrangements.HelperArrangement import HelperArrangement
+from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import chain
+from pathlib import Path
 import itertools
 
 class Full(HelperArrangement):
     
     def __init__(self):
         self.cardmarkings:CardMarkings = CardMarkings()   #Oznaczenia kart
-        self.loading_bar:LoadingBar = LoadingBar(449279, 40, 39)
-        self.file = open("permutations_data/full.txt", 'w')
+        
+        self.file_path = Path("permutations_data/full.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar:LoadingBar = LoadingBar(449279, 40, 39, self.helper_arr)
         
         self.cards:list = []                      #Tablica na karty
         self.cards_2d:list = []                   #Tablica do przetwarzania ukladow

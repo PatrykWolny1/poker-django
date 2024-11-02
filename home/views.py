@@ -1,19 +1,18 @@
 from django.shortcuts import render
-from django.core.cache import cache
-import time
-from classes.Game import Game
-import threading
-import sys
-from home.redis_buffer_singleton import redis_buffer_instance
-from home.long_running_task import long_running_task
-from main import main
+from django.http import FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse  # Import JsonResponse
-import config
-
-# from arrangements.LoadingBar import stop_event, task_thread
+from home.redis_buffer_singleton import redis_buffer_instance_stop
+from classes.Game import Game
+from main import main
+import os
+import threading
 
 stop_event = threading.Event()
+data_ready_event = threading.Event()  # Signals data is ready
+
+cache_lock_progress = threading.Lock()
+cache_lock_event_var = threading.Lock()
 task_thread = None
     
 def index(request):
@@ -26,34 +25,41 @@ def permutacje(request):
     template_data['title'] = 'Permutacje'
     return render(request, 'home/permutacje.html', {'template_data': template_data, })
 
-# def run_script(request):
-#     result = subprocess.run(['python', 'main.py'], stdout=subprocess.PIPE)
-#     output = result.stdout.decode('utf-8')
-#     return render(request, 'home/run_script.html', {'output': output})
+def kareta(request):
+    return render(request, 'home/kareta.html')
 
-# def long_running_task1():
-#     aa = cache.get('shared_variable')
-#     print(f'Progress bar: {aa}')  #
-        
+@csrf_exempt
 def start_task(request): ###################################
-    stop_event.clear()  # Clear the stop event if it was previously set
-    task_thread = threading.Thread(target=main)  # Create a new thread for the task
-    task_thread.start()  # Start the long-running task
-    
-    return render(request, 'home/progress.html')
+    global task_thread, stop_event, data_ready_event
+    if request.method == 'POST':
+        redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
+        stop_event.clear()  # Clear the stop event if it was previously set
+        data_ready_event.clear()
+        if task_thread is not None and task_thread.is_alive():
+            stop_event.set()
+            redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
+        
+
+        task_thread = threading.Thread(target=main)  # Create a new thread for the task
+        task_thread.start()  # Start the long-running task
+
+        return JsonResponse({'status': 'Task started'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def stop_task_view(request):
+    global stop_event, task_thread
     if stop_event is not None:
         stop_event.set()  # Set the stop event to stop the thread
     if task_thread is not None:
         task_thread.join()  # Wait for the thread to finish
+        
+    redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
+
     return JsonResponse({'status': 'Task stopped'})
         
-from django.http import FileResponse, Http404
-import os
 def download_saved_file(request):
-    file_path = 'permutations_data/carriage.txt'
+    file_path = 'permutations_data/data_permutations_combinations.txt'
 
     # Check if the file exists
     if not os.path.exists(file_path):
@@ -61,5 +67,5 @@ def download_saved_file(request):
 
     # Serve the file as a download
     response = FileResponse(open(file_path, 'rb'), as_attachment=True)
-    response['Content-Disposition'] = f'attachment; filename="carriage.txt"'
+    response['Content-Disposition'] = f'attachment; filename="collected_data_perms_combs.txt"'
     return response

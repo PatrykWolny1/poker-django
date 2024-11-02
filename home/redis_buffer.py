@@ -1,16 +1,3 @@
-# import redis
-
-# class RedisBuffer:
-#     def __init__(self):
-#         self.redis = redis.StrictRedis(host='localhost', port=6379, db=0)
-
-#     def write_to_buffer(self, key, data):
-#         self.redis.set(key, data)
-#         print("Data written to Redis:", data)  # Debugging output
-
-#     def read_from_buffer(self, key):
-#         return self.redis.get(key)
-
 import redis
 import threading 
 import sys

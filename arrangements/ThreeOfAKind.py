@@ -1,16 +1,23 @@
 from classes.Card import Card
 from arrangements.HelperArrangement import HelperArrangement
+from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import permutations, combinations
+from pathlib import Path
 
 class ThreeOfAKind(HelperArrangement):
     
     def __init__(self):
         self.cardmarkings:CardMarkings = CardMarkings()  # Oznaczenia kart
         self.high_card:Card = Card()             # Wysoka karta (Card)
-        self.loading_bar:LoadingBar = LoadingBar(6589440, 40, 39)
-        self.file = open("permutations_data/three_of_a_kind.txt", "w")
+        
+        self.file_path = Path("permutations_data/three_of_a_kind.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar:LoadingBar = LoadingBar(6589440, 40, 39, self.helper_arr)
 
         self.perm:list = []                      # Lista na permutacje
         self.weight_arrangement_part:list = []   # Wagi wysokich kart

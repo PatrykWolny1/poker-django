@@ -37,6 +37,13 @@
   flex-direction: column;
 }
 
+h1 {
+  font-size: 36px; /* Change font size */
+  color: #e8f8ff; /* Change text color */
+  text-align: center; /* Center align the text */
+  font-family: 'Cambria Math', sans-serif; /* Change the font family */
+}
+
 .container {
   width: 80%; /* Set the container width to 40% of the page */
   display: flex;
@@ -47,7 +54,7 @@
 
 .progress-container {
   width: 80%; /* Set the progress bar width to 40% */
-  background-color: #f3f3f3;
+  background: linear-gradient(to top, #a8e5ff, #aae6ff);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 10px;
@@ -56,8 +63,9 @@
 .progress-bar {
   height: 30px;
   width: 0; /* Initial width */
-  background-color: #4caf50;
-  color: white;
+  /* background-color: #4caf50; */
+  background: linear-gradient(to top, #31c1ff, #5cceff);
+  color: #00101e;
   text-align: center;
   line-height: 30px; /* Vertical centering */
   border-radius: 10px;
@@ -86,30 +94,36 @@
 
 }
 
-.download-button {
-  background-color: transparent; /* Make the background transparent */
-  color: white; /* Text color */
-  border: none; /* Remove default border */
-  border-radius: 15px; /* Rounded corners */
-  padding: 10px 20px; /* Padding */
-  font-size: 16px; /* Font size */
+.button-container {
+  display: flex;
+  gap: 10px; /* Space between buttons */
+  margin-top: 20px; /* Space above the button container */
+  margin-bottom: 40px;
+}
+
+.start-button, .stop-button, .download-button, .perms-button, .combs-button {
+  /* background-color: #00426e; Blue background */
+  background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
+  color: #e8f8ff; /* White text color */
+  border: 1px solid #001d29; /* No border */
+  border-radius: 10px; /* Rounded corners */
+  padding: 10px 15px; /* Padding around the text */
+  font-size: 20px; /* Font size */
   cursor: pointer; /* Pointer cursor on hover */
-  transition: opacity 0.3s ease; /* Smooth transition for opacity */
-  opacity: 1; /* Default opacity */
-  font-size: 24px;
+  transition: background-color 0.3s; /* Smooth background color transition */
   font-family: 'Cambria Math', sans-serif; /* Specify the font family */
-
+  
 }
 
-/* Button hover and active styles */
-.download-button:hover {
-  background-color: #0080a7; /* Make the background transparent */
-  opacity: 0.8; /* Change opacity on hover */
+.start-button:hover, .stop-button:hover, .download-button:hover, .perms-button:hover, .combs-button:hover {
+  background: linear-gradient(to top, #31c1ff, #5cceff);
+  color: #00101e;
 }
 
-.download-button:active {
-  background-color: #0080a7; /* Make the background transparent */
-  opacity: 0.1; /* Further change opacity when active */ 
+#startTaskButton:disabled {
+  background: linear-gradient(to top, #9be1ff, #d3f2ff);
+  color: #00101e; /* White text color */
+  cursor: not-allowed; /* Change cursor to indicate it's disabled */
 }
 
 body {

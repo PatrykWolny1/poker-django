@@ -1,8 +1,10 @@
 from classes.Card import Card
 from arrangements.HelperArrangement import HelperArrangement
+from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import permutations, combinations
+from pathlib import Path
 
 class TwoPairs(HelperArrangement):
     
@@ -10,9 +12,14 @@ class TwoPairs(HelperArrangement):
         self.cardmarkings:CardMarkings = CardMarkings()  # Oznaczenia kart
         self.limit_rand:int = 2                 # Ograniczenie dla liczby obliczen 143 - pelne obliczenie
         self.one_iter:int = 103680
-        self.loading_bar:LoadingBar = LoadingBar(self.one_iter * self.limit_rand - 1, 40, 54)   #14826239
+        
+        self.file_path = Path("permutations_data/two_pairs.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar:LoadingBar = LoadingBar(self.one_iter * self.limit_rand - 1, 40, 54, self.helper_arr)   #14826239
         self.high_card:Card = Card()             # Wysoka karta
-        self.file = open("permutations_data/two_pairs.txt", "w")
 
         self.cards_2d:list = []                  # Przygotowanie listy pod kombinacje i permutacje
         self.cards_2d_acc:list = []              # Lista pomocnicza

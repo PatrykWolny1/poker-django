@@ -1,6 +1,9 @@
 import random
 from itertools import chain
 import pickle
+import time
+import shutil
+from pathlib import Path
 
 class HelperArrangement(object):
     indices_2d:list = []                     #Indeksy ukladow kart figury
@@ -8,9 +11,12 @@ class HelperArrangement(object):
     cards_all_permutations:list = []         #Tablica na permutacje - losowy uklad
     weight_gen:list = []                     #Tablica na wagi kart
     perm:list = []
-    
-    rand_int:int = 0
 
+    rand_int:int = 0
+    
+    def __init__(self, helper_file_class):
+        self.helper_file_class = helper_file_class
+    
     def dim(self, a):
         #Jesli to nie jest lista to zwroc pusty zbior
         if not type(a) == list:
@@ -90,9 +96,10 @@ class HelperArrangement(object):
                     if idx1 == 4:
                         pass
                         # print(indices[idx])
-                print()
+                # print()
 
     def random_arrangement(self, if_combs=True):
+        from home.views import stop_event, cache_lock_event_var
         #Zerowanie pustych wierszy
         self.cards_all_permutations = [ele for ele in self.cards_all_permutations if ele != []]
 
@@ -136,11 +143,19 @@ class HelperArrangement(object):
                 if repeat == 0:
                     idx1 += 1 
                         
-                iter_idx += 1               
-                
+                iter_idx += 1   
+                            
         # print("Wylosowany uklad: ", self.rand_int)
-        print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
-        print()
+        time.sleep(0.1)
+        with cache_lock_event_var:
+            print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
+
+        stop_event.set()
+        # redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
+        stop_event.clear()
+
+        shutil.copyfile(self.file_path.resolve(), self.file_path_dst.resolve())
+
         
         HelperArrangement.weight_gen.clear()
         HelperArrangement.cards_all_permutations.clear()

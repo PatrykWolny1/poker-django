@@ -1,6 +1,8 @@
 from arrangements.HelperArrangement import HelperArrangement
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
+from arrangements.HelperFileClass import HelperFileClass
+from pathlib import Path
 from classes.Card import Card
 from itertools import permutations, combinations
 
@@ -11,9 +13,14 @@ class HighCard(HelperArrangement):
         self.high_card_1:Card = Card()
         self.limit_rand:int = 100000            # Liczba kombinacji kart -> pomnozone przez 120 daje liczbe permutacji
         self.one_iter:int = 120    
-        self.loading_bar:LoadingBar = LoadingBar(self.limit_rand * self.one_iter - 1, 40, 40)   # 156 304 800 permutacji           
-        self.file = open("permutations_data/high_card.txt", "w")
-
+        
+        self.file_path = Path("permutations_data/high_card.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar:LoadingBar = LoadingBar(self.limit_rand * self.one_iter - 1, 40, 40, self.helper_arr)   # 156 304 800 permutacji           
+        
         self.perm:list = []                       # Lista na karty gracza
         self.weight_arrangement_part:list = []    # Lista na wagi wszystkich kart
         

@@ -1,15 +1,22 @@
 from classes.Card import Card
 from arrangements.HelperArrangement import HelperArrangement
+from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
+from pathlib import Path
 import itertools
 
 class Straight(HelperArrangement):
     
     def __init__(self):
         self.cardmarkings:CardMarkings = CardMarkings()   #Oznaczenia kart
-        self.loading_bar:LoadingBar = LoadingBar(1223999, 40, 39)
-        self.file = open("permutations_data/straight.txt", "w")
+        
+        self.file_path = Path("permutations_data/straight.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar:LoadingBar = LoadingBar(1223999, 40, 39, self.helper_arr)
 
         self.cards:list = []                      #Tablica na karty
         self.perm:list  = []                       #Tablica na permutacje do wag - posortowana

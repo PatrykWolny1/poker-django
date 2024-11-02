@@ -1,17 +1,22 @@
 from classes.Card import Card
 from arrangements.HelperArrangement import HelperArrangement
+from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import permutations
-from django.core.cache import cache
-import time
+from pathlib import Path
 
 class StraightRoyalFlush(HelperArrangement):
     
     def __init__(self):
         self.cardmarkings:CardMarkings = CardMarkings()  #Oznaczenia kart
-        self.loading_bar:LoadingBar = LoadingBar(4799, 39, 40)
-        self.file = open("permutations_data/straight_royal_flush.txt", "w")
+        self.file_path = Path("permutations_data/straight_royal_flush.txt")   
+        self.file = open(self.file_path.resolve(), "w")
+        self.helper_file_class = HelperFileClass(self.file_path.resolve())
+        self.helper_arr = HelperArrangement(self.helper_file_class)
+        
+        self.loading_bar:LoadingBar = LoadingBar(4799, 39, 40, self.helper_arr)
+                
         self.cards:list = []                     #Tablica na karty
         self.perm:list = []                      #Tablica na permutacje do wag
 

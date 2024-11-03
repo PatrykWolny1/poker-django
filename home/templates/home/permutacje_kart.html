@@ -5,11 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+    <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: light)" type="image/x-icon">
+    <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/FFFFFF/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: dark)" type="image/x-icon">
     <title>Permutacje - kombinacje</title>
 </head>
 <body data-page-type="initial">
-    <div id="progressPage">
-        <h1>Obliczanie kombinacji lub permutacji układów kart</h1>
+    <div id="perms_combsPage">
+        <div class="container-perms-combs">
+            <h1><a href="{% url 'home.index' %}">Poker Simulation</a></h1>
+        </div>
+        <h2>Obliczanie kombinacji lub permutacji układów kart</h2>
         <div class="container">
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>

@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.log("Download canceled by user.");
             }
         };
-        
+
         // Function to check if progress is "hanging"
         function checkProgressHanging() {
             if (lastProgress === 0 && startTaskButton.disabled) {
@@ -76,7 +76,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         function connectWebSocket() {
             const socket = new WebSocket('wss://127.0.0.1:8001/ws/progress/');
-            
 
             socket.onopen = function() {
                 console.log("WebSocket connection opened");

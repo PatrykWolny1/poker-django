@@ -15,6 +15,8 @@ class LoadingBar(object):
         self.count_bar:int = 0
         self.progress:int = 0
         self.helper_arr = helper_arr
+        self.begin = True
+        self.ret_lb = True
         
     def set_count_bar(self, count_bar):
         self.count_bar = count_bar
@@ -65,6 +67,7 @@ class LoadingBar(object):
             time.sleep(0.1)        
             
         if stop_event.is_set():
+            self.ret_lb = False
             with cache_lock_event_var:
                 shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), self.helper_arr.helper_file_class.file_path_dst.resolve())
                 
@@ -78,7 +81,9 @@ class LoadingBar(object):
                 self.helper_arr.cards_all_permutations.clear()
 
                 redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
-                return False                
+                return self.ret_lb               
         else:
-            self.helper_arr.helper_file_class.file_path_dst.write_text('')
-            return True
+            if self.begin:
+                self.helper_arr.helper_file_class.file_path_dst.write_text('')
+                self.begin = False
+            return self.ret_lb

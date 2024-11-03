@@ -154,7 +154,7 @@ class HelperArrangement(object):
         # redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
         stop_event.clear()
 
-        shutil.copyfile(self.file_path.resolve(), self.file_path_dst.resolve())
+        shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
 
         
         HelperArrangement.weight_gen.clear()

@@ -17,19 +17,14 @@ task_thread = None
     
 def index(request):
     template_data = {}
-    template_data['title'] = 'Poker Game'
+    template_data['title'] = 'Poker Simulation'
     return render(request, 'home/index.html', {'template_data': template_data})
 
-def permutacje(request):
-    template_data = {}
-    template_data['title'] = 'Permutacje'
-    return render(request, 'home/permutacje.html', {'template_data': template_data, })
-
-def kareta(request):
-    return render(request, 'home/kareta.html')
+def permutacje_kart(request):
+    return render(request, 'home/permutacje_kart.html')
 
 @csrf_exempt
-def start_task(request): ###################################
+def start_task(request):
     global task_thread, stop_event, data_ready_event
     if request.method == 'POST':
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')

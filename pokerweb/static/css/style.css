@@ -1,21 +1,116 @@
-.bg-index{
+.bg-index {
     background: url("img/background.jpg") repeat fixed;
     background-size: 75% auto;
+    height: 400px;
   }
 
-.text-bg-primary {
-  color: #ffffff !important;
+.bg-index::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 400px;
+  width: 100%;
+  background: linear-gradient(to bottom, #00162800, #001d37);
+  pointer-events: none;
+}
+
+p {
+  text-align: justify !important;
+}
+
+.row {
+  --bs-gutter-x: 1.5rem;
+  --bs-gutter-y: 0;
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 20px !important;
+}
+
+h1 {
+  display: block !important;
+  font-size: 64px !important;
+  font-weight: bold !important;
+  unicode-bidi: isolate;
+  background: linear-gradient(to bottom, #a4e4ff, rgb(165, 224, 255));
+  -webkit-background-clip: text; /* For Safari */
+  -webkit-text-fill-color: transparent; /* Make the fill color transparent */
+  background-clip: text; /* For other browsers */}
+
+.container {
+  width: 80%;
+  display: flex;
+  gap: 20px;
+  flex-direction: column; /* Stack elements vertically inside the container */
+  align-items: center; /* Center align children in the container */
+  font-family: 'Cambria Math', sans-serif; /* Specify the font family */
+}
+
+.container-perms-combs {
+  height: 300px;
+  display: flex;
+  flex-direction: column; /* Stack elements vertically inside the container */
+  align-items: center; /* Center align children in the container */
+  font-family: 'Cambria Math', sans-serif; /* Specify the font family */ 
+}
+
+.border-bottom-index {
+  width: 100%; /* Full width */
+  height: 1px;
+  background-color: #ffffff07; /* Line color */
+  margin-top: 0px;
+}
+
+h2 {
+  display: block;
+  font-size: 48px;
+  font-weight: bold;
+  unicode-bidi: isolate;
+  color: rgb(194, 234, 255);
+  font-family: 'Cambria Math', sans-serif; /* Specify the font family */
+}
+
+.pb-2 {
+  text-align: center;
+  padding-bottom: 0 !important;
+}
+
+.border-bottom {
+  width: 100%; /* Full width */
+  height: 1px;
+  background-color: #ffffff; /* Line color */
+  margin-bottom: 20px;
 }
 
 .text-body-emphasis {
   --bs-text-opacity: 1;
-  color: var(--bs-emphasis-color) !important;
+  color: #ffffff !important;
   margin-bottom: 20px
+}
+
+.fs-2 {
+  font-size: calc(1.325rem + .9vw) !important; 
+  color: #9be1ff !important;
+  margin-top: 5px;
+}
+
+.icon-link {
+  color: #a8e5ff;
+  text-decoration: none;
+}
+
+.icon-link:hover {
+  color: #0085be;
+  text-decoration: none;
 }
 
 .bi {
   vertical-align: -.125em;
   fill: #ffffff;
+}
+
+.bg-gradient {
+  background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73)) !important;
 }
 
 .feature-icon {
@@ -24,16 +119,25 @@
   border-radius: .75rem;
 }
 
-.fs-2 {
-  font-size: calc(1.325rem + .9vw) !important;
+h3 {
+  display: block;
+  font-size: 1.17em;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-weight: bold;
+  unicode-bidi: isolate;
+  color: #9be1ff !important;
 }
 
-#progressPage {
-  height: 100vh; /* Full viewport height */
+#perms_combsPage {
+  height: 100%; /* Full viewport height */
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 h1 {
@@ -43,38 +147,39 @@ h1 {
   font-family: 'Cambria Math', sans-serif; /* Change the font family */
 }
 
-.container {
-  width: 80%; /* Set the container width to 40% of the page */
-  display: flex;
-  flex-direction: column; /* Stack elements vertically inside the container */
-  align-items: center; /* Center align children in the container */
-  font-family: 'Cambria Math', sans-serif; /* Specify the font family */
-}
-
 .progress-container {
   width: 80%; /* Set the progress bar width to 40% */
+  height: 40px;
   background: linear-gradient(to top, #a8e5ff, #aae6ff);
   border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 10px;
+}
+
+@keyframes flashShadow {
+  0%, 100% {
+      box-shadow: 0 0 0 rgba(0, 166, 255, 0.8), 0 0 10px rgba(0, 166, 255, 0.8);
+  }
+  50% {
+      box-shadow: 0 0 0 rgba(0, 166, 255, 0.8), 0 0 25px rgba(0, 166, 255, 0.8);
+  }
 }
 
 .progress-bar {
-  height: 30px;
+  height: 40px;
   width: 0; /* Initial width */
-  /* background-color: #4caf50; */
   background: linear-gradient(to top, #31c1ff, #5cceff);
   color: #00101e;
   text-align: center;
-  line-height: 30px; /* Vertical centering */
+  line-height: 40px; /* Vertical centering */
   border-radius: 10px;
   transition: width 0.4s ease;
+  animation: flashShadow 0.5s infinite;
+  overflow: hidden;
 }
 
 .data-script-container {
   width: 80%; /* Match width with the container */
-  margin-top: 10px; /* Space above the data script */
-  margin-bottom: 10px;
+  height: auto;
   display: flex;
   flex-direction: column; /* Stack elements vertically inside the container */
   align-items: center; /* Center align children in the container */
@@ -85,8 +190,7 @@ h1 {
   max-width: 100%; /* Prevent exceeding the container's width */
   background-color: #f0f0f0; /* Example background color */
   border: 1px solid #ccc; /* Optional border */
-  overflow-y: auto; /* Allow scrolling if content overflows */
-  padding: 10px; /* Optional padding */
+  padding: 10px; 
   border-radius: 15px; /* Rounded corners */
   white-space: pre-wrap; /* Preserve whitespace and wrap long text */
   font-size: 24px; /* Font size */
@@ -96,8 +200,8 @@ h1 {
 .button-container {
   display: flex;
   gap: 10px; /* Space between buttons */
-  margin-top: 20px; /* Space above the button container */
-  margin-bottom: 40px;
+  position: relative;
+  z-index: 0;
 }
 
 .start-button, .stop-button, .download-button, .perms-button, .combs-button {
@@ -105,6 +209,8 @@ h1 {
   background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
   color: #e8f8ff; /* White text color */
   border: 1px solid #001d29; /* No border */
+  margin-top: 10px;
+  margin-bottom: 10px;
   border-radius: 10px; /* Rounded corners */
   padding: 10px 15px; /* Padding around the text */
   font-size: 20px; /* Font size */
@@ -119,14 +225,14 @@ h1 {
   color: #00101e;
 }
 
-#startTaskButton:disabled {
+#startTaskButton:disabled, #permsButton:disabled, #combsButton:disabled {
   background: linear-gradient(to top, #9be1ff, #d3f2ff);
   color: #00101e; /* White text color */
   cursor: not-allowed; /* Change cursor to indicate it's disabled */
 }
 
 body {
-  background: radial-gradient(circle, #001628, #00101e);
+  background: radial-gradient(circle, #001d37, #00101e); /*001628*/
 }
   
 [data-bs-theme=dark] {

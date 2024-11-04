@@ -17,6 +17,7 @@ class LoadingBar(object):
         self.helper_arr = helper_arr
         self.begin = True
         self.ret_lb = True
+        self.points_step = points_step
         
     def set_count_bar(self, count_bar):
         self.count_bar = count_bar
@@ -34,12 +35,6 @@ class LoadingBar(object):
         if self.step_p:
             # print("[", end="")
             # print(self.str_1, end="]\n")
-            with cache_lock_progress:
-                cache.set('shared_progress', str(self.progress))
-            data_ready_event.set()
-            data_ready_event.clear()
-            self.progress += 1
-            time.sleep(0.1)
             # os.system('cls')
             self.step_p = False
         # Zamiana znaku "#" na ".", co okreslona liczbe iteracji
@@ -48,11 +43,9 @@ class LoadingBar(object):
             self.str_1 = self.str_1.replace("#", ".", 1)
             # print(self.str_1, end="]\n")
             with cache_lock_progress:
-                cache.set('shared_progress', str(self.progress))
+                cache.set('shared_progress', str(self.str_1.count('.')))
             data_ready_event.set()
             data_ready_event.clear()
-            self.progress += 1
-            time.sleep(0.1)
             # os.system('cls')
             # time.sleep(0.1)
         # Ostatnia iteracja zamiana znaku
@@ -61,10 +54,8 @@ class LoadingBar(object):
             self.str_1 = self.str_1.replace("#", ".", 1)
             # print(self.str_1, end="]\n")
             with cache_lock_progress:
-                cache.set('shared_progress', str(self.progress))
-            data_ready_event.set()
-            self.progress += 1
-            time.sleep(0.1)        
+                cache.set('shared_progress', str(self.str_1.count('.')))
+            data_ready_event.set()       
             
         if stop_event.is_set():
             self.ret_lb = False
@@ -79,7 +70,7 @@ class LoadingBar(object):
                 
                 self.helper_arr.weight_gen.clear()
                 self.helper_arr.cards_all_permutations.clear()
-
+                
                 redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
                 return self.ret_lb               
         else:

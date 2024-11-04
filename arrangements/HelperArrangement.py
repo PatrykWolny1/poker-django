@@ -4,6 +4,7 @@ import pickle
 import time
 import shutil
 from pathlib import Path
+from home.redis_buffer_singleton import redis_buffer_instance
 
 class HelperArrangement(object):
     indices_2d:list = []                     #Indeksy ukladow kart figury
@@ -31,7 +32,8 @@ class HelperArrangement(object):
         if self.dim(cards) == 2:
             cards = [item for sublist in cards for item in sublist]
             #print(cards)
-
+        if self.dim(cards) == 1:
+            cards = [cards]
         
         for idx in range(0, size):
             indices = []
@@ -53,7 +55,7 @@ class HelperArrangement(object):
         #     #print(self.indices_2d_color)
         #     return
 
-        #if self.dim(cards) == 1:
+        # if self.dim(cards) == 1:
         cards = [cards]
 
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
@@ -146,16 +148,17 @@ class HelperArrangement(object):
                 iter_idx += 1   
                             
         # print("Wylosowany uklad: ", self.rand_int)
-        time.sleep(0.1)
         with cache_lock_event_var:
             print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
 
+        redis_buffer_instance.redis_1.set('prog_when_fast', '100')
+
         stop_event.set()
-        # redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
         stop_event.clear()
 
         shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
 
+        
         HelperArrangement.weight_gen.clear()
         HelperArrangement.cards_all_permutations.clear()
 

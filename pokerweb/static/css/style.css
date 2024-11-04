@@ -225,7 +225,7 @@ h1 {
   color: #00101e;
 }
 
-#startTaskButton:disabled, #permsButton:disabled, #combsButton:disabled {
+#startTaskButton:disabled, #permsButton:disabled, #combsButton:disabled, #downloadButton:disabled {
   background: linear-gradient(to top, #9be1ff, #d3f2ff);
   color: #00101e; /* White text color */
   cursor: not-allowed; /* Change cursor to indicate it's disabled */

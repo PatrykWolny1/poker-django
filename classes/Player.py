@@ -118,7 +118,7 @@ class Player(object):
     def cards_permutations(self, rand_arr = False, combs_gen = False):
             if combs_gen == False:
                 # print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
-                if_rand = '2'
+                if_rand = '1'    #if_rand == '2' if generate random with permutations (too many...)
                 if_combs = False
             else:
                 if_rand = "1"
@@ -150,13 +150,14 @@ class Player(object):
             # Gra jednym ukladem kart
             if combs_gen == True:
                 print("Generowanie kombinacji kart...")
-
+            else:
+                print("Generowanie permutacji kart...")
             #blockPrint()
             
             if arrangement == "1":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random)
             if arrangement == "2":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.carriage.carriage_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.carriage.carriage_generating(self.random, if_combs)
             if arrangement == "3":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.full.full_generating(self.random)
             if arrangement == "4":

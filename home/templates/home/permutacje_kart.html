@@ -7,6 +7,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: light)" type="image/x-icon">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/FFFFFF/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: dark)" type="image/x-icon">
+    <script src="{% static 'js/websocket.js' %}" defer></script>
     <title>Permutacje - kombinacje</title>
 </head>
 <body data-page-type="initial">
@@ -23,7 +24,7 @@
                 <button class="stop-button" type="button" id="stopTaskButton">Stop</button>
                 <button class="start-button" type="button" id="startTaskButton" onclick="handleClick()">Start</button>
                 <button class="perms-button" type="button" id="permsButton">Permutacje</button>
-                <button class="combs-button" type="button" id="combsButton">Kombinacje</button>
+                <button class="combs-button" type="button" id="combsButton" disabled>Kombinacje</button>
                 <button class="download-button" type="button" id="downloadButton">Pobierz układy kart do pliku</button>
             </div>
             <div class="data-script-container">
@@ -31,6 +32,6 @@
             </div>
         </div>
     </div>
-    <script src="{% static 'js/websocket.js' %}" defer></script> <!-- Link to the external JavaScript file -->
+     <!-- Link to the external JavaScript file -->
 </body>
 </html>

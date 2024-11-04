@@ -41,6 +41,76 @@ def kombinacje(request):
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
+def high_card(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for High Card
+        return JsonResponse({'status': 'High Card is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def one_pair(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '2')  # Binary code for One Pair
+        return JsonResponse({'status': 'One Pair is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def two_pairs(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '3')  # Binary code for Two Pairs
+        return JsonResponse({'status': 'Two Pairs are ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def three_of_a_kind(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '4')  # Binary code for Three of a Kind
+        return JsonResponse({'status': 'Three of a Kind is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def straight(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '5')  # Binary code for Straight
+        return JsonResponse({'status': 'Straight is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def color(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '6')  # Binary code for Color
+        return JsonResponse({'status': 'Color is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def full(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '7')  # Binary code for Full
+        return JsonResponse({'status': 'Full is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def carriage(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '8')  # Binary code for Carriage
+        return JsonResponse({'status': 'Carriage is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def straight_flush(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '9')  # Binary code for Straight Flush
+        return JsonResponse({'status': 'Straight Flush is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def straight_royal_flush(request):
+    if request.method == 'POST':
+        redis_buffer_instance.redis_1.set('arrangement', '10')  # Binary code for Straight Royal Flush
+        return JsonResponse({'status': 'Straight Royal Flush is ON'})
+    return JsonResponse({'status': 'Invalid request'}, status=400)
+
+@csrf_exempt
 def start_task(request):
     global task_thread, stop_event, data_ready_event
     if request.method == 'POST':
@@ -57,10 +127,10 @@ def start_task(request):
         redis_buffer_instance.redis_1.set('choice_1', '2')
         redis_buffer_instance.redis_1.set('choice', '1')
         
-        task_thread = threading.Thread(target=main)  # Create a new thread for the task
-        task_thread.start()  # Start the long-running task
+        task_thread = threading.Thread(target=main)  # Create a new thread for the arrangement
+        task_thread.start()  # Start the long-running arrangement
         
-        return JsonResponse({'status': 'Task started'})
+        return JsonResponse({'status': 'arrangement started'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
@@ -71,7 +141,7 @@ def stop_task(request):
     if task_thread is not None:
         task_thread.join()  # Wait for the thread to finish
     
-    return JsonResponse({'status': 'Task stopped'})
+    return JsonResponse({'status': 'arrangement stopped'})
 
 def download_saved_file(request):
     file_path = 'permutations_data/data_permutations_combinations.txt'

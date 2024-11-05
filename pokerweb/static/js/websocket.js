@@ -4,7 +4,24 @@ class TaskManager {
         this.progressTimeout = null;
         this.lastDataScript = "";
         this.lastClickedPermsCombs = true;
+        this.lastClickedArr = null;
         this.progress = 0;
+        this.progressUpdateThreshold = 500; // milliseconds
+        this.lastProgressUpdateTime = Date.now() // To track the last progress update
+        this.maxAllowedValue = undefined;
+        
+        this.arrangementLimits = {
+            highcardButton: { max_perms: 156304800, max_combs: 1302540 },
+            onepairButton: { max_perms: 131788800, max_combs: 1098240 },
+            twopairsButton: { max_perms: 14826240, max_combs: 123552 },
+            threeofakindButton: { max_perms: 6589440, max_combs: 54912 },
+            straightButton: { max_perms: 1224000, max_combs: 10200 },
+            colorButton: { max_perms: 612960, max_combs: 5108 },
+            fullButton: { max_perms: 449280, max_combs: 3744 },
+            carriageButton: { max_perms: 74880, max_combs: 624 },
+            straightflushButton: { max_perms: 4320, max_combs: 36 },
+            straightroyalflushButton: { max_perms: 480, max_combs: 4 },
+        };
 
         // UI Elements
         this.elements = {
@@ -71,18 +88,19 @@ class TaskManager {
                 buttonElement.addEventListener('click', () => this.handleTaskSelection(buttonElement, url));
             }
         });
-        
+
         this.elements.carriageButton.disabled = true;
-
-        // Set up permsButton and combsButton to toggle each other
-        this.elements.permsButton.addEventListener('click', () => this.handleTaskSelection(this.elements.permsButton, '/permutacje_view/'));
-        this.elements.combsButton.addEventListener('click', () => this.handleTaskSelection(this.elements.combsButton, '/kombinacje_view/'));
-
+        this.lastClickedArr = this.elements.carriageButton;
+        
         this.elements.combsButton.disabled = true;
         this.elements.permsButton.disabled = false;
+        this.lastClickedPermsCombs = true;
         
+        this.updateMaxAllowedValue()
+
+        this.elements.startTaskButton.addEventListener('click', () => this.showNumberPopup());
         // Start and stop task buttons
-        this.elements.startTaskButton.onclick = () => this.startTask();
+
         this.elements.stopTaskButton.onclick = () => this.stopTask();
         
         // Download button with confirmation
@@ -91,24 +109,116 @@ class TaskManager {
         // Stop task on page unload
         window.addEventListener("beforeunload", () => this.handleBeforeUnload());
     }
+    updateMaxAllowedValue() {
+        // Check which button is disabled to determine the source of maxAllowedValue
+        const isPermsDisabled = this.elements.permsButton.disabled;
+        const isCombsDisabled = this.elements.combsButton.disabled;
+
+        // Loop through arrangement buttons to set maxAllowedValue
+        for (const [buttonKey, limits] of Object.entries(this.arrangementLimits)) {
+            const buttonElement = this.elements[buttonKey];
+            
+            // Check if the button is the last clicked arrangement button
+            if (buttonElement === this.lastClickedArr) {
+                // If permsButton is disabled, assign max_perms; if combsButton is disabled, assign max_combs
+                this.maxAllowedValue = isPermsDisabled ? limits.max_perms : isCombsDisabled ? limits.max_combs : Infinity;
+                break;
+            }
+        }
+    }
+    ///////////////////////////////////////////TRANSFER VARIABLE TO VIEWS
+    showNumberPopup() {
+        this.updateMaxAllowedValue()
+
+        // Create the overlay
+        const overlay = document.createElement("div");
+        overlay.className = "popup-overlay";
+    
+        const popup = document.createElement("div");
+        popup.className = "popup";
+
+        const message = document.createElement("p");
+        message.innerText = `Podaj ilość układów do wygenerowania (maksimum: ${this.maxAllowedValue})`;
+        popup.appendChild(message);
+
+        const inputField = document.createElement("input");
+        inputField.type = "number";
+        inputField.max = this.maxAllowedValue;
+        inputField.placeholder = `Wpisz ilość ≤ ${this.maxAllowedValue}`;
+        popup.appendChild(inputField);
+
+        const confirmButton = document.createElement("button");
+        confirmButton.innerText = "OK";
+        confirmButton.className = "popup-button";
+        confirmButton.onclick = () => {
+            const enteredValue = parseInt(inputField.value, 10);
+            if (enteredValue && enteredValue <= this.maxAllowedValue) {
+                alert(`Ilość: ${enteredValue}`);
+                document.body.removeChild(overlay);
+                this.startTask(enteredValue); // Start the task with the entered value
+            } else {
+                alert(`Wpisz właściwą wartość lub mniejszą od: ${this.maxAllowedValue}.`);
+            }
+        };
+        popup.appendChild(confirmButton);
+
+        const cancelButton = document.createElement("button");
+        cancelButton.innerText = "Anuluj";
+        cancelButton.className = "popup-button";
+        cancelButton.onclick = () => {
+            document.body.removeChild(overlay);
+        };
+        popup.appendChild(cancelButton);
+
+        overlay.appendChild(popup); // Append popup to overlay
+        document.body.appendChild(overlay); // Append overlay to body
+    }
 
     handleTaskSelection(selectedButton, url) {
-        // Enable all other task buttons
+        // Enable all arrangement task buttons initially
         for (const [buttonKey] of Object.entries(this.taskButtons)) {
             const buttonElement = this.elements[buttonKey];
-            if (buttonElement !== selectedButton) {
+            if (buttonElement !== this.elements.permsButton && buttonElement !== this.elements.combsButton) {
                 buttonElement.disabled = false;
             }
         }
-
-        // Disable the selected button and enable the other one if it's either permsButton or combsButton
-        if (selectedButton === this.elements.permsButton) {
-            this.elements.combsButton.disabled = false;
-        } else if (selectedButton === this.elements.combsButton) {
-            this.elements.permsButton.disabled = false;
+        
+        // Toggle between `permsButton` and `combsButton` clicks
+        if (selectedButton === this.elements.permsButton || selectedButton === this.elements.combsButton) {
+            // Disable the last clicked arrangement button if it exists
+            if (this.lastClickedArr) {
+                this.lastClickedArr.disabled = true;
+            }
+        } else {
+            // For an arrangement button click, disable the previously clicked arrangement button if it exists
+            if (this.lastClickedArr && this.lastClickedArr !== selectedButton) {
+                this.lastClickedArr.disabled = false;
+            }
+            // Set the newly clicked arrangement button as the last clicked arrangement
+            this.lastClickedArr = selectedButton;
         }
 
-        // Disable the selected button
+        // Toggle between enabling `permsButton` and `combsButton`
+        if (selectedButton === this.elements.permsButton) {
+            this.elements.permsButton.disabled = true;
+            this.elements.combsButton.disabled = false;
+            // Set maxAllowedValue based on lastClickedArr's max_perms
+            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_perms : Infinity;
+            this.lastClickedPermsCombs = false;
+        } else if (selectedButton === this.elements.combsButton) {
+            this.elements.combsButton.disabled = true;
+            this.elements.permsButton.disabled = false;
+            // Set maxAllowedValue based on lastClickedArr's max_combs
+            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_combs : Infinity;
+            this.lastClickedPermsCombs = true;
+        } else {
+            // If an arrangement button is clicked, set maxAllowedValue based on perms/combs status
+            this.maxAllowedValue = this.lastClickedPermsCombs
+                ? this.arrangementLimits[selectedButton.id]?.max_perms
+                : this.arrangementLimits[selectedButton.id]?.max_combs;
+        }
+        
+
         selectedButton.disabled = true;
 
         // Trigger task for selected button's view
@@ -129,12 +239,21 @@ class TaskManager {
             .catch(error => console.error('Error starting task:', error));
     }
 
-    startTask() {
-        fetch('/start_task_view/', { method: 'POST' })
+    startTask(enteredValue) {
+        fetch('/start_task_view/', { method: 'POST', body: JSON.stringify({ value: enteredValue }), headers: { 'Content-Type': 'application/json' } })
             .then(response => response.json())
             .then(() => {
                 this.elements.startTaskButton.disabled = true;
                 this.elements.downloadButton.disabled = true;
+                
+                // Maintain perms/combs button state as per previous functionality
+                if (this.elements.combsButton.disabled) {
+                    this.elements.permsButton.disabled = true;
+                    this.lastClickedPermsCombs = true;
+                } else if (this.elements.permsButton.disabled) {
+                    this.elements.combsButton.disabled = true;
+                    this.lastClickedPermsCombs = false;
+                }
 
                 // Disable all task buttons when starting
                 Object.keys(this.taskButtons).forEach(buttonKey => {
@@ -146,14 +265,7 @@ class TaskManager {
                 this.connectWebSocket();
                 this.resetProgressBar();
 
-                // Maintain perms/combs button state as per previous functionality
-                if (this.elements.combsButton.disabled) {
-                    this.elements.permsButton.disabled = true;
-                    this.lastClickedPermsCombs = true;
-                } else if (this.elements.permsButton.disabled) {
-                    this.elements.combsButton.disabled = true;
-                    this.lastClickedPermsCombs = false;
-                }
+
             })
             .catch(error => console.error('Error starting task:', error));
     }
@@ -161,7 +273,7 @@ class TaskManager {
     stopTask() {
         fetch('/stop_task_view/', { method: 'POST' })
             .then(response => response.json())
-            .then(() => {
+            .then(data => {
                 this.elements.startTaskButton.disabled = false;
                 this.elements.downloadButton.disabled = false;
 
@@ -178,7 +290,7 @@ class TaskManager {
                     this.elements.combsButton.disabled = true;
                     this.elements.permsButton.disabled = false;
                 }
-
+              
                 clearTimeout(this.progressTimeout);
             })
             .catch(error => console.error('Error stopping task:', error));
@@ -208,16 +320,29 @@ class TaskManager {
     handleSocketMessage(event) {
         const data = JSON.parse(event.data);
         
+        // Update progress
         if ('progress' in data) {
             this.updateProgress(data.progress);
+            this.lastProgressUpdateTime = Date.now(); // Update the last progress time
+
+            // Clear any existing timeout since we have new progress
+            clearTimeout(this.progressTimeout);
+            
+            // Set a new timeout to check for hanging progress
+            this.progressTimeout = setTimeout(() => {
+                this.requestLatestDataScript(); // Function to request latest data_script
+            }, this.progressUpdateThreshold);
         }
         
         if ('data_script' in data) {
             this.updateDataScript(data.data_script);
         }
-        
+
         if (data.progress == 100) {
             this.finalizeProgress();
+            if ('data_script' in data) {
+                this.updateDataScript(data.data_script)
+            }
         }
     }
 
@@ -246,24 +371,30 @@ class TaskManager {
             this.elements.dataScriptDiv.innerHTML += this.lastDataScript + '<br>';
         }
     }
- //////////////////////////////////////////////Perm on -> finish -> perm on
+
+    // Function to request the latest data_script
+    requestLatestDataScript() {
+        // Your logic to request the latest data_script from the server
+        // This could involve sending a message through the WebSocket or making an AJAX call
+        console.log("Requesting latest data_script due to hanging progress");
+        this.socket.send(JSON.stringify({ action: "request_latest_data_script" }));
+    }
+
     finalizeProgress() {
         this.elements.downloadButton.disabled = false;
 
-        // Enable all task buttons
+           // Enable all task buttons except the last clicked button
         for (const buttonKey of Object.keys(this.taskButtons)) {
-            this.elements[buttonKey].disabled = false;
+            const buttonElement = this.elements[buttonKey];
+            if (buttonElement !== this.lastClickedArr) {
+                buttonElement.disabled = false;
+            }
+        }
+        // Ensure the last clicked button remains disabled
+        if (this.lastClickedArr) {
+            this.lastClickedArr.disabled = true;
         }
     
-        // Determine if any task buttons are still enabled
-        const enabledTaskButtons = Object.keys(this.taskButtons).filter(buttonKey => {
-            return !this.elements[buttonKey].disabled;
-        });
-    
-        // If any task button is still enabled, we keep it enabled
-        if (enabledTaskButtons.length > 0) {
-            this.elements[enabledTaskButtons[0]].disabled = true; // Keep one enabled
-        }
         this.elements.downloadButton.disabled = false;
         
         // Restore state for perms/combs button based on last selection
@@ -277,7 +408,8 @@ class TaskManager {
     }
 
     checkProgressHanging() {
-        if (this.lastProgress === 0 || this.lastProgress > 0) {
+        if (this.progress > 0 && this.progress < 100) {
+            this.fetchLatestDataScript(); // Fetch the latest data script if progress is hanging
             this.elements.startTaskButton.disabled = false;
         }
     }

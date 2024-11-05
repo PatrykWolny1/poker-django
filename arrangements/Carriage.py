@@ -16,10 +16,12 @@ class Carriage(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         self.cardmarkings = CardMarkings()   #Oznaczenia kart
-        self.loading_bar = LoadingBar(74880, 20, 19, self.helper_arr) #Permutacje
-        self.loading_bar_combs = LoadingBar(624, 20, 19, self.helper_arr)   #Kombinacje
-
+        self.loading_bar = LoadingBar('carriage', 74880, 20, 19, self.helper_arr) #Permutacje
+        self.loading_bar_combs = LoadingBar('carriage_combs', 624, 60, 60, self.helper_arr)   #Kombinacje
         
+        self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
+        self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
+
         self.cards:list = []                      #Tablica do wstepnego przetwarzania
         self.cards_2d:list = []                   #Tablica do wstepnego przetwarzania
         self.cards_5:list = []                    #Tablca do wstepnego przetwarzania
@@ -38,6 +40,7 @@ class Carriage(HelperArrangement):
         self.example:bool = False                 #Jesli jest recznie wpisany uklad
         self.random:bool = False                  #Jesli jest losowanie ukladu
         self.if_combs:bool = False
+        self.stop:bool = True
         
     #Funkcja dla przykladowego ukladu wpisanego recznie
     def set_cards(self, cards):
@@ -167,10 +170,9 @@ class Carriage(HelperArrangement):
                             self.file.write("\n")
                             # print()
 
-                        self.loading_bar_combs.set_count_bar(self.num_arr)
-                        to_exit = self.loading_bar_combs.display_bar()
-                        
-                        if not to_exit:
+                        self.loading_bar_combs.update_progress(self.num_arr)
+                    
+                        if not self.loading_bar_combs.check_stop_event():
                             sys.exit()
                         
                         self.helper_arr.append_cards_all_permutations(self.perm)
@@ -202,11 +204,10 @@ class Carriage(HelperArrangement):
                                 self.file.write("\n")
                             
 
-                            self.loading_bar.set_count_bar(self.num_arr)
-                            to_exit = self.loading_bar.display_bar()
-                            if not to_exit:
-                                sys.exit()
+                            self.loading_bar.update_progress(self.num_arr)
                             
+                            if not self.loading_bar.check_stop_event():
+                                sys.exit()
                             self.helper_arr.append_cards_all_permutations(self.cards_perm[idx6])
 
                             self.c_idx6 = idx6
@@ -228,11 +229,11 @@ class Carriage(HelperArrangement):
         self.if_combs = if_combs
         
         if self.if_combs:        
-            redis_buffer_instance.redis_1.set('min', str(0))
-            redis_buffer_instance.redis_1.set('max', str(int(self.loading_bar_combs.n_bar/self.loading_bar_combs.step_bar)))
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_combs)
         else:
-            redis_buffer_instance.redis_1.set('min', str(0))
-            redis_buffer_instance.redis_1.set('max', str(int(self.loading_bar.n_bar/self.loading_bar.step_bar)))
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_1)
             
         shift = 0
 

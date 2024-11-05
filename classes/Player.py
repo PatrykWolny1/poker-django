@@ -2,6 +2,7 @@ from classes.Arrangements import Arrangements
 from classes.Deck import Deck
 from classes.Card import Card
 from random import choice
+from home.redis_buffer_singleton import redis_buffer_instance
 import sys
 import os
 
@@ -145,8 +146,8 @@ class Player(object):
             #     "(9 - WYSOKA KARTA)\n", flush=True)
 
             # arrangement = input()
-            arrangement = "2"
-            
+            arrangement = redis_buffer_instance.redis_1.get('arrangement').decode('utf-8')  # Binary code for Carriage
+
             # Gra jednym ukladem kart
             if combs_gen == True:
                 print("Generowanie kombinacji kart...")
@@ -159,9 +160,9 @@ class Player(object):
             if arrangement == "2":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.carriage.carriage_generating(self.random, if_combs)
             if arrangement == "3":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.full.full_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.full.full_generating(self.random, if_combs)
             if arrangement == "4":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.color.color_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.color.color_generating(self.random, if_combs)
             if arrangement == "5":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random)
             if arrangement == "6":
@@ -171,7 +172,7 @@ class Player(object):
             if arrangement == "8":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.one_pair.one_pair_generating(self.random, if_combs)
             if arrangement == "9":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs)
 
             #print(self.cards)
             

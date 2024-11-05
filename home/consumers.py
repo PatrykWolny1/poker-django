@@ -52,14 +52,19 @@ class TestConsumer(AsyncWebsocketConsumer):
                     cache.set('shared_progress', '100') 
                 break
 
-            await asyncio.sleep(0.2)  # Adjust the interval as needed
+            await asyncio.sleep(0.5)  # Adjust the interval as needed
 
     async def disconnect(self, close_code):
         print("WebSocket connection closed")
 
     async def receive(self, text_data):
-        # Handle messages received from the WebSocket if needed
-        pass
+        data = json.loads(text_data)
+        if data.get("action") == "request_latest_data_script":
+            with cache_lock_event_var:
+                data_script = redis_buffer_instance.read_from_buffer('prog')
+                processed_data_script = self.send_data_print(data_script)
+                if processed_data_script is not None:
+                    await self.send(text_data=json.dumps({'data_script': str(processed_data_script)}))
     
     def send_data_print(self, data_script):
         data_ready_event.clear()  

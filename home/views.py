@@ -7,6 +7,7 @@ from classes.Game import Game
 from main import main
 import os
 import threading
+import json
 
 stop_event = threading.Event()
 data_ready_event = threading.Event()  # Signals data is ready
@@ -43,28 +44,28 @@ def kombinacje(request):
 @csrf_exempt
 def high_card(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for High Card
+        redis_buffer_instance.redis_1.set('arrangement', '9')  # Binary code for High Card
         return JsonResponse({'status': 'High Card is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def one_pair(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '2')  # Binary code for One Pair
+        redis_buffer_instance.redis_1.set('arrangement', '8')  # Binary code for One Pair
         return JsonResponse({'status': 'One Pair is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def two_pairs(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '3')  # Binary code for Two Pairs
+        redis_buffer_instance.redis_1.set('arrangement', '7')  # Binary code for Two Pairs
         return JsonResponse({'status': 'Two Pairs are ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def three_of_a_kind(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '4')  # Binary code for Three of a Kind
+        redis_buffer_instance.redis_1.set('arrangement', '6')  # Binary code for Three of a Kind
         return JsonResponse({'status': 'Three of a Kind is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -78,35 +79,35 @@ def straight(request):
 @csrf_exempt
 def color(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '6')  # Binary code for Color
+        redis_buffer_instance.redis_1.set('arrangement', '4')  # Binary code for Color
         return JsonResponse({'status': 'Color is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def full(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '7')  # Binary code for Full
+        redis_buffer_instance.redis_1.set('arrangement', '3')  # Binary code for Full
         return JsonResponse({'status': 'Full is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def carriage(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '8')  # Binary code for Carriage
+        redis_buffer_instance.redis_1.set('arrangement', '2')  # Binary code for Carriage
         return JsonResponse({'status': 'Carriage is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def straight_flush(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '9')  # Binary code for Straight Flush
+        redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for Straight Flush
         return JsonResponse({'status': 'Straight Flush is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 @csrf_exempt
 def straight_royal_flush(request):
     if request.method == 'POST':
-        redis_buffer_instance.redis_1.set('arrangement', '10')  # Binary code for Straight Royal Flush
+        redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for Straight Royal Flush
         return JsonResponse({'status': 'Straight Royal Flush is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -154,4 +155,17 @@ def download_saved_file(request):
     response = FileResponse(open(file_path, 'rb'), as_attachment=True)
     response['Content-Disposition'] = f'attachment; filename="collected_data_perms_combs.txt"'
     return response
+
+@csrf_exempt  # Use only if you’re not sending the CSRF token (recommended for testing only)
+def submit_number(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        number = data.get("number")
+        
+        # Perform any processing with the number here
+        print("Received number:", number)  # Example action
+        
+        return JsonResponse({"message": "Number received successfully", "number": number})
+    
+    return JsonResponse({"error": "Invalid request"}, status=400)
     

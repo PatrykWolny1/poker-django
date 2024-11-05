@@ -18,7 +18,7 @@ class TwoPairs(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar(self.one_iter * self.limit_rand - 1, 40, 54, self.helper_arr)   #14826239
+        self.loading_bar:LoadingBar = LoadingBar('twopairs', self.one_iter * self.limit_rand - 1, 40, 54, self.helper_arr)   #14826239
         self.high_card:Card = Card()             # Wysoka karta
 
         self.cards_2d:list = []                  # Przygotowanie listy pod kombinacje i permutacje

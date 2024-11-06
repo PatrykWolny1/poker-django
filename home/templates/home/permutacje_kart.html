@@ -7,6 +7,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: light)" type="image/x-icon">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/FFFFFF/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: dark)" type="image/x-icon">
+    <script src="{% static 'js/websocket.js' %}" defer></script>
     <title>Permutacje - kombinacje</title>
 </head>
 <body data-page-type="initial">
@@ -19,11 +20,23 @@
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
+            <div class="button-container-top">
+                <button class="high-card-button" type="button" id="highcardButton">Wysoka Karta</button>
+                <button class="one-pair-button" type="button" id="onepairButton">Jedna Para</button>
+                <button class="two-pairs-button" type="button" id="twopairsButton">Dwie Pary</button>
+                <button class="three-of-a-kind-button" type="button" id="threeofakindButton">Trójka</button>
+                <button class="straight-button" type="button" id="straightButton">Strit</button>
+                <button class="color-button" type="button" id="colorButton">Kolor</button>
+                <button class="full-button" type="button" id="fullButton">Full</button>
+                <button class="carriage-button" type="button" id="carriageButton" disabled>Kareta</button>
+                <button class="straight-flush-button" type="button" id="straightflushButton">Poker</button>
+                <button class="straight-royal-flush-button" type="button" id="straightroyalflushButton">Poker Królewski</button>
+            </div>
             <div class="button-container">
                 <button class="stop-button" type="button" id="stopTaskButton">Stop</button>
-                <button class="start-button" type="button" id="startTaskButton" onclick="handleClick()">Start</button>
+                <button class="start-button" type="button" id="startTaskButton">Start</button>
                 <button class="perms-button" type="button" id="permsButton">Permutacje</button>
-                <button class="combs-button" type="button" id="combsButton">Kombinacje</button>
+                <button class="combs-button" type="button" id="combsButton" disabled>Kombinacje</button>
                 <button class="download-button" type="button" id="downloadButton">Pobierz układy kart do pliku</button>
             </div>
             <div class="data-script-container">
@@ -31,6 +44,6 @@
             </div>
         </div>
     </div>
-    <script src="{% static 'js/websocket.js' %}" defer></script> <!-- Link to the external JavaScript file -->
+     <!-- Link to the external JavaScript file -->
 </body>
 </html>

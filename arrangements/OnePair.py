@@ -5,9 +5,8 @@ from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import permutations, combinations
 from pathlib import Path
-import random
-import time
-import pickle
+from home.redis_buffer_singleton import redis_buffer_instance
+import sys
 
 class OnePair(HelperArrangement):
     
@@ -22,9 +21,14 @@ class OnePair(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar(self.one_iter * self.limit_rand - 1, 40, 40, self.helper_arr) #Permutacje: 131 788 800
-        self.loading_bar_combs:LoadingBar = LoadingBar(self.n_combs - 1, 40, 40, self.helper_arr)              #Kombinacje: 1 098 240 2s -> 84480
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
 
+        self.loading_bar:LoadingBar = LoadingBar('onepair', self.max_value_generate, 100, 100, self.helper_arr) #Permutacje: 131 788 800
+        self.loading_bar_combs:LoadingBar = LoadingBar('onepair_combs', self.max_value_generate, 100, 100, self.helper_arr)              #Kombinacje: 1 098 240 2s -> 84480
+
+        self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
+        self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
+        
         self.perm:list = []                      # Lista na permutacje
         self.weight_arrangement_part:list  = []   # Lista na wagi pozostalych kart   
 
@@ -35,7 +39,8 @@ class OnePair(HelperArrangement):
 
         self.random:bool = False
         self.example:bool = False
-        self.if_combs:bool = False           # Combinations for testing strategies
+        self.if_combs:bool = False
+        self.stop:bool = True
 
     def set_cards(self, cards):
         self.perm = cards
@@ -63,8 +68,8 @@ class OnePair(HelperArrangement):
     def remove_multiples(self, cards_comb):
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
 
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if len(HelperArrangement().get_indices_2d_1()[i]) in range(2, 4):  # Jesli w wierszu tablicy znajduja sie 2 lub 3 takie same elementy
+        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if len(self.helper_arr.get_indices_2d_1()[i]) in range(2, 4):  # Jesli w wierszu tablicy znajduja sie 2 lub 3 takie same elementy
                 return True
 
         return False
@@ -72,8 +77,8 @@ class OnePair(HelperArrangement):
     def remove_multiples_more_4(self, cards_comb):
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
 
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if len(HelperArrangement().get_indices_2d_1()[i]) > 4:  # Jesli w wierszu tablicy znajduja sie wiecej niz 4 takie same elementy
+        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if len(self.helper_arr.get_indices_2d_1()[i]) > 4:  # Jesli w wierszu tablicy znajduja sie wiecej niz 4 takie same elementy
                 return True
 
         return False
@@ -81,8 +86,8 @@ class OnePair(HelperArrangement):
     def remove_multiples_more_2(self, cards_comb):
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
 
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if len(HelperArrangement().get_indices_2d_1()[i]) > 2:  # Jesli w wierszu tablicy znajduja sie wiecej niz 2 takie same elementy
+        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if len(self.helper_arr.get_indices_2d_1()[i]) > 2:  # Jesli w wierszu tablicy znajduja sie wiecej niz 2 takie same elementy
                 return True
 
         return False
@@ -97,42 +102,42 @@ class OnePair(HelperArrangement):
         cards_max_sort = []     # Lista na karty do okreslenie najwyzszej karty (na pojedyncze karty)
         self.weight_arrangement_part = []
         
-        if len(HelperArrangement().dim(self.perm)) == 1:
+        if len(self.helper_arr.dim(self.perm)) == 1:
             self.perm = [self.perm]
             self.c_idx1 = 0
         
         
-        HelperArrangement().clear_indices_2d_1()
-        HelperArrangement().get_indices_1(self.perm[self.c_idx1])
+        self.helper_arr.clear_indices_2d_1()
+        self.helper_arr.get_indices_1(self.perm[self.c_idx1])
         
-        for idx in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if len(HelperArrangement().get_indices_2d_1()[idx]) == 2:
+        for idx in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if len(self.helper_arr.get_indices_2d_1()[idx]) == 2:
                 one_count_2 += 1
 
                 # Warunek wykonywany jeden raz
                 if once_1 == False:
                     # Obliczenia dla jednej karty i drugiej (para)
-                    one_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]].weight, 6)
-                    one_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][1]].weight, 6)
+                    one_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]].weight, 6)
+                    one_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][1]].weight, 6)
 
                     once_1 = True
 
-            if len(HelperArrangement().get_indices_2d_1()[idx]) == 1:
+            if len(self.helper_arr.get_indices_2d_1()[idx]) == 1:
                 # Dodanie do listy karty ktorej wystapienie pojawia sie 1 raz w ukladzie
-                cards_max_sort.append(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]])
+                cards_max_sort.append(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]])
                 one_count_1 += 1
 
                 # Wyszukiwanie w kolejnych petlach kart ktore wystepuja 1 raz w ukladzie
-                for idx1 in range(idx + 1, len(HelperArrangement().get_indices_2d_1())):
+                for idx1 in range(idx + 1, len(self.helper_arr.get_indices_2d_1())):
 
                     if once_2 == False:
 
-                        if len(HelperArrangement().get_indices_2d_1()[idx1]) == 1:
-                            cards_max_sort.append(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx1][0]])
+                        if len(self.helper_arr.get_indices_2d_1()[idx1]) == 1:
+                            cards_max_sort.append(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx1][0]])
 
-                            for idx2 in range(idx1 + 1, len(HelperArrangement().get_indices_2d_1())):
-                                if len(HelperArrangement().get_indices_2d_1()[idx2]) == 1:
-                                    cards_max_sort.append(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx2][0]])
+                            for idx2 in range(idx1 + 1, len(self.helper_arr.get_indices_2d_1())):
+                                if len(self.helper_arr.get_indices_2d_1()[idx2]) == 1:
+                                    cards_max_sort.append(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx2][0]])
 
                                     if once_3 == False:
                                         cards_max_sort.sort(key=lambda x: x.weight)
@@ -169,7 +174,7 @@ class OnePair(HelperArrangement):
         if one_count_1 == 3 and one_count_2 == 2:
             self.weight_arrangement = one_weight + 390079
 
-            HelperArrangement().append_weight_gen(self.weight_arrangement)   # Tablica wag dla sprawdzania czy wygenerowane uklady maja wieksze
+            self.helper_arr.append_weight_gen(self.weight_arrangement)   # Tablica wag dla sprawdzania czy wygenerowane uklady maja wieksze
             
             if self.random == False:
                 #self.print_arrengement()
@@ -207,6 +212,13 @@ class OnePair(HelperArrangement):
         self.random = random
         self.if_combs = if_combs
         
+        if self.if_combs:        
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        else:
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_1)
+        
         cards_2d = []
         cards_to_comb = []
         cards_to_comb_1 = []
@@ -242,9 +254,9 @@ class OnePair(HelperArrangement):
             if idx_1 == len(cards_comb_rest):
                 break
             
-            HelperArrangement().clear_indices_2d_1()
+            self.helper_arr.clear_indices_2d_1()
 
-            HelperArrangement().get_indices_1(cards_comb_rest[idx_1])
+            self.helper_arr.get_indices_1(cards_comb_rest[idx_1])
             
             # Usuwanie powtorek powtarzajacych sie kart (2 lub 3)
             if_remove_comb_1 = self.remove_multiples(cards_comb_rest[idx_1])
@@ -290,8 +302,8 @@ class OnePair(HelperArrangement):
             if idx_1 == len(cards_to_comb_1):
                 break
             
-            HelperArrangement().clear_indices_2d_1()
-            HelperArrangement().get_indices_1(cards_to_comb_1[idx_1])
+            self.helper_arr.clear_indices_2d_1()
+            self.helper_arr.get_indices_1(cards_to_comb_1[idx_1])
             
             # Usuwanie powtorek powtarzajacych sie kart (2 lub 3)
             if_remove_comb_1 = self.remove_multiples(cards_to_comb_1[idx_1])
@@ -319,8 +331,8 @@ class OnePair(HelperArrangement):
             
             for idx1 in range(0, len(cards_comb)):
                 
-                HelperArrangement().clear_indices_2d_1()
-                HelperArrangement().get_indices_1(cards_comb[idx1])
+                self.helper_arr.clear_indices_2d_1()
+                self.helper_arr.get_indices_1(cards_comb[idx1])
                 
                 if_remove_comb_3 = self.remove_multiples_more_2(cards_comb[idx1])
                 
@@ -340,11 +352,9 @@ class OnePair(HelperArrangement):
                 len_comb += 1
                 
                 if self.if_combs == True:
-                    self.loading_bar_combs.set_count_bar(len_comb)
-                    self.loading_bar_combs.display_bar()
                     cards_comb[idx1] = list(cards_comb[idx1])
-                    HelperArrangement().append_cards_all_permutations(cards_comb[idx1])
-                    HelperArrangement().append_weight_gen(0)
+                    self.helper_arr.append_cards_all_permutations(cards_comb[idx1])
+                    self.helper_arr.append_weight_gen(0)
                     
                     # # Test if cards arrangement is one pair of 2s or 3s ... As
                     # for idx2 in range(0, len(cards_comb[idx1])):
@@ -363,11 +373,19 @@ class OnePair(HelperArrangement):
                     # Test if cards arrangement is one pair of 2s or 3s ... As
                     # pickle.dump(cards_comb[idx1], self.pickle_data, pickle.HIGHEST_PROTOCOL)
 
-                    # for idx2 in range(0, len(cards_comb[idx1])):
-                    #     self.file_data.write(cards_comb[idx1][idx2].print_str() + " ")
-                    # self.file_data.write("\n")
+                    for idx2 in range(0, len(cards_comb[idx1])):
+                        self.file.write(cards_comb[idx1][idx2].print_str() + " ")
+                    self.file.write("\n")
                     
-                       
+                    if not self.loading_bar_combs.update_progress(len_comb):
+                        self.helper_arr.check_if_weights_larger(False)
+                        self.file.close()
+                        return self.helper_arr.random_arrangement()
+                
+                    if not self.loading_bar_combs.check_stop_event():
+                        sys.exit()
+                        
+                        
                     if len_comb == self.n_combs:                #84480    One pair of 2s
                         print("END")
                         # print(len_comb)
@@ -375,7 +393,7 @@ class OnePair(HelperArrangement):
                         # self.file_data.close()
                         self.file.close()
                         
-                        return HelperArrangement().random_arrangement(self.if_combs)
+                        return self.helper_arr.random_arrangement(self.if_combs)
         
                 # for idx2 in range(0, len(cards_comb[idx1])):
                 #     cards_comb[idx1][idx2].print()
@@ -396,24 +414,29 @@ class OnePair(HelperArrangement):
                         self.c_idx1 = idx2
                         self.arrangement_recogn()
 
-                        self.loading_bar.set_count_bar(self.num_arr)
-                        self.loading_bar.display_bar()
+                        if not self.loading_bar.update_progress(self.num_arr):
+                            self.helper_arr.check_if_weights_larger(False)
+                            self.file.close()
+                            return self.helper_arr.random_arrangement()
+                    
+                        if not self.loading_bar.check_stop_event():
+                            sys.exit()
 
-                        HelperArrangement().append_cards_all_permutations(self.perm[idx2])
+                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
             
                         self.rand_iter += 1
                         #print(self.rand_iter) 
             
                         if self.rand_iter == self.one_iter * self.limit_rand:
-                            HelperArrangement().check_if_weights_larger(False)
+                            self.helper_arr.check_if_weights_larger(False)
                             #print(len_comb)
                             self.file.close()
                             
-                            return HelperArrangement().random_arrangement(False)
+                            return self.helper_arr.random_arrangement(False)
 
 
-        HelperArrangement().check_if_weights_larger(False)
+        self.helper_arr.check_if_weights_larger(False)
 
         self.file.close()
 
-        return HelperArrangement().random_arrangement()
+        return self.helper_arr.random_arrangement()

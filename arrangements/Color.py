@@ -5,8 +5,8 @@ from arrangements.LoadingBar import LoadingBar
 from arrangements.HelperFileClass import HelperFileClass
 from pathlib import Path
 from itertools import permutations, combinations
-from operator import itemgetter
-from itertools import chain
+from home.redis_buffer_singleton import redis_buffer_instance
+import sys
 
 
 
@@ -19,9 +19,14 @@ class Color(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar_1:LoadingBar = LoadingBar(611519, 40, 39, self.helper_arr)
-        self.loading_bar_2:LoadingBar = LoadingBar(5095, 40, 39, self.helper_arr)
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
 
+        self.loading_bar_1:LoadingBar = LoadingBar('color', self.max_value_generate, 100, 100, self.helper_arr)
+        self.loading_bar_2:LoadingBar = LoadingBar('color_combs', self.max_value_generate, 100, 100, self.helper_arr)
+        
+        self.max_combs:str = str(int(self.loading_bar_1.total_steps/self.loading_bar_1.display_interval))
+        self.max_1:str = str(int(self.loading_bar_2.total_steps/self.loading_bar_2.display_interval))
+        
         self.cards_2d:list = []           # Przygotowanie listy do wstepnego przetwarzania
         self.perm:list = []               # Lista na permutacje
         self.perm_unsort:list = []        # Nieposortowana lista na permutacje
@@ -38,6 +43,8 @@ class Color(HelperArrangement):
 
         self.random:bool = False
         self.example:bool = False
+        self.if_combs:bool = False
+        self.stop:bool = True
 
     def set_cards(self, cards):
         self.perm = cards
@@ -160,29 +167,33 @@ class Color(HelperArrangement):
         if self.example == True:
             self.c_idx2 = 0
             
-            if len(HelperArrangement().dim(self.perm)) == 1:
+            if len(self.helper_arr.dim(self.perm)) == 1:
                 self.perm = [self.perm]
-
-        if self.check_if_straight_royal_flush():
-            return
+        
+        if not self.if_combs:
+            if self.check_if_straight_royal_flush():
+                return
+        
+        if self.if_combs:
+            self.perm = self.cards_2d.copy()
         
         self.color_weight = 0
         self.color_sum = 0
-        HelperArrangement().clear_indices_2d_1()
-        HelperArrangement().clear_indices_2d_color()
+        self.helper_arr.clear_indices_2d_1()
+        self.helper_arr.clear_indices_2d_color()
         
         #Pobranie indeksow tablicy, gdzie wystepuja takie same kolory
-        HelperArrangement().get_indices_color(self.perm[self.c_idx2])
-        HelperArrangement().get_indices_1(self.perm[self.c_idx2])
+        self.helper_arr.get_indices_color(self.perm[self.c_idx2])
+        self.helper_arr.get_indices_1(self.perm[self.c_idx2])
         
-        for idx in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if len(HelperArrangement().get_indices_2d_1()[idx]) > 1:
+        for idx in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if len(self.helper_arr.get_indices_2d_1()[idx]) > 1:
                 return
             
         #Lista ma dlugosc 1 w ktorej znajduje sie kolejna lista z kartami, a dalej z waga ukladu
-        for idx1 in range(0, len(HelperArrangement().get_indices_2d_color()) - 4):
+        for idx1 in range(0, len(self.helper_arr.get_indices_2d_color()) - 4):
             #Jesli wystepuje 5 kolorow to jest to uklad Kolor
-            if len(HelperArrangement().get_indices_2d_color()[idx1]) == 5:
+            if len(self.helper_arr.get_indices_2d_color()[idx1]) == 5:
                 for idx in range(0, len(self.perm[self.c_idx2]) - 1):
                     #Dla kart innych niz najwyzsza policz czesciowo wage ukladu
                     if sorted(self.perm[self.c_idx2])[idx] != max(self.perm[self.c_idx2]):
@@ -199,7 +210,7 @@ class Color(HelperArrangement):
                 #Calkowita suma ukladu
                 self.color_sum += self.color_weight + 12007274
                 
-                HelperArrangement().append_weight_gen(self.color_sum)
+                self.helper_arr.append_weight_gen(self.color_sum)
                 
                 if self.random == False:
                     #self.print_arrengement()
@@ -221,8 +232,16 @@ class Color(HelperArrangement):
                     
                 return 6
 
-    def color_generating(self, random):
+    def color_generating(self, random, if_combs):
         self.random = random
+        self.if_combs = if_combs
+        
+        if self.if_combs:        
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        else:
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_1)
 
         self.cards_2d = []
 
@@ -245,40 +264,64 @@ class Color(HelperArrangement):
 
             #Usuwanie pokera oraz pokera krolewskiego
             self.remove_straight_royal_flush()
-
-            # Wyswietlanie kombinacji wszystkich kart z ukladem kolor
-            # for idx1 in range(0, len(self.cards_2d)):
-            #     for idx2 in range(0, len(self.cards_2d[idx1])):
-            #         self.cards_2d[idx1][idx2].print()
-            #     print()
-
-            #Kazda iteracja zawiera 1278 kart dla kazdego koloru
-            for idx1 in range(0, len(self.cards_2d)):
-                self.perm = list(permutations(self.cards_2d[idx1], 5))
-
-                #Zamiana tuple na list w dwuwymiarowej tablicy
-                self.perm = [list(i) for i in self.perm]
-
-                #print(len(self.perm))
-                for idx2 in range(0, len(self.perm)):
-                    if self.random == False:
-                        for idx3 in range(0, len(self.perm[idx2])):
-                            #self.perm[idx2][idx3].print()
-                            self.file.write(self.perm[idx2][idx3].print_str() + " ")
-                        #print()
-                        self.file.write("\n")
-
-                    self.c_idx2 = idx2
+            
+            if self.if_combs:
+                # Wyswietlanie kombinacji wszystkich kart z ukladem kolor
+                for idx1 in range(0, len(self.cards_2d)):
+                    for idx2 in range(0, len(self.cards_2d[idx1])):
+                        self.file.write(self.cards_2d[idx1][idx2].print_str() + " ")
+                        # self.cards_2d[idx1][idx2].print()
+                    self.file.write("\n")
+                    # print()
+                    self.c_idx2 = idx1
                     self.arrangement_recogn()
-                    
-                    self.loading_bar_1.set_count_bar(self.count_1)
-                    self.loading_bar_1.display_bar()
+
+                    if not self.loading_bar_2.update_progress(self.count_1):
+                        self.helper_arr.check_if_weights_larger()
+                        self.file.close()
+                        return self.helper_arr.random_arrangement()
+                   
+                    if not self.loading_bar_2.check_stop_event():
+                        sys.exit()
+                        
                     self.count_1 += 1
                     
-                    HelperArrangement().append_cards_all_permutations(self.perm[idx2])
+                    self.helper_arr.append_cards_all_permutations(self.perm[idx1])
+
+            #Kazda iteracja zawiera 1278 kart dla kazdego koloru
+            if not self.if_combs:
+                for idx1 in range(0, len(self.cards_2d)):
+                    self.perm = list(permutations(self.cards_2d[idx1], 5))
+
+                    #Zamiana tuple na list w dwuwymiarowej tablicy
+                    self.perm = [list(i) for i in self.perm]
+
+                    #print(len(self.perm))
+                    for idx2 in range(0, len(self.perm)):
+                        if self.random == False:
+                            for idx3 in range(0, len(self.perm[idx2])):
+                                #self.perm[idx2][idx3].print()
+                                self.file.write(self.perm[idx2][idx3].print_str() + " ")
+                            #print()
+                            self.file.write("\n")
+
+                        self.c_idx2 = idx2
+                        self.arrangement_recogn()
+
+                        if not self.loading_bar_1.update_progress(self.count_1):
+                            self.helper_arr.check_if_weights_larger()
+                            self.file.close()
+                            return self.helper_arr.random_arrangement()
+                    
+                        if not self.loading_bar_1.check_stop_event():
+                            sys.exit()
+                            
+                        self.count_1 += 1
+                        
+                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
         
-        HelperArrangement().check_if_weights_larger()
+        self.helper_arr.check_if_weights_larger()
 
         self.file.close()
         
-        return HelperArrangement().random_arrangement()
+        return self.helper_arr.random_arrangement()

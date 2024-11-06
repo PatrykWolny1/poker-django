@@ -2,11 +2,10 @@ import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
-import time
-import shutil
 from classes.Player import Player
 from classes.Croupier import Croupier
 from machine_learning.M_learning import M_learning 
+from home.redis_buffer_singleton import redis_buffer_instance
 import re
 import sys
 import atexit
@@ -46,14 +45,17 @@ class Game(object):
         #         "- Permutacje kart" +
         #         "- Aktualizacja modelu ML" +
         #         "- Uczenie maszynowe")
-        choice_1 = '2'
+        # choice_1 = '2'
+        choice_1 = redis_buffer_instance.redis_1.get('choice_1').decode('utf-8')
+        
         if choice_1 == '1':
             # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far
             cards_1, rand_int_1, all_comb_perm = Player().cards_permutations(combs_gen=True)
         if choice_1 == '2':
             all_comb_perm = []
 
-        choice = '1'
+        # choice = '1'
+        choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
         
         # print("Wybierz opcje: \n" + 
         #                     "(1) - Permutacje Kart\n" +
@@ -69,7 +71,13 @@ class Game(object):
         #                     "(11) - Wyjscie\n")
             
         if choice == '1':
-            Player().cards_permutations(combs_gen=True)
+            
+            if redis_buffer_instance.redis_1.get('perms_combs').decode('utf-8') == '1':
+                combs_gen_1 = True
+            if redis_buffer_instance.redis_1.get('perms_combs').decode('utf-8') == '0':
+                combs_gen_1 = False
+ 
+            Player().cards_permutations(rand_arr = False, combs_gen=combs_gen_1)
             return 0
         if choice == '2':
             while(game_si_human := input("(1) - SI vs Czlowiek\n" +

@@ -15,7 +15,10 @@ class StraightRoyalFlush(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar(4799, 39, 40, self.helper_arr)
+        self.loading_bar:LoadingBar = LoadingBar('straightroyalflush', 4799, 39, 40, self.helper_arr)
+        
+        # self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
+        self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
                 
         self.cards:list = []                     #Tablica na karty
         self.perm:list = []                      #Tablica na permutacje do wag

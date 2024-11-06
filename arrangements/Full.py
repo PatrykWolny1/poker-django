@@ -5,8 +5,9 @@ from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from itertools import chain
 from pathlib import Path
+from home.redis_buffer_singleton import redis_buffer_instance
 import itertools
-
+import sys
 class Full(HelperArrangement):
     
     def __init__(self):
@@ -17,7 +18,13 @@ class Full(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar(449279, 40, 39, self.helper_arr)
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
+
+        self.loading_bar:LoadingBar = LoadingBar('full', self.max_value_generate, 100, 100, self.helper_arr)
+        self.loading_bar_combs:LoadingBar = LoadingBar('full_combs', self.max_value_generate, 100, 100, self.helper_arr)
+        
+        self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
+        self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
         
         self.cards:list = []                      #Tablica na karty
         self.cards_2d:list = []                   #Tablica do przetwarzania ukladow
@@ -34,7 +41,9 @@ class Full(HelperArrangement):
         self.random:bool = False                  #Jesli jest losowanie ukladu
         self.example:bool = False                 #Jesli jest recznie wpisany uklad
         self.print_permutations:bool = True       #Czy wyswietlic wszystkie permutacje
-    
+        self.if_combs:bool = False
+        self.stop:bool = True
+        
     #tabnine: document
     def set_cards(self, cards):
         self.perm = cards
@@ -59,8 +68,8 @@ class Full(HelperArrangement):
 
     def remove_repeats_full(self):
         #Usuwanie tych samych kart ktorych liczba jest rowna 4
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if (len(HelperArrangement().get_indices_2d_1()[i]) == 4):  # Jesli w wierszu tablicy znajduja sie 4 elementy
+        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if (len(self.helper_arr.get_indices_2d_1()[i]) == 4):  # Jesli w wierszu tablicy znajduja sie 4 elementy
                 return True
         return False
 
@@ -73,33 +82,38 @@ class Full(HelperArrangement):
         indices_2 = False
 
         self.weight_arrangement = 0
-
         if self.example == True:
-            if len(HelperArrangement().dim(self.perm)) == 2:
+            if len(self.helper_arr.dim(self.perm)) == 2:
                 self.perm = list(chain.from_iterable(self.perm))
 
-            HelperArrangement().get_indices_1(self.perm)
+            self.helper_arr.get_indices_1(self.perm)
 
             self.c_idx6 = 0
             self.perm = [self.perm]
+            
+        if self.if_combs:
+            self.perm = self.cards_2d_5
 
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
+            self.helper_arr.get_indices_1(self.perm[self.c_idx6])
+
+
+        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
             #print("Rozmiar: ", len(self.indices_2d[i]))
-            if ((len(HelperArrangement().get_indices_2d_1()[i]) == 3) and indices_1 == False):  # Jesli w wierszu tablicy znajduja sie 3 elementy
-                for j in range(0, len(HelperArrangement().get_indices_2d_1()[i])):
-                    weight_1 += pow(self.perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][j]].weight, 3)
+            if ((len(self.helper_arr.get_indices_2d_1()[i]) == 3) and indices_1 == False):  # Jesli w wierszu tablicy znajduja sie 3 elementy
+                for j in range(0, len(self.helper_arr.get_indices_2d_1()[i])):
+                    weight_1 += pow(self.perm[self.c_idx6][self.helper_arr.get_indices_2d_1()[i][j]].weight, 3)
                     #print(weight_1)
                     indices_1 = True
                 self.if_full += 1
-            if ((len(HelperArrangement().get_indices_2d_1()[i]) == 2) and indices_2 == False):  # Jesli w wierszu tablicy znajduja sie 2 elementy
-                for k in range(0, len(HelperArrangement().get_indices_2d_1()[i])):
-                    weight_2 += self.perm[self.c_idx6][HelperArrangement().get_indices_2d_1()[i][k]].weight * 2
+            if ((len(self.helper_arr.get_indices_2d_1()[i]) == 2) and indices_2 == False):  # Jesli w wierszu tablicy znajduja sie 2 elementy
+                for k in range(0, len(self.helper_arr.get_indices_2d_1()[i])):
+                    weight_2 += self.perm[self.c_idx6][self.helper_arr.get_indices_2d_1()[i][k]].weight * 2
                     #print(weight_2)
                     indices_2 = True
                 self.if_full += 1
         if (self.if_full == 2):
             self.weight_arrangement = (weight_1 + weight_2) + 12408806
-            HelperArrangement().append_weight_gen(self.weight_arrangement)  # Tablica wag dla sprawdzania czy wygenerowane uklady maja wieksze
+            self.helper_arr.append_weight_gen(self.weight_arrangement)  # Tablica wag dla sprawdzania czy wygenerowane uklady maja wieksze
             if self.random == False:
                 self.file.write("Full: " + str(self.weight_arrangement) + " Numer: " + str(self.num_arr) + "\n")
                 
@@ -119,10 +133,18 @@ class Full(HelperArrangement):
                 
             return 7
 
-    def full_generating(self, random):
+    def full_generating(self, random, if_combs):
         self.cards_2d = []
         self.random = random
-
+        self.if_combs = if_combs
+        
+        if self.if_combs:        
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        else:
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_1)
+            
         for i in self.cardmarkings.arrangements:        #Iteracja po oznaczeniach
             self.cards_1d = []
             for idx1 in range(0, 4):                    #Dodanie 4 pierwszych kart
@@ -239,7 +261,7 @@ class Full(HelperArrangement):
                             #print(self.cards_2d_5[idx5])
 
                             # Pobranie indeksow z tablicy permutacji w ktorych wystepuje FULL np. [1, 3, 4][2, 5]
-                            HelperArrangement().get_indices_1(self.cards_2d_5[idx5])
+                            self.helper_arr.get_indices_1(self.cards_2d_5[idx5])
 
                             # Usuwanie liczby kart wiekszych od 3
                             if_remove = self.remove_repeats_full()
@@ -247,39 +269,66 @@ class Full(HelperArrangement):
                             if if_remove == True:
                                 self.cards_2d_5[idx5].clear()
 
-                            HelperArrangement().clear_indices_2d_1()
+                            self.helper_arr.clear_indices_2d_1()
 
                             self.cards_2d_5[idx5] = [ele for ele in self.cards_2d_5[idx5] if ele != []]
 
-                            # for idx55 in range(0, len(self.cards_2d_5)):
-                            #     for idx66 in range(0, len(self.cards_2d_5[idx55])):
-                            #         self.cards_2d_5[idx55][idx66].print()
-                            #     print()
+                            self.file = open("permutations_data/full.txt", "a")
+                            if self.cards_2d_5[idx5] != []:
+                                if self.if_combs:
+                                    for idx66 in range(0, len(self.cards_2d_5[idx5])):
+                                        self.file.write(self.cards_2d_5[idx5][idx66].print_str() + " ")
+                                        # self.cards_2d_5[idx55][idx66].print()
+                                    # print()
+                                    
+                                    if not self.loading_bar_combs.update_progress(self.num_arr):
+                                        self.helper_arr.check_if_weights_larger()
+                                        self.file.close()
+                                        return self.helper_arr.random_arrangement()
+                                
+                                    if not self.loading_bar_combs.check_stop_event():
+                                        sys.exit()
+                                        
+                                    self.c_idx6 = idx5
+                                    self.arrangement_recogn()
+
+                                    self.helper_arr.clear_indices_2d_1()
+
+                                    # Tablica permutacji do wylosowania ukladu
+                                    self.helper_arr.append_cards_all_permutations(self.cards_2d_5[idx5])
+                                    self.file.write("\n")
 
                             self.perm = list(itertools.permutations(self.cards_2d_5[idx5], 5))
-                            self.file = open("permutations_data/full.txt", "a")
-                            for idx6 in range(0, len(self.perm)):
-                                HelperArrangement().get_indices_1(self.perm[idx6])
+                            
+                            if not self.if_combs:
+                                for idx6 in range(0, len(self.perm)):
+                                    self.helper_arr.get_indices_1(self.perm[idx6])
 
-                                if self.random == False:
-                                    for idx7 in range(0, len(self.perm[idx6])):
-                                        #self.perm[idx6][idx7].print()
+                                    if self.random == False:
+                                        for idx7 in range(0, len(self.perm[idx6])):
+                                            #self.perm[idx6][idx7].print()
+                                            # with open("permutations_data/full.txt", "a") as f:
+                                            self.file.write(self.perm[idx6][idx7].print_str() + " ")
+                                        #print()
                                         # with open("permutations_data/full.txt", "a") as f:
-                                        self.file.write(self.perm[idx6][idx7].print_str() + " ")
-                                    #print()
-                                    # with open("permutations_data/full.txt", "a") as f:
-                                    self.file.write("\n")
-            
-                                self.loading_bar.set_count_bar(self.num_arr)
-                                self.loading_bar.display_bar()
+                                        self.file.write("\n")
+                
+                                    if not self.loading_bar.update_progress(self.num_arr):
+                                        self.helper_arr.check_if_weights_larger()
+                                        self.file.close()
+                                        return self.helper_arr.random_arrangement()
+                                
+                                    if not self.loading_bar.check_stop_event():
+                                        sys.exit()
+                                        
+                                        
+                                    self.c_idx6 = idx6
+                                    self.arrangement_recogn()
 
-                                self.c_idx6 = idx6
-                                self.arrangement_recogn()
+                                    self.helper_arr.clear_indices_2d_1()
 
-                                HelperArrangement().clear_indices_2d_1()
-
-                                # Tablica permutacji do wylosowania ukladu
-                                HelperArrangement().append_cards_all_permutations(self.perm[idx6])
+                                    # Tablica permutacji do wylosowania ukladu
+                                    self.helper_arr.append_cards_all_permutations(self.perm[idx6])
 
                 step += 4
 
@@ -287,8 +336,8 @@ class Full(HelperArrangement):
             step2 += 4
             step3 += 4
 
-        HelperArrangement().check_if_weights_larger()
+        self.helper_arr.check_if_weights_larger()
         
         self.file.close()
         
-        return HelperArrangement().random_arrangement()
+        return self.helper_arr.random_arrangement()

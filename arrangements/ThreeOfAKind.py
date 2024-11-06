@@ -17,7 +17,7 @@ class ThreeOfAKind(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar(6589440, 40, 39, self.helper_arr)
+        self.loading_bar:LoadingBar = LoadingBar('threeofakind', 6589440, 40, 39, self.helper_arr)
 
         self.perm:list = []                      # Lista na permutacje
         self.weight_arrangement_part:list = []   # Wagi wysokich kart

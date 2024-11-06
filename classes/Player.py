@@ -164,7 +164,7 @@ class Player(object):
             if arrangement == "4":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.color.color_generating(self.random, if_combs)
             if arrangement == "5":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random, if_combs)
             if arrangement == "6":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.three_of_a_kind.three_of_a_kind_generating(self.random)
             if arrangement == "7":

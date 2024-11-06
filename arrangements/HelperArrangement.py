@@ -104,7 +104,7 @@ class HelperArrangement(object):
         from home.views import stop_event, cache_lock_event_var
         #Zerowanie pustych wierszy
         self.cards_all_permutations = [ele for ele in self.cards_all_permutations if ele != []]
-
+        
         self.rand_int = random.sample(range(0, len(self.weight_gen) - 1), 2)
      
         #if if_combs == True:
@@ -149,7 +149,7 @@ class HelperArrangement(object):
                             
         # print("Wylosowany uklad: ", self.rand_int)
         with cache_lock_event_var:
-            print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations) + 1)
+            print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
         
         shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
 

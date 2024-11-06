@@ -18,8 +18,10 @@ class Full(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar('full', 449279, 40, 39, self.helper_arr)
-        self.loading_bar_combs:LoadingBar = LoadingBar('full_combs', 3744, 10, 100, self.helper_arr)
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
+
+        self.loading_bar:LoadingBar = LoadingBar('full', self.max_value_generate, 100, 100, self.helper_arr)
+        self.loading_bar_combs:LoadingBar = LoadingBar('full_combs', self.max_value_generate, 100, 100, self.helper_arr)
         
         self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
         self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
@@ -278,10 +280,15 @@ class Full(HelperArrangement):
                                         self.file.write(self.cards_2d_5[idx5][idx66].print_str() + " ")
                                         # self.cards_2d_5[idx55][idx66].print()
                                     # print()
-                                    self.loading_bar_combs.update_progress(self.num_arr)
-                                    self.stop = self.loading_bar_combs.check_stop_event()
-                                    if not self.stop:
+                                    
+                                    if not self.loading_bar_combs.update_progress(self.num_arr):
+                                        self.helper_arr.check_if_weights_larger()
+                                        self.file.close()
+                                        return self.helper_arr.random_arrangement()
+                                
+                                    if not self.loading_bar_combs.check_stop_event():
                                         sys.exit()
+                                        
                                     self.c_idx6 = idx5
                                     self.arrangement_recogn()
 
@@ -306,9 +313,14 @@ class Full(HelperArrangement):
                                         # with open("permutations_data/full.txt", "a") as f:
                                         self.file.write("\n")
                 
-                                    self.loading_bar.update_progress(self.num_arr)
+                                    if not self.loading_bar.update_progress(self.num_arr):
+                                        self.helper_arr.check_if_weights_larger()
+                                        self.file.close()
+                                        return self.helper_arr.random_arrangement()
+                                
                                     if not self.loading_bar.check_stop_event():
                                         sys.exit()
+                                        
                                         
                                     self.c_idx6 = idx6
                                     self.arrangement_recogn()

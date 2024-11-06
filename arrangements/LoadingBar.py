@@ -18,6 +18,7 @@ class LoadingBar:
         self.ret_lb = True
 
     def update_progress(self, step_count):
+        from home.views import stop_event
         """Updates the internal progress bar based on step count."""
         self.current_progress = step_count
 
@@ -27,13 +28,12 @@ class LoadingBar:
             if next_dot_index is not None:
                 self.progress_bar[next_dot_index] = "."
                 self._update_cache_with_progress()
-                
-        # Complete the progress if at the final step
+            # Complete the progress if at the final step
         if step_count == self.total_steps - 1:
-            self._finish_progress()
-
+            return False 
+        return True # Delete with _finish_progress()
     def _update_cache_with_progress(self):
-        from home.views import data_ready_event, stop_event, cache_lock_progress, cache_lock_event_var
+        from home.views import data_ready_event, cache_lock_progress
         """Helper to update cache with current progress status and trigger event."""
         with cache_lock_progress:
             cache.set('shared_progress', str(self.progress_bar.count('.')))
@@ -41,13 +41,15 @@ class LoadingBar:
         data_ready_event.clear()
 
     def _finish_progress(self):
+        from home.views import cache_lock_progress
         """Marks the progress as complete and updates the cache."""
-        self.progress_bar = ["."] * len(self.progress_bar)
-        self._update_cache_with_progress()
+        with cache_lock_progress:
+            self.progress_bar = ["."] * len(self.progress_bar)
+            self._update_cache_with_progress()
         
     def check_stop_event(self):
+        from home.views import stop_event, cache_lock_event_var
         """Checks for stop event and finalizes if set."""
-        from home.views import data_ready_event, stop_event, cache_lock_progress, cache_lock_event_var
         if stop_event.is_set():
             self.ret_lb = False
             with cache_lock_event_var:

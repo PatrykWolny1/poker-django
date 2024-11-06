@@ -126,22 +126,23 @@ def start_task(request):
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
         
         redis_buffer_instance.redis_1.set('choice_1', '2')
-        redis_buffer_instance.redis_1.set('choice', '1')
-        
+        redis_buffer_instance.redis_1.set('choice', '1') 
+
         task_thread = threading.Thread(target=main)  # Create a new thread for the arrangement
         task_thread.start()  # Start the long-running arrangement
         
         return JsonResponse({'status': 'arrangement started'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
-@csrf_exempt
+# @csrf_exempt
 def stop_task(request):
     global stop_event, task_thread
     if stop_event is not None:
         stop_event.set()  # Set the stop event to stop the thread
     if task_thread is not None:
         task_thread.join()  # Wait for the thread to finish
-    
+ 
+        
     return JsonResponse({'status': 'arrangement stopped'})
 
 def download_saved_file(request):
@@ -160,12 +161,14 @@ def download_saved_file(request):
 def submit_number(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        number = data.get("number")
+        number = data.get("value")
+        
+        redis_buffer_instance.redis_1.set("entered_value", str(number))
         
         # Perform any processing with the number here
-        print("Received number:", number)  # Example action
+        # print("Received number:", number)  # Example action
         
-        return JsonResponse({"message": "Number received successfully", "number": number})
+        return JsonResponse({"message": "Number received successfully", "value": number})
     
     return JsonResponse({"error": "Invalid request"}, status=400)
     

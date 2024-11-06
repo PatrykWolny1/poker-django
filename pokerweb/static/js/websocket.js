@@ -126,42 +126,77 @@ class TaskManager {
             }
         }
     }
-    ///////////////////////////////////////////TRANSFER VARIABLE TO VIEWS
-    showNumberPopup() {
-        this.updateMaxAllowedValue()
+    // Function to get CSRF token from cookies
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 
+    showNumberPopup() {
+        this.updateMaxAllowedValue();
+    
         // Create the overlay
         const overlay = document.createElement("div");
         overlay.className = "popup-overlay";
-    
+        
         const popup = document.createElement("div");
         popup.className = "popup";
-
+    
         const message = document.createElement("p");
         message.innerText = `Podaj ilość układów do wygenerowania (maksimum: ${this.maxAllowedValue})`;
         popup.appendChild(message);
-
+    
         const inputField = document.createElement("input");
         inputField.type = "number";
         inputField.max = this.maxAllowedValue;
         inputField.placeholder = `Wpisz ilość ≤ ${this.maxAllowedValue}`;
         popup.appendChild(inputField);
-
+    
         const confirmButton = document.createElement("button");
         confirmButton.innerText = "OK";
         confirmButton.className = "popup-button";
         confirmButton.onclick = () => {
             const enteredValue = parseInt(inputField.value, 10);
-            if (enteredValue && enteredValue <= this.maxAllowedValue) {
-                alert(`Ilość: ${enteredValue}`);
+            if (enteredValue && !isNaN(enteredValue) && enteredValue > 0 && enteredValue <= this.maxAllowedValue) {
                 document.body.removeChild(overlay);
-                this.startTask(enteredValue); // Start the task with the entered value
+    
+                // Send the entered value to Django
+                fetch('/submit_number/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ value: enteredValue })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Response from server:", data);
+                    if (data.message) {
+                        alert(data.message);  // Optionally display server response in an alert
+                    }
+                    this.startTask();  // Start the task with the entered value
+                })
+                .catch(error => {
+                    console.error("Error sending number:", error);
+                    alert("Błąd przy wysyłaniu danych. Spróbuj ponownie.");
+                });
             } else {
                 alert(`Wpisz właściwą wartość lub mniejszą od: ${this.maxAllowedValue}.`);
             }
         };
         popup.appendChild(confirmButton);
-
+    
         const cancelButton = document.createElement("button");
         cancelButton.innerText = "Anuluj";
         cancelButton.className = "popup-button";
@@ -169,9 +204,17 @@ class TaskManager {
             document.body.removeChild(overlay);
         };
         popup.appendChild(cancelButton);
-
-        overlay.appendChild(popup); // Append popup to overlay
-        document.body.appendChild(overlay); // Append overlay to body
+    
+        overlay.appendChild(popup);
+        document.body.appendChild(overlay);
+    
+        // Optional: Close popup with escape key
+        document.addEventListener('keydown', function onKeydown(event) {
+            if (event.key === "Escape") {
+                document.body.removeChild(overlay);
+                document.removeEventListener('keydown', onKeydown);
+            }
+        });
     }
 
     handleTaskSelection(selectedButton, url) {
@@ -239,61 +282,67 @@ class TaskManager {
             .catch(error => console.error('Error starting task:', error));
     }
 
-    startTask(enteredValue) {
-        fetch('/start_task_view/', { method: 'POST', body: JSON.stringify({ value: enteredValue }), headers: { 'Content-Type': 'application/json' } })
-            .then(response => response.json())
-            .then(() => {
-                this.elements.startTaskButton.disabled = true;
-                this.elements.downloadButton.disabled = true;
-                
-                // Maintain perms/combs button state as per previous functionality
-                if (this.elements.combsButton.disabled) {
-                    this.elements.permsButton.disabled = true;
-                    this.lastClickedPermsCombs = true;
-                } else if (this.elements.permsButton.disabled) {
-                    this.elements.combsButton.disabled = true;
-                    this.lastClickedPermsCombs = false;
-                }
+    startTask() {
+        fetch('/start_task_view/', { method: 'POST' })
+        .then(response => response.json())
+        .then(() => {
+            this.elements.startTaskButton.disabled = true;
+            this.elements.downloadButton.disabled = true;
+            
+            // Maintain perms/combs button state as per previous functionality
+            if (this.elements.combsButton.disabled) {
+                this.elements.permsButton.disabled = true;
+                this.lastClickedPermsCombs = true;
+            } else if (this.elements.permsButton.disabled) {
+                this.elements.combsButton.disabled = true;
+                this.lastClickedPermsCombs = false;
+            }
 
-                // Disable all task buttons when starting
-                Object.keys(this.taskButtons).forEach(buttonKey => {
-                    this.elements[buttonKey].disabled = true;
-                });
+            // Disable all task buttons when starting
+            Object.keys(this.taskButtons).forEach(buttonKey => {
+                this.elements[buttonKey].disabled = true;
+            });
 
-                clearTimeout(this.progressTimeout);
-                this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 1000);
-                this.connectWebSocket();
-                this.resetProgressBar();
+            clearTimeout(this.progressTimeout);
+            this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 10000);
+            this.connectWebSocket();
+            this.resetProgressBar();
 
 
-            })
-            .catch(error => console.error('Error starting task:', error));
+        })
+        .catch(error => console.error('Error starting task:', error));
     }
 
     stopTask() {
-        fetch('/stop_task_view/', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                this.elements.startTaskButton.disabled = false;
-                this.elements.downloadButton.disabled = false;
+        fetch('/stop_task_view/', { 
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.getCookie('csrftoken')  // Include CSRF token if not using @csrf_exempt
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            this.elements.startTaskButton.disabled = false;
+            this.elements.downloadButton.disabled = false;
 
-                // Re-enable task buttons after stopping
-                Object.keys(this.taskButtons).forEach(buttonKey => {
-                    this.elements[buttonKey].disabled = false;
-                });
+            // Re-enable task buttons after stopping
+            Object.keys(this.taskButtons).forEach(buttonKey => {
+                this.elements[buttonKey].disabled = false;
+            });
 
-                // Restore perms/combs button state based on last selection
-                if (!this.lastClickedPermsCombs) {
-                    this.elements.permsButton.disabled = true;
-                    this.elements.combsButton.disabled = false;
-                } else {
-                    this.elements.combsButton.disabled = true;
-                    this.elements.permsButton.disabled = false;
-                }
-              
-                clearTimeout(this.progressTimeout);
-            })
-            .catch(error => console.error('Error stopping task:', error));
+            // Restore perms/combs button state based on last selection
+            if (!this.lastClickedPermsCombs) {
+                this.elements.permsButton.disabled = true;
+                this.elements.combsButton.disabled = false;
+            } else {
+                this.elements.combsButton.disabled = true;
+                this.elements.permsButton.disabled = false;
+            }
+            
+            clearTimeout(this.progressTimeout);
+        })
+        .catch(error => console.error('Error stopping task:', error));
     }
 
     confirmDownload() {
@@ -332,6 +381,9 @@ class TaskManager {
             this.progressTimeout = setTimeout(() => {
                 this.requestLatestDataScript(); // Function to request latest data_script
             }, this.progressUpdateThreshold);
+            if (data.action == "request_latest_data_script") {
+                this.updateDataScript(data.data_script);
+            }
         }
         
         if ('data_script' in data) {
@@ -350,7 +402,7 @@ class TaskManager {
         this.progress = newProgress;
         this.lastProgress = this.progress;
         clearTimeout(this.progressTimeout);
-        this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 1000);
+        this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 5000);
         
         this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
         this.elements.progressBar.style.width = this.progress + '%';
@@ -420,9 +472,28 @@ class TaskManager {
     }
 
     handleBeforeUnload() {
-        fetch('/stop_task_view/', { method: 'POST' })
+        // Use sendBeacon to make sure the request is sent even on page unload
+        const data = new FormData();
+        data.append('csrfmiddlewaretoken', this.getCookie('csrftoken'));
+
+        // Assuming /stop_task_view/ accepts POST requests
+        const url = '/stop_task_view/';
+
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url, data);
+        } else {
+            // Fallback to fetch if sendBeacon is not supported
+            fetch(url, { 
+                method: 'POST', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCookie('csrftoken')
+                }
+            })
             .then(() => console.log('Task stopped on refresh.'))
             .catch(error => console.error('Error stopping task:', error));
+        }
+
         this.resetProgressBar();
     }
 }

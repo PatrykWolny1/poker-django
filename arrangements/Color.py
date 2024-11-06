@@ -19,8 +19,10 @@ class Color(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar_1:LoadingBar = LoadingBar('color', 611519, 40, 39, self.helper_arr)
-        self.loading_bar_2:LoadingBar = LoadingBar('color_combs', 5095, 40, 39, self.helper_arr)
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
+
+        self.loading_bar_1:LoadingBar = LoadingBar('color', self.max_value_generate, 100, 100, self.helper_arr)
+        self.loading_bar_2:LoadingBar = LoadingBar('color_combs', self.max_value_generate, 100, 100, self.helper_arr)
         
         self.max_combs:str = str(int(self.loading_bar_1.total_steps/self.loading_bar_1.display_interval))
         self.max_1:str = str(int(self.loading_bar_2.total_steps/self.loading_bar_2.display_interval))
@@ -273,23 +275,27 @@ class Color(HelperArrangement):
                     # print()
                     self.c_idx2 = idx1
                     self.arrangement_recogn()
-                    
-                    self.loading_bar_2.update_progress(self.count_1)
+
+                    if not self.loading_bar_2.update_progress(self.count_1):
+                        self.helper_arr.check_if_weights_larger()
+                        self.file.close()
+                        return self.helper_arr.random_arrangement()
                    
                     if not self.loading_bar_2.check_stop_event():
                         sys.exit()
+                        
                     self.count_1 += 1
                     
                     self.helper_arr.append_cards_all_permutations(self.perm[idx1])
 
             #Kazda iteracja zawiera 1278 kart dla kazdego koloru
-            for idx1 in range(0, len(self.cards_2d)):
-                self.perm = list(permutations(self.cards_2d[idx1], 5))
+            if not self.if_combs:
+                for idx1 in range(0, len(self.cards_2d)):
+                    self.perm = list(permutations(self.cards_2d[idx1], 5))
 
-                #Zamiana tuple na list w dwuwymiarowej tablicy
-                self.perm = [list(i) for i in self.perm]
+                    #Zamiana tuple na list w dwuwymiarowej tablicy
+                    self.perm = [list(i) for i in self.perm]
 
-                if not self.if_combs:
                     #print(len(self.perm))
                     for idx2 in range(0, len(self.perm)):
                         if self.random == False:
@@ -301,11 +307,15 @@ class Color(HelperArrangement):
 
                         self.c_idx2 = idx2
                         self.arrangement_recogn()
-                        
-                        self.loading_bar_1.set_count_bar(self.count_1)
-                        self.stop = self.loading_bar_1.display_bar()
-                        if not self.stop:
+
+                        if not self.loading_bar_1.update_progress(self.count_1):
+                            self.helper_arr.check_if_weights_larger()
+                            self.file.close()
+                            return self.helper_arr.random_arrangement()
+                    
+                        if not self.loading_bar_1.check_stop_event():
                             sys.exit()
+                            
                         self.count_1 += 1
                         
                         self.helper_arr.append_cards_all_permutations(self.perm[idx2])

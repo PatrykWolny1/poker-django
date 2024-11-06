@@ -21,15 +21,16 @@ class TestConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
         stop_event_var = redis_buffer_instance_stop.redis_1.get('stop_event_var').decode('utf-8')
 
-        from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
-        from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
-        
         # Keep sending progress updates
         # Continuously check for progress updates in cache   
         while not stop_event.is_set():
+            from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
+            from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
+        
             stop_event_var = redis_buffer_instance_stop.redis_1.get('stop_event_var').decode('utf-8') 
             if stop_event_var != '0':
                 break
+            
             # Clear the update event so the producer can set it again
             data_ready_event.clear()
 
@@ -39,6 +40,8 @@ class TestConsumer(AsyncWebsocketConsumer):
                 if processed_progress is not None:
                     if processed_progress > 100:
                         processed_progress = 100
+                    print(processed_progress)
+                    print(from_min, from_max)
                     await self.send(text_data=json.dumps({'progress': str(processed_progress)}))
 
             with cache_lock_event_var:
@@ -52,7 +55,7 @@ class TestConsumer(AsyncWebsocketConsumer):
                     cache.set('shared_progress', '100') 
                 break
 
-            await asyncio.sleep(0.5)  # Adjust the interval as needed
+            await asyncio.sleep(0.2)  # Adjust the interval as needed
 
     async def disconnect(self, close_code):
         print("WebSocket connection closed")
@@ -65,7 +68,7 @@ class TestConsumer(AsyncWebsocketConsumer):
                 processed_data_script = self.send_data_print(data_script)
                 if processed_data_script is not None:
                     await self.send(text_data=json.dumps({'data_script': str(processed_data_script)}))
-    
+                    
     def send_data_print(self, data_script):
         data_ready_event.clear()  
         

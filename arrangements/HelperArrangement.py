@@ -68,7 +68,7 @@ class HelperArrangement(object):
                 self.indices_2d_color.append(indices)
         #print(self.indices_2d_color)
 
-    def check_if_weights_larger(self, show = True):
+    def check_if_weights_larger(self, show = False):
         # Sprawdzanie czy wagi w wygenerowanych ukladach sa wieksze niz poprzedni uklad (min -> max)
         self.weight_gen = [ele for ele in self.weight_gen if ele != []]
         indices = []
@@ -113,50 +113,51 @@ class HelperArrangement(object):
         #else:
          #   cards = self.cards_all_permutations[self.rand_int[0]]
         
-        idx1 = 0
-        idx2 = 0
+        # idx1 = 0
+        # idx2 = 0
         
-        iter_idx = 0
-        if_not_the_same = True
-        repeat = 0
+        # iter_idx = 0
+        # if_not_the_same = True
+        # repeat = 0
         
-        while(if_not_the_same and if_combs):
-            idx1 = 0
+        # while(if_not_the_same and if_combs):
+        #     idx1 = 0
 
-            while idx1 < len(cards[0]):
-                idx2 = 0
-                repeat = 0
-                while idx2 < len(cards[1]):
-                    if cards[0][idx1] == cards[1][idx2]:
-                        repeat += 1
-                        cards[1] = []
-                        #print(len(self.weight_gen))
-                        #print(len(self.cards_all_permutations))
-                        cards[1] = self.cards_all_permutations[random.sample(range(0, len(self.weight_gen) - 1), 1)[0]]
+        #     while idx1 < len(cards[0]):
+        #         idx2 = 0
+        #         repeat = 0
+        #         while idx2 < len(cards[1]):
+        #             if cards[0][idx1] == cards[1][idx2]:
+        #                 repeat += 1
+        #                 cards[1] = []
+        #                 #print(len(self.weight_gen))
+        #                 #print(len(self.cards_all_permutations))
+        #                 cards[1] = self.cards_all_permutations[random.sample(range(0, len(self.weight_gen) - 1), 1)[0]]
                         
-                        iter_idx=0
-                        idx1 = 0
-                        break
+        #                 iter_idx=0
+        #                 idx1 = 0
+        #                 break
                     
-                    if iter_idx == 19 and repeat == 0:
-                        if_not_the_same = False
-                    iter_idx += 1
-                    idx2 += 1
-                if repeat == 0:
-                    idx1 += 1 
+        #             if iter_idx == 19 and repeat == 0:
+        #                 if_not_the_same = False
+        #             iter_idx += 1
+        #             idx2 += 1
+        #         if repeat == 0:
+        #             idx1 += 1 
                         
-                iter_idx += 1   
+        #         iter_idx += 1   
                             
         # print("Wylosowany uklad: ", self.rand_int)
         with cache_lock_event_var:
-            print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
+            print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations) + 1)
+        
+        shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
 
         redis_buffer_instance.redis_1.set('prog_when_fast', '100')
 
         stop_event.set()
         stop_event.clear()
 
-        shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
 
         
         HelperArrangement.weight_gen.clear()

@@ -19,4 +19,5 @@ urlpatterns = [
     path('straight_flush_view/', views.straight_flush, name='straight_flush_view'),
     path('straight_royal_flush_view/', views.straight_royal_flush, name='straight_royal_flush_view'),
     path('download_saved_file/', views.download_saved_file, name='download_saved_file'),
+    path('submit_number/', views.submit_number, name='submit_number'),
 ]

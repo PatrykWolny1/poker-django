@@ -21,8 +21,10 @@ class OnePair(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar('onepair', self.one_iter * self.limit_rand - 1, 40, 40, self.helper_arr) #Permutacje: 131 788 800
-        self.loading_bar_combs:LoadingBar = LoadingBar('onepair_combs', self.n_combs - 1, 40, 40, self.helper_arr)              #Kombinacje: 1 098 240 2s -> 84480
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
+
+        self.loading_bar:LoadingBar = LoadingBar('onepair', self.max_value_generate, 100, 100, self.helper_arr) #Permutacje: 131 788 800
+        self.loading_bar_combs:LoadingBar = LoadingBar('onepair_combs', self.max_value_generate, 100, 100, self.helper_arr)              #Kombinacje: 1 098 240 2s -> 84480
 
         self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
         self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
@@ -374,9 +376,15 @@ class OnePair(HelperArrangement):
                     for idx2 in range(0, len(cards_comb[idx1])):
                         self.file.write(cards_comb[idx1][idx2].print_str() + " ")
                     self.file.write("\n")
-                    self.loading_bar_combs.update_progress(len_comb)
+                    
+                    if not self.loading_bar_combs.update_progress(len_comb):
+                        self.helper_arr.check_if_weights_larger(False)
+                        self.file.close()
+                        return self.helper_arr.random_arrangement()
+                
                     if not self.loading_bar_combs.check_stop_event():
                         sys.exit()
+                        
                         
                     if len_comb == self.n_combs:                #84480    One pair of 2s
                         print("END")
@@ -406,8 +414,11 @@ class OnePair(HelperArrangement):
                         self.c_idx1 = idx2
                         self.arrangement_recogn()
 
-                        self.loading_bar.update_progress(self.num_arr)
-                        
+                        if not self.loading_bar.update_progress(self.num_arr):
+                            self.helper_arr.check_if_weights_larger(False)
+                            self.file.close()
+                            return self.helper_arr.random_arrangement()
+                    
                         if not self.loading_bar.check_stop_event():
                             sys.exit()
 

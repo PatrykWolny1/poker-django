@@ -26,12 +26,14 @@ atexit.register(cleanup)
 
 class Game(object):
         
-    def __init__(self):
+    def __init__(self, queue = None):
         self.all_combs_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_duplicates.csv'
         self.all_combs_update_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_to_update_duplicates.csv' 
         
         self.file_all_to_update = 'ml_data/poker_game_one_pair_combs_all_to_update.csv'
         self.file_one_pair_combs_all = 'ml_data/poker_game_one_pair_combs_all.csv'  
+
+        self.all_comb_perm = queue.get()
 
         self.Game()
         
@@ -48,11 +50,12 @@ class Game(object):
         # choice_1 = '2'
         choice_1 = redis_buffer_instance.redis_1.get('choice_1').decode('utf-8')
         
-        if choice_1 == '1':
-            # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far
-            cards_1, rand_int_1, all_comb_perm = Player().cards_permutations(combs_gen=True)
-        if choice_1 == '2':
-            all_comb_perm = []
+        # if choice_1 == '1':
+        #     # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far
+        #     cards_1, rand_int_1, all_comb_perm = Player().cards_permutations(combs_gen=True)
+            
+        # if choice_1 == '2':
+        #     all_comb_perm = []
 
         # choice = '1'
         choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
@@ -71,7 +74,6 @@ class Game(object):
         #                     "(11) - Wyjscie\n")
             
         if choice == '1':
-            
             if redis_buffer_instance.redis_1.get('perms_combs').decode('utf-8') == '1':
                 combs_gen_1 = True
             if redis_buffer_instance.redis_1.get('perms_combs').decode('utf-8') == '0':
@@ -79,22 +81,19 @@ class Game(object):
  
             Player().cards_permutations(rand_arr = False, combs_gen=combs_gen_1)
             return 0
+        
         if choice == '2':
-            while(game_si_human := input("(1) - SI vs Czlowiek\n" +
-                                "(2) - SI vs SI\n" + 
-                                "(3) - Czlowiek vs Czlowiek\n" +
-                                "(4) - Wroc\n")):
+            game_si_human = redis_buffer_instance.redis_1.get('game_si_human').decode('utf-8')
+
+            if game_si_human == '1':
+                croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
+            if game_si_human == '2':
+                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
+            if game_si_human == '3':
+                croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
                 
-                if game_si_human == '1':
-                    croupier = Croupier(game_si_human=1, all_comb_perm=all_comb_perm, game_visible=True, tree_visible=False)
-                if game_si_human == '2':
-                    croupier = Croupier(game_si_human=2, all_comb_perm=all_comb_perm, game_visible=True, tree_visible=False)
-                if game_si_human == '3':
-                    croupier = Croupier(game_si_human=3, all_comb_perm=all_comb_perm, game_visible=True, tree_visible=False)
-                if game_si_human == '4':
-                    break
-                
-                croupier.play()
+            croupier.play()
+            return 0
         
         if choice == '3':
             croupier = Croupier(game_visible=True, tree_visible=False)

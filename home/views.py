@@ -8,6 +8,7 @@ from main import main
 import os
 import threading
 import json
+import queue
 
 stop_event = threading.Event()
 data_ready_event = threading.Event()  # Signals data is ready
@@ -26,6 +27,21 @@ def permutacje_kart(request):
     redis_buffer_instance.redis_1.set('choice', '1')
     redis_buffer_instance.redis_1.set('prog_when_fast', '-1')
     return render(request, 'home/permutacje_kart.html')
+
+def gra_jedna_para(request):
+    redis_buffer_instance.redis_1.set('choice_1', '2')
+    redis_buffer_instance.redis_1.set('choice', '2')
+    one_pair_combs_max = '10982'
+    redis_buffer_instance.redis_1.set("entered_value", one_pair_combs_max)
+    redis_buffer_instance.redis_1.set('game_si_human', '2')
+    global stop_event
+    stop_event.clear()  # Clear the stop event if it was previously set
+    
+    data_queue_combinations = queue.Queue()
+
+    task_thread = threading.Thread(target=main, args=(data_queue_combinations,))      # Create a new thread for the arrangement
+    task_thread.start()                              # Start the long-running arrangement
+    return render(request, 'home/gra_jedna_para.html')
 
 @csrf_exempt
 def permutacje(request):

@@ -19,6 +19,7 @@ import pandas as pd
 import tensorflow as tf
 import re
 import logging
+import queue
     
 class Croupier(object):
 
@@ -91,40 +92,40 @@ class Croupier(object):
         self.set_players_nicknames()
 
         
-        # for self.player in self.players:
-        #     self.player.arrangements.print()
-        #     self.player.arrangements.set_rand_int()
-        #     self.player.arrangements.check_arrangement(game_visible=self.game_visible)
+        for self.player in self.players:
+            self.player.arrangements.print()
+            # self.player.arrangements.set_rand_int()
+            self.player.arrangements.check_arrangement(game_visible=self.game_visible)
         
             
-        # print()
+        print()
         
-        #########################################################
+        ########################################################
 
-        # # Dla testowania wybranych uklaldow
-        # self.set_cards()
-        # player1 = Player(self.deck, cards = self.cards)
-        # player1.arrangements.set_cards(self.cards)
-        # player1.print()
-        # player1.arrangements.check_arrangement(game_visible=self.game_visible)
+        # Dla testowania wybranych uklaldow
+        self.set_cards()
+        player1 = Player(self.deck, cards = self.cards)
+        player1.arrangements.set_cards(self.cards)
+        player1.print()
+        player1.arrangements.check_arrangement(game_visible=self.game_visible)
 
-        #########################################################
+        ########################################################
 
         # player1 = Player(deck=self.deck, if_show_perm=True)
         # player1.cards_permutations()
 
-        # # for idx in range(0, len(player1.all_combs)):
-        # #     for idx1 in range(0, len(player1.all_combs[idx])):
-        # #         player1.all_combs[idx][idx1].print()
-        # #     print()
+        # for idx in range(0, len(player1.all_combs)):
+        #     for idx1 in range(0, len(player1.all_combs[idx])):
+        #         player1.all_combs[idx][idx1].print()
+        #     print()
 
         # player1.arrangements.print()
         # print()
         # player1.arrangements.check_arrangement(game_visible=self.game_visible)
 
-        #########################################################
-        #########################################################
-        #enablePrint()
+        ########################################################
+        ########################################################
+        # enablePrint()
         self.weights_cards = []
         
         self.one_pair_strategy = []
@@ -291,7 +292,8 @@ class Croupier(object):
         self.idx_players = 2
     
         self.deck = Deck()
-        # Jesli wybrano opcje zbierania rozgrywek to lista all_comb_perm nie jest pusta
+        # Jesli wybrano opcje zbierania rozgrywek to lista all_comb_perm nie jest pusta        
+        
         if len(self.all_comb_perm) != 0:
             self.cards = self.random_arrangement()
 

@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from numpy import floor
-from home.redis_buffer_singleton import redis_buffer_instance_stop
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
 import time
 import shutil
         
@@ -36,7 +36,7 @@ class LoadingBar:
         from home.views import data_ready_event, cache_lock_progress
         """Helper to update cache with current progress status and trigger event."""
         with cache_lock_progress:
-            cache.set('shared_progress', str(self.progress_bar.count('.')))
+            redis_buffer_instance.redis_1.set('shared_progress', str(self.progress_bar.count('.')))
         data_ready_event.set()
         data_ready_event.clear()
 

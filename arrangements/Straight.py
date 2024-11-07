@@ -38,6 +38,8 @@ class Straight(HelperArrangement):
 
         self.random:bool = False                  #Jesli jest losowanie ukladu
         self.example:bool = False                 #Jesli jest recznie wpisany uklad
+        self.stop:bool = True
+        self.if_combs:bool = False
     
     def set_cards(self, cards):
         self.perm = cards

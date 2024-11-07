@@ -147,7 +147,12 @@ class Player(object):
 
             # arrangement = input()
             arrangement = redis_buffer_instance.redis_1.get('arrangement').decode('utf-8')  # Binary code for Carriage
-
+            straight_royal_flush = redis_buffer_instance.redis_1.get('straight_royal_flush').decode('utf-8')
+            if straight_royal_flush == '0':
+                straight_royal_flush = False
+            elif straight_royal_flush == '1':
+                straight_royal_flush = True
+            
             # Gra jednym ukladem kart
             if combs_gen == True:
                 print("Generowanie kombinacji kart...")
@@ -156,7 +161,7 @@ class Player(object):
             #blockPrint()
             
             if arrangement == "1":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random, if_combs, straight_royal_flush)
             if arrangement == "2":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.carriage.carriage_generating(self.random, if_combs)
             if arrangement == "3":
@@ -166,9 +171,9 @@ class Player(object):
             if arrangement == "5":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random, if_combs)
             if arrangement == "6":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.three_of_a_kind.three_of_a_kind_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.three_of_a_kind.three_of_a_kind_generating(self.random, if_combs)
             if arrangement == "7":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.two_pairs.two_pairs_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.two_pairs.two_pairs_generating(self.random, if_combs)
             if arrangement == "8":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.one_pair.one_pair_generating(self.random, if_combs)
             if arrangement == "9":

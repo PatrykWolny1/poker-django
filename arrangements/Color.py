@@ -275,6 +275,7 @@ class Color(HelperArrangement):
                     # print()
                     self.c_idx2 = idx1
                     self.arrangement_recogn()
+                    self.file.flush()
 
                     if not self.loading_bar_2.update_progress(self.count_1):
                         self.helper_arr.check_if_weights_larger()
@@ -304,6 +305,7 @@ class Color(HelperArrangement):
                                 self.file.write(self.perm[idx2][idx3].print_str() + " ")
                             #print()
                             self.file.write("\n")
+                        self.file.flush()
 
                         self.c_idx2 = idx2
                         self.arrangement_recogn()

@@ -171,11 +171,13 @@ class Carriage(HelperArrangement):
                         if self.random == False:
                             self.file.write("\n")
                             # print()
-
+                        self.file.flush()
                         self.stop = self.loading_bar_combs.update_progress(self.num_arr)
                         if not self.stop:
                             self.helper_arr.check_if_weights_larger()
+                            self.file.close()
                             return self.helper_arr.random_arrangement()
+                        
                         if not self.loading_bar_combs.check_stop_event():
                             sys.exit()
                         
@@ -206,9 +208,11 @@ class Carriage(HelperArrangement):
                                 # print()
                                 self.file.write("\n")
                             
+                            self.file.flush()
                             self.stop = self.loading_bar.update_progress(self.num_arr)
                             if not self.stop:
                                 self.helper_arr.check_if_weights_larger()
+                                self.file.close()
                                 return self.helper_arr.random_arrangement()
                             
                             if not self.loading_bar.check_stop_event():

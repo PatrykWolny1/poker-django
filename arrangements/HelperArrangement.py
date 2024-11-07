@@ -3,6 +3,7 @@ from itertools import chain
 import pickle
 import time
 import shutil
+import os
 from pathlib import Path
 from home.redis_buffer_singleton import redis_buffer_instance
 
@@ -150,21 +151,24 @@ class HelperArrangement(object):
         # print("Wylosowany uklad: ", self.rand_int)
         with cache_lock_event_var:
             print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
+            
+        try:
+            shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
+        except Exception as e:
+            print(f"Error copying file: {e}")
+            
+        time.sleep(2)
         
-        shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
-
         redis_buffer_instance.redis_1.set('prog_when_fast', '100')
 
         stop_event.set()
         stop_event.clear()
-
-
         
         HelperArrangement.weight_gen.clear()
         HelperArrangement.cards_all_permutations.clear()
 
         return cards, self.rand_int, self.cards_all_permutations
-
+        
     def get_indices_2d_1(self):
         return self.indices_2d
 

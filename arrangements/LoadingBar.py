@@ -29,7 +29,7 @@ class LoadingBar:
                 self.progress_bar[next_dot_index] = "."
                 self._update_cache_with_progress()
             # Complete the progress if at the final step
-        if step_count == self.total_steps:
+        if step_count == self.total_steps + 1:
             return False 
         return True # Delete with _finish_progress()
     def _update_cache_with_progress(self):
@@ -57,6 +57,7 @@ class LoadingBar:
                 shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
                                 self.helper_arr.helper_file_class.file_path_dst.resolve())
                 self._log_saved_permutations()
+                time.sleep(3)
                 
                 # Clear data structures in helper_arr
                 self.helper_arr.weight_gen.clear()

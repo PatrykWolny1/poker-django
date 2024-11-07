@@ -101,6 +101,7 @@ def carriage(request):
 def straight_flush(request):
     if request.method == 'POST':
         redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for Straight Flush
+        redis_buffer_instance.redis_1.set('straight_royal_flush', '0')
         return JsonResponse({'status': 'Straight Flush is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -108,6 +109,7 @@ def straight_flush(request):
 def straight_royal_flush(request):
     if request.method == 'POST':
         redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for Straight Royal Flush
+        redis_buffer_instance.redis_1.set('straight_royal_flush', '1')
         return JsonResponse({'status': 'Straight Royal Flush is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -137,6 +139,7 @@ def start_task(request):
 # @csrf_exempt
 def stop_task(request):
     global stop_event, task_thread
+    
     if stop_event is not None:
         stop_event.set()  # Set the stop event to stop the thread
     if task_thread is not None:

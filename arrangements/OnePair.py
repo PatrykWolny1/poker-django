@@ -378,16 +378,18 @@ class OnePair(HelperArrangement):
                         self.file.write(self.cards_comb[idx1][idx2].print_str() + " ")
                     self.file.write("\n")
                     
-                    self.c_idx1 = idx1
-                    self.arrangement_recogn()
-
+                    self.file.flush()
 
                     if not self.loading_bar_combs.update_progress(len_comb):
                         self.helper_arr.check_if_weights_larger(False)
+                        self.file.close()
                         return self.helper_arr.random_arrangement()
                 
                     if not self.loading_bar_combs.check_stop_event():
                         sys.exit()
+
+                    self.c_idx1 = idx1
+                    self.arrangement_recogn()
                     
                     self.helper_arr.append_weight_gen(0)
                     self.helper_arr.append_cards_all_permutations(self.cards_comb[idx1])
@@ -413,21 +415,24 @@ class OnePair(HelperArrangement):
                             for idx3 in range(0, len(self.perm[idx2])):
                                 #self.perm[idx2][idx3].print()
                                 self.file.write(self.perm[idx2][idx3].print_str() + " ")
-                                pass
                             #print()
                             self.file.write("\n")
-                            pass
+                        self.file.flush()
                         # Zapisanie indeksu uzywanego w funkcji one_pair()
-                        self.c_idx1 = idx2
-                        self.arrangement_recogn()
-                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
+
 
                         if not self.loading_bar.update_progress(self.num_arr):
                             self.helper_arr.check_if_weights_larger(False)
+                            self.file.close()
                             return self.helper_arr.random_arrangement()
                     
                         if not self.loading_bar.check_stop_event():
                             sys.exit()
+                        
+                        self.c_idx1 = idx2
+                        self.arrangement_recogn()
+                          
+                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
 
             
                         # self.rand_iter += 1

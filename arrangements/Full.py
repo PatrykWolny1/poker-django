@@ -280,7 +280,8 @@ class Full(HelperArrangement):
                                         self.file.write(self.cards_2d_5[idx5][idx66].print_str() + " ")
                                         # self.cards_2d_5[idx55][idx66].print()
                                     # print()
-                                    
+                                    self.file.flush()
+
                                     if not self.loading_bar_combs.update_progress(self.num_arr):
                                         self.helper_arr.check_if_weights_larger()
                                         self.file.close()
@@ -312,7 +313,8 @@ class Full(HelperArrangement):
                                         #print()
                                         # with open("permutations_data/full.txt", "a") as f:
                                         self.file.write("\n")
-                
+                                        self.file.flush()
+
                                     if not self.loading_bar.update_progress(self.num_arr):
                                         self.helper_arr.check_if_weights_larger()
                                         self.file.close()

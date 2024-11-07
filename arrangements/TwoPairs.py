@@ -3,8 +3,10 @@ from arrangements.HelperArrangement import HelperArrangement
 from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
+from home.redis_buffer_singleton import redis_buffer_instance
 from itertools import permutations, combinations
 from pathlib import Path
+import sys
 
 class TwoPairs(HelperArrangement):
     
@@ -18,7 +20,14 @@ class TwoPairs(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar('twopairs', self.one_iter * self.limit_rand - 1, 40, 54, self.helper_arr)   #14826239
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
+        
+        self.loading_bar:LoadingBar = LoadingBar('twopairs', self.max_value_generate, 100, 100, self.helper_arr)
+        self.loading_bar_combs:LoadingBar = LoadingBar('twopairs_combs', self.max_value_generate, 100, 100, self.helper_arr)
+        
+        self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
+        self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))        
+        
         self.high_card:Card = Card()             # Wysoka karta
 
         self.cards_2d:list = []                  # Przygotowanie listy pod kombinacje i permutacje
@@ -38,6 +47,8 @@ class TwoPairs(HelperArrangement):
 
         self.random:bool = False
         self.example:bool = False
+        self.if_combs:bool = False
+        self.stop:bool = True
 
     def set_cards(self, cards):
         self.perm = cards
@@ -66,9 +77,9 @@ class TwoPairs(HelperArrangement):
 
         count = 0
 
-        for idx in range(0, len(HelperArrangement().get_indices_2d_1())):
+        for idx in range(0, len(self.helper_arr.get_indices_2d_1())):
             #Jesli wiecej niz 2 takie same karty to zwroc falsz
-            if len(HelperArrangement().get_indices_2d_1()[idx]) > 2:
+            if len(self.helper_arr.get_indices_2d_1()[idx]) > 2:
                 count += 1
         if count > 0:
             return False
@@ -105,22 +116,24 @@ class TwoPairs(HelperArrangement):
         c_two_pairs = False     # Zmienna tymczasowa (pomocnicza)
         pow_two_pairs = 3       # Potega dla jednej i drugiej pary [4 6]
         self.two_pairs_sum = 0  # Zmienna zawierajaca sume wag tymczasowych
-
+        if self.if_combs:
+            self.perm = self.cards_comb
+            
         if self.example == True:
             self.c_idx1 = 0
             
-            if len(HelperArrangement().dim(self.perm)) == 1:
+            if len(self.helper_arr.dim(self.perm)) == 1:
                 self.perm = [self.perm]
-            
-        HelperArrangement().clear_indices_2d_1()    
+        
+        self.helper_arr.clear_indices_2d_1()    
         #print(self.perm[self.c_idx1])
-        HelperArrangement().get_indices_1(sorted(self.perm[self.c_idx1]))
+        self.helper_arr.get_indices_1(sorted(self.perm[self.c_idx1]))
 
         # Okreslenie czy uklad to dwie pary
-        for idx in range(0, len(HelperArrangement().get_indices_2d_1())):
+        for idx in range(0, len(self.helper_arr.get_indices_2d_1())):
             # Jesli wystepuje 1 karta to jest to wysoka karta
-            if len(HelperArrangement().get_indices_2d_1()[idx]) == 1:
-                high_card_idx = int(''.join(str(i) for i in HelperArrangement().get_indices_2d_1()[idx]))
+            if len(self.helper_arr.get_indices_2d_1()[idx]) == 1:
+                high_card_idx = int(''.join(str(i) for i in self.helper_arr.get_indices_2d_1()[idx]))
 
                 #Przypisanie wysokiej karty z posortowanej tablicy
                 self.high_card = sorted(self.perm[self.c_idx1])[high_card_idx]
@@ -133,7 +146,7 @@ class TwoPairs(HelperArrangement):
                 self.two_pairs_part_sum = sorted(self.perm[self.c_idx1])[high_card_idx].weight
 
             # Jesli wystepuja dwie takie same karty to jest to para
-            if len(HelperArrangement().get_indices_2d_1()[idx]) == 2:
+            if len(self.helper_arr.get_indices_2d_1()[idx]) == 2:
                 # Dla pierwszej iteracji (jednej pary) count_two_pairs != 0
                 if c_two_pairs == True:
                     c_two_pairs = False
@@ -141,12 +154,12 @@ class TwoPairs(HelperArrangement):
                 count_one_pair += 1
                 count_two_pairs += 1
 
-                # Jesli jedna para z tablicy HelperArrangement().get_indices_2d_1() czyli [1, 1][1, 1]
+                # Jesli jedna para z tablicy self.helper_arr.get_indices_2d_1() czyli [1, 1][1, 1]
                 if count_one_pair == 2:
-                    two_pairs_weight = pow(sorted(self.perm[self.c_idx1])[HelperArrangement().get_indices_2d_1()[idx][0]].weight,
+                    two_pairs_weight = pow(sorted(self.perm[self.c_idx1])[self.helper_arr.get_indices_2d_1()[idx][0]].weight,
                                            pow_two_pairs)
                     self.two_pairs_sum += two_pairs_weight
-                    two_pairs_weight = pow(sorted(self.perm[self.c_idx1])[HelperArrangement().get_indices_2d_1()[idx][1]].weight,
+                    two_pairs_weight = pow(sorted(self.perm[self.c_idx1])[self.helper_arr.get_indices_2d_1()[idx][1]].weight,
                                            pow_two_pairs)
                     self.two_pairs_sum += two_pairs_weight
 
@@ -160,12 +173,12 @@ class TwoPairs(HelperArrangement):
                 #print()
 
             # Jesli nie sa to dwie pary to zwroc Prawda i wyzeruj sume
-            if len(HelperArrangement().get_indices_2d_1()[idx]) == 3:
+            if len(self.helper_arr.get_indices_2d_1()[idx]) == 3:
                 self.two_pairs_sum = 0
                 return None
 
         self.two_pairs_sum += 10065826
-        HelperArrangement().append_weight_gen(self.two_pairs_sum)
+        self.helper_arr.append_weight_gen(self.two_pairs_sum)
 
         if self.random == False and count_two_pairs == 4:
             self.file.write("Dwie pary: " + str(self.two_pairs_sum) +
@@ -197,7 +210,7 @@ class TwoPairs(HelperArrangement):
         # Zmienna do funkcji temp_lambda
         self.count = 0
 
-        HelperArrangement().clear_indices_2d_1()
+        self.helper_arr.clear_indices_2d_1()
 
     def combinations_generating(self):
         self.cards_comb = list(combinations(self.cards_begin, 5))
@@ -205,53 +218,95 @@ class TwoPairs(HelperArrangement):
         self.cards_comb = [list(i) for i in self.cards_comb]
 
         for idx in range(0, len(self.cards_comb)):
-            HelperArrangement().get_indices_1(self.cards_comb[idx])
+            self.helper_arr.get_indices_1(self.cards_comb[idx])
 
             # Filtrowanie listy z niepotrzebnych ukladow kart
             self.cards_comb[idx] = list(filter(self.filter_func, self.cards_comb[idx])).copy()
 
-            HelperArrangement().clear_indices_2d_1()
-
-            self.perm = list(permutations(self.cards_comb[idx], 5))
-            self.perm = [list(j) for j in self.perm]
-
-            for idx1 in range(0, len(self.perm)):
-                self.loading_bar.set_count_bar(self.count_bar)
-                self.loading_bar.display_bar()
-                self.count_bar += 1
-
-                if self.random == False:
-                    for idx2 in range(0, len(self.perm[idx1])):
-                        #self.perm[idx1][idx2].print()
-                        self.file.write(self.perm[idx1][idx2].print_str() + " ")
-                    #print()
+            self.helper_arr.clear_indices_2d_1()
+            
+            if self.if_combs:
+                if self.cards_comb[idx] != []:
+                    for idx6 in range(0, len(self.cards_comb[idx])):
+                        self.file.write(self.cards_comb[idx][idx6].print_str() + " ")   
                     self.file.write("\n")
-                
-                self.c_idx1 = idx1
-                
-                if_not_two_pairs = self.arrangement_recogn()
-                if if_not_two_pairs:
-                    return None
-                
-                HelperArrangement().clear_indices_2d_1()
+                    self.file.flush()
 
-                HelperArrangement().append_cards_all_permutations(self.perm[idx1])
+                    self.c_idx1 = idx
+                    self.arrangement_recogn()
+                    
+                    self.helper_arr.clear_indices_2d_1()
+
+                    if not self.loading_bar_combs.update_progress(self.num_arr):
+                        self.helper_arr.check_if_weights_larger(False)
+                        self.file.close()
+                        return self.helper_arr.random_arrangement()
+                    
+                    if not self.loading_bar_combs.check_stop_event():
+                        sys.exit()
+                   
+                    self.helper_arr.clear_indices_2d_1()
+
+                    self.helper_arr.append_cards_all_permutations(self.cards_comb[idx])
+                    
+            if not self.if_combs:
+                self.perm = list(permutations(self.cards_comb[idx], 5))
+                self.perm = [list(j) for j in self.perm]
+
+                for idx1 in range(0, len(self.perm)):
+                    
+
+                    if self.random == False:
+                        for idx2 in range(0, len(self.perm[idx1])):
+                            #self.perm[idx1][idx2].print()
+                            self.file.write(self.perm[idx1][idx2].print_str() + " ")
+                        #print()
+                        self.file.write("\n")
+                        self.file.flush()
+
+                    self.c_idx1 = idx1
+                    
+                    if_not_two_pairs = self.arrangement_recogn()
+                    if if_not_two_pairs:
+                        return None
+                    
+                    if not self.loading_bar.update_progress(self.count_bar):
+                        self.helper_arr.check_if_weights_larger(False)
+                        self.file.close()
+                        return self.helper_arr.random_arrangement()
+                    
+                    if not self.loading_bar.check_stop_event():
+                        sys.exit()
+                        
+                    self.count_bar += 1
+                    self.helper_arr.clear_indices_2d_1()
+
+                    self.helper_arr.append_cards_all_permutations(self.perm[idx1])
         
-        if self.rand_iter == self.limit_rand:
-            HelperArrangement().check_if_weights_larger(False)
+        # if self.rand_iter == self.limit_rand:
+        #     self.helper_arr.check_if_weights_larger(False)
 
-            return HelperArrangement().random_arrangement()
+        #     return self.helper_arr.random_arrangement()
         
-        self.rand_iter += 1
+        # self.rand_iter += 1
 
-        self.file.write("Numer iteracji: " + str(self.rand_iter) + "\n")
+        # self.file.write("Numer iteracji: " + str(self.rand_iter) + "\n")
 
         self.perm.clear()
         self.cards_comb.clear()
 
-    def two_pairs_generating(self, random):
+    def two_pairs_generating(self, random, if_combs):
         self.random = random
-
+        
+        self.if_combs = if_combs
+        
+        if self.if_combs:        
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        else:
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_1)
+            
         self.cards_2d = []
 
         p = True

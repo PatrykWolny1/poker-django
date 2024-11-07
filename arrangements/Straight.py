@@ -261,7 +261,8 @@ class Straight(HelperArrangement):
                                     for idx6 in range(0, len(self.cards_comb_list[idx55])):
                                         self.file.write(self.cards_comb_list[idx55][idx6].print_str() + " ")   
                                     self.file.write("\n")
-                                                                   
+                                    self.file.flush()
+                       
                                     self.c_idx6 = idx55
                                     self.arrangement_recogn()
                                     
@@ -269,6 +270,7 @@ class Straight(HelperArrangement):
 
                                     if not self.loading_bar_combs.update_progress(self.straight_iter):
                                         self.helper_arr.check_if_weights_larger(False)
+                                        self.file.close()
                                         return self.helper_arr.random_arrangement()
                                     
                                     if not self.loading_bar_combs.check_stop_event():
@@ -297,6 +299,7 @@ class Straight(HelperArrangement):
                                             self.file.write(self.perm[idx6][idx7].print_str() + " ")
                                         #print()
                                         self.file.write("\n")
+                                        self.file.flush()
 
                                     self.c_idx6 = idx6
                                     self.arrangement_recogn()
@@ -306,6 +309,7 @@ class Straight(HelperArrangement):
 
                                     if not self.loading_bar.update_progress(self.straight_iter):
                                         self.helper_arr.check_if_weights_larger(False)
+                                        self.file.close()
                                         return self.helper_arr.random_arrangement()
                                     
                                     if not self.loading_bar.check_stop_event():

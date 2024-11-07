@@ -4,6 +4,7 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.views import data_ready_event, stop_event, cache_lock_progress, cache_lock_event_var
 import json
 import asyncio
+import time 
 
 class TestConsumer(AsyncWebsocketConsumer):
     def map_value(self, value, from_min, from_max, to_min=0, to_max=100):

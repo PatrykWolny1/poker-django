@@ -273,6 +273,7 @@ class Color(HelperArrangement):
                         # self.cards_2d[idx1][idx2].print()
                     self.file.write("\n")
                     # print()
+                    
                     self.c_idx2 = idx1
                     self.arrangement_recogn()
                     self.file.flush()

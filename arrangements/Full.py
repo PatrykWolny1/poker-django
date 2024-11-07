@@ -298,39 +298,38 @@ class Full(HelperArrangement):
                                     # Tablica permutacji do wylosowania ukladu
                                     self.helper_arr.append_cards_all_permutations(self.cards_2d_5[idx5])
                                     self.file.write("\n")
-
-                            self.perm = list(itertools.permutations(self.cards_2d_5[idx5], 5))
                             
-                            if not self.if_combs:
-                                for idx6 in range(0, len(self.perm)):
-                                    self.helper_arr.get_indices_1(self.perm[idx6])
-
-                                    if self.random == False:
-                                        for idx7 in range(0, len(self.perm[idx6])):
-                                            #self.perm[idx6][idx7].print()
-                                            # with open("permutations_data/full.txt", "a") as f:
-                                            self.file.write(self.perm[idx6][idx7].print_str() + " ")
-                                        #print()
-                                        # with open("permutations_data/full.txt", "a") as f:
-                                        self.file.write("\n")
-                                        self.file.flush()
-
-                                    if not self.loading_bar.update_progress(self.num_arr):
-                                        self.helper_arr.check_if_weights_larger()
-                                        self.file.close()
-                                        return self.helper_arr.random_arrangement()
+                                if not self.if_combs:
+                                    self.perm = list(itertools.permutations(self.cards_2d_5[idx5], 5))
                                 
-                                    if not self.loading_bar.check_stop_event():
-                                        sys.exit()
-                                        
-                                        
-                                    self.c_idx6 = idx6
-                                    self.arrangement_recogn()
+                                    for idx6 in range(0, len(self.perm)):
+                                        self.helper_arr.get_indices_1(self.perm[idx6])
 
-                                    self.helper_arr.clear_indices_2d_1()
+                                        if self.random == False:
+                                            for idx7 in range(0, len(self.perm[idx6])):
+                                                #self.perm[idx6][idx7].print()
+                                                # with open("permutations_data/full.txt", "a") as f:
+                                                self.file.write(self.perm[idx6][idx7].print_str() + " ")
+                                            #print()
+                                            # with open("permutations_data/full.txt", "a") as f:
+                                            self.file.write("\n")
+                                            self.file.flush()
 
-                                    # Tablica permutacji do wylosowania ukladu
-                                    self.helper_arr.append_cards_all_permutations(self.perm[idx6])
+                                        if not self.loading_bar.update_progress(self.num_arr):
+                                            self.helper_arr.check_if_weights_larger()
+                                            self.file.close()
+                                            return self.helper_arr.random_arrangement()
+                                    
+                                        if not self.loading_bar.check_stop_event():
+                                            sys.exit()
+                                            
+                                        self.c_idx6 = idx6
+                                        self.arrangement_recogn()
+
+                                        self.helper_arr.clear_indices_2d_1()
+
+                                        # Tablica permutacji do wylosowania ukladu
+                                        self.helper_arr.append_cards_all_permutations(self.perm[idx6])
 
                 step += 4
 

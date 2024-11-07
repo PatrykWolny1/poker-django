@@ -284,6 +284,7 @@ class Straight(HelperArrangement):
                         #     print()
 
                         #print(len(self.cards_comb_list))
+                        
                         if not self.if_combs: 
                             for idx5 in self.cards_comb_list:
                                 self.perm = list(itertools.permutations(idx5, 5))

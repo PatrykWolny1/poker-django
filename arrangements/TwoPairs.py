@@ -254,15 +254,12 @@ class TwoPairs(HelperArrangement):
                 self.perm = [list(j) for j in self.perm]
 
                 for idx1 in range(0, len(self.perm)):
-                    
-
-                    if self.random == False:
-                        for idx2 in range(0, len(self.perm[idx1])):
-                            #self.perm[idx1][idx2].print()
-                            self.file.write(self.perm[idx1][idx2].print_str() + " ")
-                        #print()
-                        self.file.write("\n")
-                        self.file.flush()
+                    for idx2 in range(0, len(self.perm[idx1])):
+                        #self.perm[idx1][idx2].print()
+                        self.file.write(self.perm[idx1][idx2].print_str() + " ")
+                    #print()
+                    self.file.write("\n")
+                    self.file.flush()
 
                     self.c_idx1 = idx1
                     
@@ -282,15 +279,6 @@ class TwoPairs(HelperArrangement):
                     self.helper_arr.clear_indices_2d_1()
 
                     self.helper_arr.append_cards_all_permutations(self.perm[idx1])
-        
-        # if self.rand_iter == self.limit_rand:
-        #     self.helper_arr.check_if_weights_larger(False)
-
-        #     return self.helper_arr.random_arrangement()
-        
-        # self.rand_iter += 1
-
-        # self.file.write("Numer iteracji: " + str(self.rand_iter) + "\n")
 
         self.perm.clear()
         self.cards_comb.clear()

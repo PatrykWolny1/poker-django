@@ -264,8 +264,8 @@ class StraightRoyalFlush(HelperArrangement):
 
         #Konwertowanie tymczasowej tablicy do tablicy na permutacje
         for idx1 in range(0, len(self.temp)):
-            if self.if_combs:
-                for self.step1, self.step2 in zip(range(0, len(self.temp[idx1]), 5), range(5, len(self.temp[idx1]) + 1, 5)):
+            for self.step1, self.step2 in zip(range(0, len(self.temp[idx1]), 5), range(5, len(self.temp[idx1]) + 1, 5)):
+                if self.if_combs:
                     self.if_royal_flush = self.straight_royal_flush_recognition(sorted(self.temp[idx1][self.step1:self.step2]))  
                     if self.if_royal_flush and self.straight_royal_flush:
                         for idx11 in range(0, len(self.temp[idx1][self.step1:self.step2])):
@@ -286,7 +286,7 @@ class StraightRoyalFlush(HelperArrangement):
                                 sys.exit() 
 
                         self.helper_arr.append_cards_all_permutations(self.temp[idx1][self.step1:self.step2])
-                        
+                    
                     if not self.if_royal_flush and not self.straight_royal_flush:
                         for idx11 in range(0, len(self.temp[idx1][self.step1:self.step2])):
                             self.file.write(self.temp[idx1][self.step1:self.step2][idx11].print_str() + " ")
@@ -307,59 +307,57 @@ class StraightRoyalFlush(HelperArrangement):
 
                         self.helper_arr.append_cards_all_permutations(self.temp[idx1][self.step1:self.step2])
                         
-            if not self.if_combs:               
-                for self.step1, self.step2 in zip(range(0, len(self.temp[idx1]), 5), range(5, len(self.temp[idx1]) + 1, 5)):
-                #Generowanie tablicy permutacji   
-                    self.perm = list(permutations(self.temp[idx1][self.step1:self.step2]))
+                if not self.if_combs:               
+                        #Generowanie tablicy permutacji   
+                        self.perm = list(permutations(self.temp[idx1][self.step1:self.step2]))
 
-                    self.perm = [list(i) for i in self.perm]
-                
-                    for idx2 in range(0, len(self.perm)):
-                        self.if_royal_flush = self.straight_royal_flush_recognition(sorted(self.perm[idx2]))
-                        if self.if_royal_flush and self.straight_royal_flush:    
-                            if self.random == False:
-                                for idx3 in range(0, len(self.perm[idx2])):
-                                    #self.perm[idx2][idx3].print()
-                                    self.file.write(self.perm[idx2][idx3].print_str() + " ")
-                                #print()
-                                self.file.write("\n")
-                                self.file.flush()
+                        self.perm = [list(i) for i in self.perm]
+                    
+                        for idx2 in range(0, len(self.perm)):
+                            self.if_royal_flush = self.straight_royal_flush_recognition(sorted(self.perm[idx2]))
+                            if self.if_royal_flush and self.straight_royal_flush:    
+                                if self.random == False:
+                                    for idx3 in range(0, len(self.perm[idx2])):
+                                        #self.perm[idx2][idx3].print()
+                                        self.file.write(self.perm[idx2][idx3].print_str() + " ")
+                                    #print()
+                                    self.file.write("\n")
+                                    self.file.flush()
 
-                                self.c_idx2 = idx2
-                                self.arrangement_recogn()
-                        
-                                if not self.loading_bar.update_progress(self.num_arr):
-                                    self.helper_arr.check_if_weights_larger(False)
-                                    self.file.close()
-                                    return self.helper_arr.random_arrangement()
-                                
-                                if not self.loading_bar.check_stop_event():
-                                    sys.exit()   
-                                    
-                                self.helper_arr.append_cards_all_permutations(self.perm[idx2])
+                                    self.c_idx2 = idx2
+                                    self.arrangement_recogn()
                             
-                        if not self.if_royal_flush and not self.straight_royal_flush:
-                            if self.random == False:
-                                for idx3 in range(0, len(self.perm[idx2])):
-                                    #self.perm[idx2][idx3].print()
-                                    self.file.write(self.perm[idx2][idx3].print_str() + " ")
-                                #print()
-                                self.file.write("\n")
-                                self.file.flush()
-
-                                self.c_idx2 = idx2
-                                self.arrangement_recogn()
-                        
-                                if not self.loading_bar.update_progress(self.num_arr):
+                                    if not self.loading_bar.update_progress(self.num_arr):
                                         self.helper_arr.check_if_weights_larger(False)
                                         self.file.close()
                                         return self.helper_arr.random_arrangement()
-                                
-                                if not self.loading_bar.check_stop_event():
-                                    sys.exit()   
                                     
-                                self.helper_arr.append_cards_all_permutations(self.perm[idx2])
-        
+                                    if not self.loading_bar.check_stop_event():
+                                        sys.exit()   
+                                        
+                                    self.helper_arr.append_cards_all_permutations(self.perm[idx2])
+                                
+                            if not self.if_royal_flush and not self.straight_royal_flush:
+                                if self.random == False:
+                                    for idx3 in range(0, len(self.perm[idx2])):
+                                        #self.perm[idx2][idx3].print()
+                                        self.file.write(self.perm[idx2][idx3].print_str() + " ")
+                                    #print()
+                                    self.file.write("\n")
+                                    self.file.flush()
+
+                                    self.c_idx2 = idx2
+                                    self.arrangement_recogn()
+                            
+                                    if not self.loading_bar.update_progress(self.num_arr):
+                                            self.helper_arr.check_if_weights_larger(False)
+                                            self.file.close()
+                                            return self.helper_arr.random_arrangement()
+                                    
+                                    if not self.loading_bar.check_stop_event():
+                                        sys.exit()   
+                                        
+                                    self.helper_arr.append_cards_all_permutations(self.perm[idx2])
                     
         self.helper_arr.check_if_weights_larger()
 

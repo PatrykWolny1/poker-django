@@ -165,14 +165,14 @@ class Carriage(HelperArrangement):
                     
                     if self.if_combs:
                         for idx7 in range(0, len(self.perm)):
-                            if self.random == False:
-                                self.file.write(self.perm[idx7].print_str() + " ")
-                                # self.perm[idx7].print()
-                        if self.random == False:
-                            self.file.write("\n")
-                            # print()
+                            self.file.write(self.perm[idx7].print_str() + " ")
+                            # self.perm[idx7].print()
+                        self.file.write("\n")
+                        # print()
                         self.file.flush()
+                        
                         self.stop = self.loading_bar_combs.update_progress(self.num_arr)
+                        
                         if not self.stop:
                             self.helper_arr.check_if_weights_larger()
                             self.file.close()
@@ -201,15 +201,15 @@ class Carriage(HelperArrangement):
                         self.cards_perm = set(self.combs)
                         self.cards_perm = [list(i) for i in self.cards_perm]
                         for idx6 in range(0, len(self.cards_perm)):
-                            if self.random == False:
-                                for idx7 in range(0, len(self.cards_perm[idx6])):
-                                    # self.cards_perm[idx6][idx7].print()
-                                    self.file.write(self.cards_perm[idx6][idx7].print_str() + " ")
-                                # print()
-                                self.file.write("\n")
+                            for idx7 in range(0, len(self.cards_perm[idx6])):
+                                # self.cards_perm[idx6][idx7].print()
+                                self.file.write(self.cards_perm[idx6][idx7].print_str() + " ")
+                            # print()
+                            self.file.write("\n")
                             
                             self.file.flush()
                             self.stop = self.loading_bar.update_progress(self.num_arr)
+                            
                             if not self.stop:
                                 self.helper_arr.check_if_weights_larger()
                                 self.file.close()

@@ -269,7 +269,6 @@ class ThreeOfAKind(HelperArrangement):
 
                     self.helper_arr.clear_indices_2d_1()
                     
-
                     if self.if_combs:
                         if self.cards_comb[idx1] != []:
                             for idx6 in range(0, len(self.cards_comb[idx1])):
@@ -302,14 +301,12 @@ class ThreeOfAKind(HelperArrangement):
 
                         for idx1 in range(0, len(self.perm)):
                             self.perm[idx1] = list(self.perm[idx1])
-
-                            if self.random == False:
-                                for idx2 in range(0, len(self.perm[idx1])):
-                                    #self.perm[idx1][idx2].print()
-                                    self.file.write(self.perm[idx1][idx2].print_str() + " ")
-                                #print()
-                                self.file.write("\n")
-                                self.file.flush()
+                            for idx2 in range(0, len(self.perm[idx1])):
+                                #self.perm[idx1][idx2].print()
+                                self.file.write(self.perm[idx1][idx2].print_str() + " ")
+                            #print()
+                            self.file.write("\n")
+                            self.file.flush()
 
                             # Pomocnicza, indeks do petli for w funkcji three_of_a_kind() - do listy perm
                             self.c_idx1 = idx1
@@ -324,8 +321,7 @@ class ThreeOfAKind(HelperArrangement):
                             
                             if not self.loading_bar.check_stop_event():
                                 sys.exit()
-                    
-
+            
                             self.helper_arr.append_cards_all_permutations(self.perm[idx1])
 
                 # Liczenie ilosci kombinacji

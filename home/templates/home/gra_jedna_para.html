@@ -4,23 +4,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style_gra_jedna_para.css' %}">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: light)" type="image/x-icon">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/FFFFFF/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: dark)" type="image/x-icon">
     <script src="{% static 'js/websocket.js' %}" defer></script>
-    <title>Permutacje - kombinacje</title>
+    <title>Gra - Jedna Para</title>
 </head>
-<body data-page-type="initial">
-    <div id="perms_combsPage">
-        <div class="container-perms-combs">
-            <h1><a href="{% url 'home.index' %}">Poker Simulation</a></h1>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="input-container">
+                <div class="input-section">
+                    <label for="player1">Imię gracza 1</label>
+                    <input type="text" id="player1" placeholder="Wpisz">
+                </div>
+                <div class="input-section">
+                    <label for="player2">Imię gracza 2</label>
+                    <input type="text" id="player2" placeholder="Wpisz">
+                </div>
+            </div>
+            <button class="play-button">GRAJ</button>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>  
         </div>
-        <h2>Obliczanie kombinacji lub permutacji układów kart</h2>
-            <div class="data-script-container">
-                <div class="data-script" id="dataScript"></div>
+        <div class="game-area">
+            <div class="player-area">Gracz 1</div>
+            <div class="player-area">Gracz 2</div>
+        </div>
+        <div class="player-info">
+            <div class="info">
+                <p class="player-title">GRACZ 1:</p>
+                <div class="cards">
+                    <div class="card"></div>
+                    <div class="card"></div>
+                    <div class="card"></div>
+                    <div class="card"></div>
+                </div>
+                <button class="next-button">DALEJ</button>
+                <p>Wymiana kart: T</p>
+                <p>Szansa 2 karty: %</p>
+                <p>Szansa 3 karty: %</p>
+                <p>Ile kart: 2</p>
+            </div>
+            <div class="info">
+                <p class="player-title">GRACZ 2:</p>
+                <div class="cards">
+                    <div class="card"></div>
+                    <div class="card"></div>
+                    <div class="card"></div>
+                    <div class="card"></div>
+                </div>
+                <button class="next-button">DALEJ</button>
+                <p>Wymiana kart: N</p>
+                <p>Szansa 2 karty: %</p>
+                <p>Szansa 3 karty: %</p>
+                <p>Ile kart: 3</p>
+            </div>
+        </div>
+
+        <div class="result">
+            <div class="result-info">
+                <p class="player-title">GRACZ 1</p>
+                <div class="cards">
+                    <div class="card"></div>
+                    <div class="card"></div>
+                </div>
+            </div>
+            <div class="result-info">
+                <p class="player-title">GRACZ 2</p>
+                <div class="cards">
+                    <div class="card"></div>
+                    <div class="card"></div>
+                </div>
             </div>
         </div>
     </div>
-     <!-- Link to the external JavaScript file -->
 </body>
 </html>

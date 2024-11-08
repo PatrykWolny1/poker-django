@@ -1,0 +1,169 @@
+[data-bs-theme=dark] {
+color-scheme: dark;
+}
+
+body {
+    font-family: 'Cambria Math', sans-serif;
+    background: radial-gradient(circle, #001d37, #00101e);
+}
+
+.container {
+    width: 70%;
+    margin: 20px auto;
+}
+
+.header {
+    height: 200px;
+    display: flex;
+    justify-content: column;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.input-container {
+    display: flex;
+    flex-direction: column; /* This stacks the divs vertically */
+    gap: 10px;
+}
+.input-section {
+    display: flex;
+    align-items: center;
+}
+
+.input-section label {
+    margin-right: 15px;
+}
+
+.input-section input {
+    width: 200px;
+    height: 30px;
+    padding: 5px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    background-color: #002b40;
+    color: #e0e0e0;
+}
+
+.play-button {
+    width: 100px;
+    height: 100px;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background-color: #003a5c;
+    color: #e0e0e0;
+    font-weight: bold;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.progress-container {
+    width: 65%; /* Set the progress bar width to 40% */
+    height: 40px;
+    background: linear-gradient(to top, #a8e5ff, #aae6ff);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  @keyframes flashShadow {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(0, 166, 255, 0.8), 0 0 10px rgba(0, 166, 255, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 0 rgba(0, 166, 255, 0.8), 0 0 25px rgba(0, 166, 255, 0.8);
+    }
+  }
+  
+  .progress-bar {
+    height: 40px;
+    width: 0; /* Initial width */
+    background: linear-gradient(to top, #31c1ff, #5cceff);
+    color: #00101e;
+    text-align: center;
+    line-height: 40px; /* Vertical centering */
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    animation: flashShadow 0.5s infinite;
+    overflow: hidden;
+  }
+
+.game-area {
+    height: 200px;
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+}
+
+.player-area {
+    width: 49%;
+    height: 100%;
+    border: 1px solid #ccc;
+    display: flex;
+    text-align: left;
+    vertical-align: top;
+    font-weight: bold;
+    background-color: #002b40;
+    color: #e0e0e0;
+}
+
+.player-info {
+    display: flex;
+    justify-content: left;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.info {
+    width: 25%;
+    padding: 10px;
+    background-color: #003a5c;
+    border-radius: 8px;
+}
+
+.player-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.cards {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.card {
+    width: 50px;
+    height: 70px;
+    border: 1px solid #ccc;
+    background-color: #ffffff;
+    border-radius: 5px;
+}
+
+.next-button {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background-color: #00496d;
+    color: #e0e0e0;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.result {
+    display: flex;
+    justify-content: left;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.result-info {
+    width: 25%;
+    text-align: center;
+    padding: 10px;
+    background-color: #002b40;
+    border-radius: 8px;
+}
+
+.result-info .cards {
+    justify-content: center;
+}

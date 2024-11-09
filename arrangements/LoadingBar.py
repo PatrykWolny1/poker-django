@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from numpy import floor
-from home.redis_buffer_singleton import redis_buffer_instance_stop
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
 import time
 import shutil
         
@@ -29,14 +29,14 @@ class LoadingBar:
                 self.progress_bar[next_dot_index] = "."
                 self._update_cache_with_progress()
             # Complete the progress if at the final step
-        if step_count == self.total_steps - 1:
+        if step_count == self.total_steps + 1:
             return False 
         return True # Delete with _finish_progress()
     def _update_cache_with_progress(self):
         from home.views import data_ready_event, cache_lock_progress
         """Helper to update cache with current progress status and trigger event."""
         with cache_lock_progress:
-            cache.set('shared_progress', str(self.progress_bar.count('.')))
+            redis_buffer_instance.redis_1.set('shared_progress', str(self.progress_bar.count('.')))
         data_ready_event.set()
         data_ready_event.clear()
 
@@ -57,6 +57,7 @@ class LoadingBar:
                 shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
                                 self.helper_arr.helper_file_class.file_path_dst.resolve())
                 self._log_saved_permutations()
+                time.sleep(3)
                 
                 # Clear data structures in helper_arr
                 self.helper_arr.weight_gen.clear()

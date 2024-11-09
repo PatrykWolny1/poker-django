@@ -35,7 +35,8 @@ h1 {
   background: linear-gradient(to bottom, #a4e4ff, rgb(165, 224, 255));
   -webkit-background-clip: text; /* For Safari */
   -webkit-text-fill-color: transparent; /* Make the fill color transparent */
-  background-clip: text; /* For other browsers */}
+  background-clip: text; /* For other browsers */
+}
 
 .container {
   width: 80%;

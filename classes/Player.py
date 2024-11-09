@@ -116,7 +116,7 @@ class Player(object):
         self.cards.append(deck.deal())
         self.arrangements.set_cards_after(self.cards)
 
-    def cards_permutations(self, rand_arr = False, combs_gen = False):
+    def cards_permutations(self, rand_arr = False, combs_gen = False, queue = None):
             if combs_gen == False:
                 # print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
                 if_rand = '1'    #if_rand == '2' if generate random with permutations (too many...)
@@ -146,8 +146,18 @@ class Player(object):
             #     "(9 - WYSOKA KARTA)\n", flush=True)
 
             # arrangement = input()
-            arrangement = redis_buffer_instance.redis_1.get('arrangement').decode('utf-8')  # Binary code for Carriage
-
+            arrangement = None
+            choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
+            if choice == '1':
+                arrangement = redis_buffer_instance.redis_1.get('arrangement').decode('utf-8')  # Binary code for Carriage
+                straight_royal_flush = redis_buffer_instance.redis_1.get('straight_royal_flush').decode('utf-8')
+                if straight_royal_flush == '0':
+                    straight_royal_flush = False
+                elif straight_royal_flush == '1':
+                    straight_royal_flush = True
+            if choice == '2':
+                arrangement = '8'
+                    
             # Gra jednym ukladem kart
             if combs_gen == True:
                 print("Generowanie kombinacji kart...")
@@ -156,7 +166,7 @@ class Player(object):
             #blockPrint()
             
             if arrangement == "1":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random, if_combs, straight_royal_flush)
             if arrangement == "2":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.carriage.carriage_generating(self.random, if_combs)
             if arrangement == "3":
@@ -164,16 +174,19 @@ class Player(object):
             if arrangement == "4":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.color.color_generating(self.random, if_combs)
             if arrangement == "5":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random, if_combs)
             if arrangement == "6":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.three_of_a_kind.three_of_a_kind_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.three_of_a_kind.three_of_a_kind_generating(self.random, if_combs)
             if arrangement == "7":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.two_pairs.two_pairs_generating(self.random)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.two_pairs.two_pairs_generating(self.random, if_combs)
             if arrangement == "8":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.one_pair.one_pair_generating(self.random, if_combs)
             if arrangement == "9":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs)
-
+            
+            if queue is not None:
+                queue.put(self.all_comb_perm)
+            
             #print(self.cards)
             
             self.cards = list(self.cards)
@@ -185,9 +198,12 @@ class Player(object):
                 self.arrangements.check_arrangement()
             
             #enablePrint()
-            
+            if choice == '1':
+                return self.cards, self.rand_int, self.all_comb_perm
+            if choice == '2':
+                return 0
             return self.cards, self.rand_int, self.all_comb_perm
-        
+
                 
     def get_arrangements(self):
         return self.arrangements

@@ -20,8 +20,8 @@ class OnePair(HelperArrangement):
         self.file = open(self.file_path.resolve(), "w")
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
-        
         self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
+        self.choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
 
         self.loading_bar:LoadingBar = LoadingBar('onepair', self.max_value_generate, 100, 100, self.helper_arr) #Permutacje: 131 788 800
         self.loading_bar_combs:LoadingBar = LoadingBar('onepair_combs', self.max_value_generate, 100, 100, self.helper_arr)              #Kombinacje: 1 098 240 2s -> 84480
@@ -31,6 +31,7 @@ class OnePair(HelperArrangement):
         
         self.perm:list = []                      # Lista na permutacje
         self.weight_arrangement_part:list  = []   # Lista na wagi pozostalych kart   
+        self.cards_comb:list = []
 
         self.weight_arrangement:int = 0         # Waga ukladu
         self.c_idx1:int = 0                     # Zapisywanie aktualnego indeksu z petli for
@@ -102,11 +103,13 @@ class OnePair(HelperArrangement):
         cards_max_sort = []     # Lista na karty do okreslenie najwyzszej karty (na pojedyncze karty)
         self.weight_arrangement_part = []
         
+        if self.if_combs:
+            self.perm = self.cards_comb
+               
         if len(self.helper_arr.dim(self.perm)) == 1:
             self.perm = [self.perm]
             self.c_idx1 = 0
-        
-        
+            
         self.helper_arr.clear_indices_2d_1()
         self.helper_arr.get_indices_1(self.perm[self.c_idx1])
         
@@ -178,10 +181,11 @@ class OnePair(HelperArrangement):
             
             if self.random == False:
                 #self.print_arrengement()
-                self.file.write("Jedna para: " + str(self.weight_arrangement) +
-                                " Wysoka Karta: " + self.high_card.print_str() +
-                                " Numer: " + str(self.num_arr) + "\n")
-                                    
+                if self.choice == '1':
+                    self.file.write("Jedna para: " + str(self.weight_arrangement) +
+                                    " Wysoka Karta: " + self.high_card.print_str() +
+                                    " Numer: " + str(self.num_arr) + "\n")
+                                        
             self.num_arr += 1
                 
             if self.example == True:
@@ -327,56 +331,39 @@ class OnePair(HelperArrangement):
                 
         idx_2 = 0
         for idx in range(0, len(cards_to_comb_1)):
-            cards_comb = list(combinations(cards_to_comb_1[idx], 5))
+            self.cards_comb = list(combinations(cards_to_comb_1[idx], 5))
             
-            for idx1 in range(0, len(cards_comb)):
+            for idx1 in range(0, len(self.cards_comb)):
                 
                 self.helper_arr.clear_indices_2d_1()
-                self.helper_arr.get_indices_1(cards_comb[idx1])
+                self.helper_arr.get_indices_1(self.cards_comb[idx1])
                 
-                if_remove_comb_3 = self.remove_multiples_more_2(cards_comb[idx1])
+                if_remove_comb_3 = self.remove_multiples_more_2(self.cards_comb[idx1])
                 
                 if if_remove_comb_3 == True:
-                    cards_comb[idx1] = []
+                    self.cards_comb[idx1] = []
                 
-            cards_comb = list(filter(None, cards_comb))                
+            self.cards_comb = list(filter(None, self.cards_comb))                
             
-            #for idx1 in range(0, len(cards_comb)):
-                # for idx2 in range(0, len(cards_comb[idx1])):
-                #     cards_comb[idx1][idx2].print()
+            #for idx1 in range(0, len(self.cards_comb)):
+                # for idx2 in range(0, len(self.cards_comb[idx1])):
+                #     self.cards_comb[idx1][idx2].print()
                 # print()
                 
-            for idx1 in range(0, len(cards_comb)):
-                self.perm = list(permutations(cards_comb[idx1], 5))
-
+            for idx1 in range(0, len(self.cards_comb)):
                 len_comb += 1
-                
-                if self.if_combs == True:
-                    cards_comb[idx1] = list(cards_comb[idx1])
-                    self.helper_arr.append_cards_all_permutations(cards_comb[idx1])
-                    self.helper_arr.append_weight_gen(0)
-                    
-                    # # Test if cards arrangement is one pair of 2s or 3s ... As
-                    # for idx2 in range(0, len(cards_comb[idx1])):
-                    #     with open("permutations_data/one_pair.txt", "a") as file:
-                    #         file.write(cards_comb[idx1][idx2].print_str() + " ")
-                    # with open("permutations_data/one_pair.txt", "a") as file:
-                    #     file.write("\n")
-                    #     if cards_comb[idx1][0].weight == 2:
-                    #         with open("permutations_data/one_pair.txt", "a") as file:
-                    #             file.write(cards_comb[idx1][idx2].print_str() + " ")
-                    #         with open("permutations_data/one_pair.txt", "a") as file:
-                    #             file.write(str(len_comb))
-                    #         print("END")
-                    #         time.sleep(1000)
+                if self.if_combs:
+                    self.cards_comb[idx1] = list(self.cards_comb[idx1])
 
-                    # Test if cards arrangement is one pair of 2s or 3s ... As
-                    # pickle.dump(cards_comb[idx1], self.pickle_data, pickle.HIGHEST_PROTOCOL)
+                    if self.choice == '1':
+                        for idx2 in range(0, len(self.cards_comb[idx1])):
+                            self.file.write(self.cards_comb[idx1][idx2].print_str() + " ")
+                        self.file.write("\n")
+                        self.file.flush()
 
-                    for idx2 in range(0, len(cards_comb[idx1])):
-                        self.file.write(cards_comb[idx1][idx2].print_str() + " ")
-                    self.file.write("\n")
-                    
+                    self.c_idx1 = idx1
+                    self.arrangement_recogn()
+                    self.helper_arr.append_cards_all_permutations(self.cards_comb[idx1])
                     if not self.loading_bar_combs.update_progress(len_comb):
                         self.helper_arr.check_if_weights_larger(False)
                         self.file.close()
@@ -384,35 +371,30 @@ class OnePair(HelperArrangement):
                 
                     if not self.loading_bar_combs.check_stop_event():
                         sys.exit()
-                        
-                        
-                    if len_comb == self.n_combs:                #84480    One pair of 2s
-                        print("END")
-                        # print(len_comb)
-                        # self.file.write(str(len_comb))
-                        # self.file_data.close()
-                        self.file.close()
-                        
-                        return self.helper_arr.random_arrangement(self.if_combs)
-        
-                # for idx2 in range(0, len(cards_comb[idx1])):
-                #     cards_comb[idx1][idx2].print()
+
+                # for idx2 in range(0, len(self.cards_comb[idx1])):
+                #     self.cards_comb[idx1][idx2].print()
                 # print()
-                if self.if_combs == False:
+                
+                if not self.if_combs:
+                    self.perm = list(permutations(self.cards_comb[idx1], 5))
+                    
                     for idx2 in range(0, len(self.perm)):
                         self.perm[idx2] = list(self.perm[idx2])
                         idx_2 += 1
                         if self.random == False:
-                            for idx3 in range(0, len(self.perm[idx2])):
-                                #self.perm[idx2][idx3].print()
-                                self.file.write(self.perm[idx2][idx3].print_str() + " ")
-                                pass
-                            #print()
-                            self.file.write("\n")
-                            pass
-                        # Zapisanie indeksu uzywanego w funkcji one_pair()
+                            if self.choice == '1':
+                                for idx3 in range(0, len(self.perm[idx2])):
+                                    #self.perm[idx2][idx3].print()
+                                    self.file.write(self.perm[idx2][idx3].print_str() + " ")
+                                #print()
+                                self.file.write("\n")
+                                self.file.flush()
+                        
                         self.c_idx1 = idx2
-                        self.arrangement_recogn()
+                        self.arrangement_recogn() 
+                        # Zapisanie indeksu uzywanego w funkcji one_pair()
+                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
 
                         if not self.loading_bar.update_progress(self.num_arr):
                             self.helper_arr.check_if_weights_larger(False)
@@ -421,19 +403,9 @@ class OnePair(HelperArrangement):
                     
                         if not self.loading_bar.check_stop_event():
                             sys.exit()
-
-                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
-            
-                        self.rand_iter += 1
-                        #print(self.rand_iter) 
-            
-                        if self.rand_iter == self.one_iter * self.limit_rand:
-                            self.helper_arr.check_if_weights_larger(False)
-                            #print(len_comb)
-                            self.file.close()
+                        
+             
                             
-                            return self.helper_arr.random_arrangement(False)
-
 
         self.helper_arr.check_if_weights_larger(False)
 

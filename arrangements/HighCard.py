@@ -237,12 +237,15 @@ class HighCard(HelperArrangement):
                         # self.cards_comb_rest[idx][idx4].print()
                         self.file.write(self.cards_comb_rest[idx][idx4].print_str() + " ")
                     self.file.write("\n")
+                    self.file.flush()
 
                     self.c_idx1 = idx
                     self.num_arr_combs += 1
                     self.stop = self.loading_bar_combs.update_progress(self.num_arr)
+
                     if not self.stop:
                         self.helper_arr.check_if_weights_larger(show=False)
+                        self.file.close()
                         return self.helper_arr.random_arrangement()
                 
                     if not self.loading_bar_combs.check_stop_event():
@@ -252,47 +255,38 @@ class HighCard(HelperArrangement):
 
                     self.helper_arr.append_cards_all_permutations(self.cards_comb_rest[idx])
 
-            # for idx2 in range(0, len(cards_comb[idx1])):
-            #     cards_comb[idx1][idx2].print()
-            # print()
-            if self.cards_comb_rest[idx] != []:
+                # for idx2 in range(0, len(cards_comb[idx1])):
+                #     cards_comb[idx1][idx2].print()
+                # print()
+                    
                 if not self.if_combs:
                     # Tworzenie permutacji kart z kombinacji
                     self.perm = list(permutations(self.cards_comb_rest[idx], 5))
                     for idx5 in range(0, len(self.perm)):
                         self.perm[idx5] = list(self.perm[idx5])
+                        for idx2 in range(0, len(self.perm[idx5])):
+                            #self.perm[idx5][idx2].print()
+                            self.file.write(self.perm[idx5][idx2].print_str() + " ")
+                        #print()
+                        self.file.write("\n")
+                        self.file.flush()
                         
-                        if self.random == False:
-                            for idx2 in range(0, len(self.perm[idx5])):
-                                #self.perm[idx5][idx2].print()
-                                self.file.write(self.perm[idx5][idx2].print_str() + " ")
-                            #print()
-                            self.file.write("\n")
-
                         # Zapisanie indeksu uzywanego w funkcji high_card()
                         self.c_idx1 = idx5
                         
                         self.stop = self.loading_bar_combs.update_progress(self.num_arr)
                         if not self.stop:
                             self.helper_arr.check_if_weights_larger(show=False)
+                            self.file.close()
                             return self.helper_arr.random_arrangement()
                     
                         if not self.loading_bar.check_stop_event():
+                            self.file.close()
                             sys.exit()
 
                         self.arrangement_recogn()
                             
                         self.helper_arr.append_cards_all_permutations(self.perm[idx5])
-
-                        #print(self.iter_high)
-                        
-                        # Iteracja po jakiej ma skonczyc sie generowanie permutacji
-                        # if self.iter_rand == self.limit_rand * self.one_iter:
-                        #     self.helper_arr.check_if_weights_larger(True)
-                            
-                        #     self.file.close()
-                            
-                        #     return self.helper_arr.random_arrangement()
                         
                         self.iter_rand += 1
 

@@ -340,7 +340,7 @@ class TaskManager {
                 this.elements.permsButton.disabled = false;
             }
             
-            clearTimeout(this.progressTimeout);
+            // clearTimeout(this.progressTimeout);
         })
         .catch(error => console.error('Error stopping task:', error));
     }

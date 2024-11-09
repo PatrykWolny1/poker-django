@@ -1,17 +1,25 @@
 from classes.Game import Game
+from classes.Player import Player
+from home.redis_buffer_singleton import redis_buffer_instance
+from home.std_out_redirector import StdoutRedirector
+import sys
+import threading
+import queue
 import time
 import cProfile
 import pstats
-from classes.Player import Player
-import sys
-import time
-from home.redis_buffer_singleton import redis_buffer_instance
-from home.std_out_redirector import StdoutRedirector
 
-def main():
-    sys.stdout = StdoutRedirector(redis_buffer_instance)
-    
-    Game()
+def main(data_queue_combinations = None):
+    when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+
+    if when_game_one_pair == '1':
+        thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
+        thread_cards_permutations.start()
+        Game(data_queue_combinations)
+        thread_cards_permutations.join()
+    else:
+        sys.stdout = StdoutRedirector(redis_buffer_instance)
+        Game()
 
 
     # end_time = time.time() - start_time
@@ -22,10 +30,10 @@ def main():
     # print()    
     # print(end_time, " sec")
     
-if __name__ == "__main__":
-    #cProfile.run('main()', 'full_profiler.txt')
+# if __name__ == "__main__":
+#     #cProfile.run('main()', 'full_profiler.txt')
     
-    main()
+#     main()
     
-    #p = pstats.Stats('full_profiler.txt')
-    #p.sort_stats('cumulative').print_stats()
+#     #p = pstats.Stats('full_profiler.txt')
+#     #p.sort_stats('cumulative').print_stats()

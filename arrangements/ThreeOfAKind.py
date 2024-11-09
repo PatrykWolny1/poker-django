@@ -3,8 +3,10 @@ from arrangements.HelperArrangement import HelperArrangement
 from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
+from home.redis_buffer_singleton import redis_buffer_instance
 from itertools import permutations, combinations
 from pathlib import Path
+import sys
 
 class ThreeOfAKind(HelperArrangement):
     
@@ -17,8 +19,14 @@ class ThreeOfAKind(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.loading_bar:LoadingBar = LoadingBar('threeofakind', 6589440, 40, 39, self.helper_arr)
-
+        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
+        
+        self.loading_bar:LoadingBar = LoadingBar('threeofakind', self.max_value_generate, 100, 100, self.helper_arr)
+        self.loading_bar_combs:LoadingBar = LoadingBar('threeofakind_combs', self.max_value_generate, 100, 100, self.helper_arr)
+        
+        self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
+        self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
+        
         self.perm:list = []                      # Lista na permutacje
         self.weight_arrangement_part:list = []   # Wagi wysokich kart
 
@@ -29,7 +37,9 @@ class ThreeOfAKind(HelperArrangement):
 
         self.random:bool = False                 # Czy uklad ma byc wylosowany
         self.example:bool = False                # Czy ma byc pokazany przykladowy uklad
-    
+        self.if_combs:bool = False
+        self.stop:bool = True
+        
     def set_cards(self, cards):
         self.perm = cards
         self.example = True
@@ -58,10 +68,10 @@ class ThreeOfAKind(HelperArrangement):
     def remove_multiples(self, cards_comb):
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
 
-        HelperArrangement().get_indices_1(cards_comb)
+        self.helper_arr.get_indices_1(cards_comb)
 
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if len(HelperArrangement().get_indices_2d_1()[i]) == 2:  # Jesli w wierszu tablicy znajduja sie 2 takie same elementy
+        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if len(self.helper_arr.get_indices_2d_1()[i]) == 2:  # Jesli w wierszu tablicy znajduja sie 2 takie same elementy
                 return True
 
         return False
@@ -69,10 +79,10 @@ class ThreeOfAKind(HelperArrangement):
     def remove_multiples_more_3(self, cards_comb):
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
 
-        HelperArrangement().get_indices_1(cards_comb)
+        self.helper_arr.get_indices_1(cards_comb)
 
-        for i in range(0, len(HelperArrangement().get_indices_2d_1())):
-            if len(HelperArrangement().get_indices_2d_1()[i]) > 3:  # Jesli w wierszu tablicy znajduje wiecej niz 3 takie same elementy
+        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
+            if len(self.helper_arr.get_indices_2d_1()[i]) > 3:  # Jesli w wierszu tablicy znajduje wiecej niz 3 takie same elementy
                 return True
 
         return False
@@ -83,60 +93,65 @@ class ThreeOfAKind(HelperArrangement):
         once_2 = False          # Jesli prawda to procedura zostala wykonana (1 raz)
         once_1 = False          # Jesli prawda to procedura zostala wykonana (1 raz)
         three_weight = 0
+        
+       
+        if self.if_combs:
+            self.perm = self.cards_comb
+        
+        if not self.if_combs:
+            if len(self.helper_arr.dim(self.perm)) == 1:
+                self.perm = [self.perm]
+                self.c_idx1 = 0
+                self.helper_arr.clear_indices_2d_1()
 
-        if len(HelperArrangement().dim(self.perm)) == 1:
-            self.perm = [self.perm]
-            self.c_idx1 = 0
-            HelperArrangement().clear_indices_2d_1()
-
-        HelperArrangement().get_indices_1(self.perm[self.c_idx1])
-
-        for idx in range(0, len(HelperArrangement().get_indices_2d_1())):
+        self.helper_arr.get_indices_1(self.perm[self.c_idx1])
+        
+        for idx in range(0, len(self.helper_arr.get_indices_2d_1())):
 
             # Jesli dlugosc jest rowna 3 to znaczy ze wystepuja 3 takie same karty
-            if len(HelperArrangement().get_indices_2d_1()[idx]) == 3:
+            if len(self.helper_arr.get_indices_2d_1()[idx]) == 3:
                 three_count_3 += 1
 
                 if once_1 == False:
-                    three_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]].weight, 5)
-                    three_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][1]].weight, 5)
-                    three_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][2]].weight, 5)
+                    three_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]].weight, 5)
+                    three_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][1]].weight, 5)
+                    three_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][2]].weight, 5)
 
                     once_1 = True
 
             # Jesli dlugosc jest rowna 1 to znaczy ze wystepuje 1 karta
-            if len(HelperArrangement().get_indices_2d_1()[idx]) == 1:
+            if len(self.helper_arr.get_indices_2d_1()[idx]) == 1:
                 three_count_1 += 1
 
                 if once_2 == False:
-                    for idx1 in range(idx + 1, len(HelperArrangement().get_indices_2d_1())):
-                        if len(HelperArrangement().get_indices_2d_1()[idx1]) == 1:
+                    for idx1 in range(idx + 1, len(self.helper_arr.get_indices_2d_1())):
+                        if len(self.helper_arr.get_indices_2d_1()[idx1]) == 1:
 
                             # Starsza karta otrzymuje wieksza wage
-                            if self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]] < self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx1][0]]:
-                                self.high_card = self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx1][0]]
+                            if self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]] < self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx1][0]]:
+                                self.high_card = self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx1][0]]
 
-                                three_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]].weight, 2)
-                                self.weight_arrangement_part.append(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]].weight)
+                                three_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]].weight, 2)
+                                self.weight_arrangement_part.append(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]].weight)
 
-                                three_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx1][0]].weight, 3)
-                                self.weight_arrangement_part.append(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx1][0]].weight)
+                                three_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx1][0]].weight, 3)
+                                self.weight_arrangement_part.append(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx1][0]].weight)
 
                             else:
-                                self.high_card = self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]]
+                                self.high_card = self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]]
 
-                                three_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]].weight, 3)
-                                self.weight_arrangement_part.append(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx][0]].weight)
+                                three_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]].weight, 3)
+                                self.weight_arrangement_part.append(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx][0]].weight)
 
-                                three_weight += pow(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx1][0]].weight, 2)
-                                self.weight_arrangement_part.append(self.perm[self.c_idx1][HelperArrangement().get_indices_2d_1()[idx1][0]].weight)
+                                three_weight += pow(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx1][0]].weight, 2)
+                                self.weight_arrangement_part.append(self.perm[self.c_idx1][self.helper_arr.get_indices_2d_1()[idx1][0]].weight)
 
                     once_2 = True
 
         # Jesli prawda to uklad jest Trojka
         if three_count_3 == 3 and three_count_1 == 2:
             self.weight_arrangement = three_weight + 10126496
-            HelperArrangement().append_weight_gen(self.weight_arrangement) # Tablica wag dla sprawdzania czy wygenerowane uklady maja wieksze
+            self.helper_arr.append_weight_gen(self.weight_arrangement) # Tablica wag dla sprawdzania czy wygenerowane uklady maja wieksze
             if self.random == False:
                 #self.print_arrengement()
                 
@@ -161,9 +176,17 @@ class ThreeOfAKind(HelperArrangement):
             self.weight_arrangement = 0
             self.weight_arrangement_part = []
 
-    def three_of_a_kind_generating(self, random):
+    def three_of_a_kind_generating(self, random, if_combs):
         self.random = random
-
+        self.if_combs = if_combs
+        
+        if self.if_combs:        
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        else:
+            redis_buffer_instance.redis_1.set('min', '0')
+            redis_buffer_instance.redis_1.set('max', self.max_1)
+            
         cards_2d = []
         cards_to_comb = []
         cards_to_comb_1 = []
@@ -224,7 +247,7 @@ class ThreeOfAKind(HelperArrangement):
                 if if_remove_comb_1 == True:
                     cards_to_comb_1[idx] = []
 
-                HelperArrangement().clear_indices_2d_1()
+                self.helper_arr.clear_indices_2d_1()
 
             cards_to_comb_1 = [x for x in cards_to_comb_1 if x != []]
 
@@ -244,35 +267,62 @@ class ThreeOfAKind(HelperArrangement):
                     if if_remove_comb_2 == True:
                         self.cards_comb[idx1] = []
 
-                    HelperArrangement().clear_indices_2d_1()
+                    self.helper_arr.clear_indices_2d_1()
+                    
+                    if self.if_combs:
+                        if self.cards_comb[idx1] != []:
+                            for idx6 in range(0, len(self.cards_comb[idx1])):
+                                self.file.write(self.cards_comb[idx1][idx6].print_str() + " ")   
+                            self.file.write("\n")
+                            self.file.flush()
 
+                            self.c_idx1 = idx1
+                            self.arrangement_recogn()
+                            
+                            self.helper_arr.clear_indices_2d_1()
+
+                            if not self.loading_bar_combs.update_progress(self.num_arr):
+                                self.helper_arr.check_if_weights_larger(False)
+                                self.file.close()
+                                return self.helper_arr.random_arrangement()
+                            
+                            if not self.loading_bar_combs.check_stop_event():
+                                sys.exit()
+
+                            self.helper_arr.append_cards_all_permutations(self.cards_comb[idx1])
+                            
                 self.cards_comb = [x for x in self.cards_comb if x != []]
+              
+                if not self.if_combs:
+                    # Permutacje z gotowego uklady kombinacji
+                    for idx1 in range(0, len(self.cards_comb)):
+                        self.perm = list(permutations(self.cards_comb[idx1], 5))
+                        #print(self.perm)
 
-                # Permutacje z gotowego uklady kombinacji
-                for idx1 in range(0, len(self.cards_comb)):
-                    self.perm = list(permutations(self.cards_comb[idx1], 5))
-                    #print(self.perm)
-
-                    for idx1 in range(0, len(self.perm)):
-                        self.perm[idx1] = list(self.perm[idx1])
-
-                        if self.random == False:
+                        for idx1 in range(0, len(self.perm)):
+                            self.perm[idx1] = list(self.perm[idx1])
                             for idx2 in range(0, len(self.perm[idx1])):
                                 #self.perm[idx1][idx2].print()
                                 self.file.write(self.perm[idx1][idx2].print_str() + " ")
                             #print()
                             self.file.write("\n")
+                            self.file.flush()
 
-                        # Pomocnicza, indeks do petli for w funkcji three_of_a_kind() - do listy perm
-                        self.c_idx1 = idx1
-                        self.arrangement_recogn()
+                            # Pomocnicza, indeks do petli for w funkcji three_of_a_kind() - do listy perm
+                            self.c_idx1 = idx1
+                            self.arrangement_recogn()
 
-                        HelperArrangement().clear_indices_2d_1()
-
-                        self.loading_bar.set_count_bar(self.num_arr)
-                        self.loading_bar.display_bar()
-
-                        HelperArrangement().append_cards_all_permutations(self.perm[idx1])
+                            self.helper_arr.clear_indices_2d_1()
+                            
+                            if not self.loading_bar.update_progress(self.num_arr):
+                                self.helper_arr.check_if_weights_larger(False)
+                                self.file.close()
+                                return self.helper_arr.random_arrangement()
+                            
+                            if not self.loading_bar.check_stop_event():
+                                sys.exit()
+            
+                            self.helper_arr.append_cards_all_permutations(self.perm[idx1])
 
                 # Liczenie ilosci kombinacji
                 len_comb += len(self.cards_comb)
@@ -290,8 +340,8 @@ class ThreeOfAKind(HelperArrangement):
                 break
 
         if self.random == False:
-            HelperArrangement().check_if_weights_larger()
+            self.helper_arr.check_if_weights_larger()
         
         self.file.close()
         
-        return HelperArrangement().random_arrangement()
+        return self.helper_arr.random_arrangement()

@@ -3,11 +3,14 @@ from django.http import FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse  # Import JsonResponse
 from home.redis_buffer_singleton import redis_buffer_instance_stop, redis_buffer_instance
+from home.MyThread import MyThread
 from classes.Game import Game
 from main import main
 import os
 import threading
 import json
+import queue
+import uuid
 
 stop_event = threading.Event()
 data_ready_event = threading.Event()  # Signals data is ready
@@ -24,8 +27,49 @@ def index(request):
 def permutacje_kart(request):
     redis_buffer_instance.redis_1.set('choice_1', '2')
     redis_buffer_instance.redis_1.set('choice', '1')
+    redis_buffer_instance.redis_1.set('when_one_pair', '0')
     redis_buffer_instance.redis_1.set('prog_when_fast', '-1')
     return render(request, 'home/permutacje_kart.html')
+
+def gra_jedna_para(request):
+    redis_buffer_instance.redis_1.set('choice_1', '2')
+    redis_buffer_instance.redis_1.set('choice', '2')
+    redis_buffer_instance.redis_1.set('when_one_pair', 1)
+    one_pair_combs_max = '10982'
+    redis_buffer_instance.redis_1.set("entered_value", one_pair_combs_max)
+    redis_buffer_instance.redis_1.set('game_si_human', '2')
+    global stop_event
+    stop_event.clear()  # Clear the stop event if it was previously set
+    
+    # Initialize and start a new thread for the task
+    data_queue_combinations = queue.Queue()
+    
+    # Call start_thread and check the result
+    thread_result = start_thread(request)
+    if thread_result['task_status'] == 'Thread started':
+        # Handle any specific message or notification in the template if needed
+        return render(request, 'home/gra_jedna_para.html', {'message': 'Thread already running'})
+    
+    # If thread starts successfully, render the page with the thread ID or any additional context
+    return render(request, 'home/gra_jedna_para.html', {'thread_id': thread_result['thread_id']})
+
+def start_thread(request):
+    # Check if a thread is already running for this session
+    if 'thread_id' in request.session:
+        existing_thread_id = request.session['thread_id']
+        thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{existing_thread_id}').decode('utf-8')
+
+        if thread_status == 'running':
+            return {'task_status': 'Thread already running', 'thread_id': existing_thread_id}
+
+    # Create a new thread for this session
+    thread_id = str(uuid.uuid4())
+    request.session['thread_id'] = thread_id
+    my_thread = MyThread(target=main, thread_id=thread_id)
+    my_thread.start()
+
+    result = {'task_status': 'Thread started', 'thread_id': thread_id}
+    return result
 
 @csrf_exempt
 def permutacje(request):
@@ -101,6 +145,7 @@ def carriage(request):
 def straight_flush(request):
     if request.method == 'POST':
         redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for Straight Flush
+        redis_buffer_instance.redis_1.set('straight_royal_flush', '0')
         return JsonResponse({'status': 'Straight Flush is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -108,6 +153,7 @@ def straight_flush(request):
 def straight_royal_flush(request):
     if request.method == 'POST':
         redis_buffer_instance.redis_1.set('arrangement', '1')  # Binary code for Straight Royal Flush
+        redis_buffer_instance.redis_1.set('straight_royal_flush', '1')
         return JsonResponse({'status': 'Straight Royal Flush is ON'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -127,24 +173,48 @@ def start_task(request):
         
         redis_buffer_instance.redis_1.set('choice_1', '2')
         redis_buffer_instance.redis_1.set('choice', '1') 
+        redis_buffer_instance.redis_1.set('when_one_pair', '0')
 
-        task_thread = threading.Thread(target=main)  # Create a new thread for the arrangement
-        task_thread.start()  # Start the long-running arrangement
+        # Call start_thread to handle thread initialization and starting
+        thread_result = start_thread(request)
+
+        if thread_result['task_status'] == 'Thread started':
+            # If thread is already running, optionally handle this case (e.g., log or notify)
+            return JsonResponse({'status': 'Thread already running', 'thread_id': thread_result['thread_id']})
         
         return JsonResponse({'status': 'arrangement started'})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 # @csrf_exempt
-def stop_task(request):
+def stop_task(request):    
     global stop_event, task_thread
-    if stop_event is not None:
-        stop_event.set()  # Set the stop event to stop the thread
-    if task_thread is not None:
-        task_thread.join()  # Wait for the thread to finish
- 
-        
-    return JsonResponse({'status': 'arrangement stopped'})
 
+    # Check if a thread is currently running for this session
+    if 'thread_id' in request.session:
+        existing_thread_id = request.session['thread_id']
+        thread_status = str(redis_buffer_instance.redis_1.get(f'thread_data_{existing_thread_id}').decode('utf-8'))
+
+        if thread_status == 'running':
+            # Stop the thread
+            if stop_event is not None:
+                stop_event.set()  # Signal the thread to stop
+
+            # Wait for the thread to finish
+            if task_thread is not None and task_thread.is_alive():
+                task_thread.join()  # Wait for the thread to finish
+
+            # Optionally, update the thread status in Redis or session
+            redis_buffer_instance.redis_1.set(f'thread_data_{existing_thread_id}', 'stopped')
+
+            # Reset stop_event and task_thread
+            stop_event.clear()
+            task_thread = None
+
+            return JsonResponse({'status': 'Task stopped successfully', 'thread_id': existing_thread_id})
+
+    # If no thread is running, return an error message
+    return JsonResponse({'status': 'No running task found'}, status=400)
+ 
 def download_saved_file(request):
     file_path = 'permutations_data/data_permutations_combinations.txt'
 

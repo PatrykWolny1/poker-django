@@ -4,6 +4,7 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.views import data_ready_event, stop_event, cache_lock_progress, cache_lock_event_var
 import json
 import asyncio
+import time 
 
 class TestConsumer(AsyncWebsocketConsumer):
     def map_value(self, value, from_min, from_max, to_min=0, to_max=100):
@@ -15,8 +16,8 @@ class TestConsumer(AsyncWebsocketConsumer):
         
         print("WebSocket connection accepted") # Debugging output
 
-        cache.set('shared_progress', '0')
-        progress = int(cache.get('shared_progress'))
+        redis_buffer_instance.redis_1.set('shared_progress', '0')
+        progress = int(redis_buffer_instance.redis_1.get('shared_progress').decode('utf-8'))
         
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
         stop_event_var = redis_buffer_instance_stop.redis_1.get('stop_event_var').decode('utf-8')
@@ -35,7 +36,7 @@ class TestConsumer(AsyncWebsocketConsumer):
             data_ready_event.clear()
 
             with cache_lock_progress:
-                progress = int(cache.get('shared_progress', '0'))  # Retrieve from cache
+                progress = int(redis_buffer_instance.redis_1.get('shared_progress').decode('utf-8'))  # Retrieve from cache
                 processed_progress = self.send_map_progress(progress, from_min, from_max)
                 if processed_progress is not None:
                     if processed_progress > 100:
@@ -52,7 +53,7 @@ class TestConsumer(AsyncWebsocketConsumer):
 
             if (processed_progress == 100) or stop_event.is_set():
                 with cache_lock_event_var:
-                    cache.set('shared_progress', '100') 
+                    redis_buffer_instance.redis_1.set('shared_progress', '100') 
                 break
 
             await asyncio.sleep(0.2)  # Adjust the interval as needed

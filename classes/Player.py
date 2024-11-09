@@ -183,8 +183,9 @@ class Player(object):
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.one_pair.one_pair_generating(self.random, if_combs)
             if arrangement == "9":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs)
-
-            queue.put(self.all_comb_perm)
+            
+            if queue is not None:
+                queue.put(self.all_comb_perm)
             
             #print(self.cards)
             

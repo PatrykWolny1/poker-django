@@ -107,10 +107,7 @@ class HelperArrangement(object):
         self.cards_all_permutations = [ele for ele in self.cards_all_permutations if ele != []]
         
         self.rand_int = random.sample(range(0, len(self.weight_gen) - 1), 2)
-        print(len(self.weight_gen))
-        print(self.rand_int[0])
-        print(self.rand_int[1])
-        print(len(self.cards_all_permutations))
+
         #if if_combs == True:
         cards = [self.cards_all_permutations[self.rand_int[0]],  
                 self.cards_all_permutations[self.rand_int[1]]]

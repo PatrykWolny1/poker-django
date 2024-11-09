@@ -10,9 +10,9 @@ import cProfile
 import pstats
 
 def main(data_queue_combinations = None):
-    when_game_one_pair = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
-    
-    if when_game_one_pair == '2':
+    when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+
+    if when_game_one_pair == '1':
         thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
         thread_cards_permutations.start()
         Game(data_queue_combinations)

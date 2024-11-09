@@ -32,8 +32,9 @@ class Game(object):
         
         self.file_all_to_update = 'ml_data/poker_game_one_pair_combs_all_to_update.csv'
         self.file_one_pair_combs_all = 'ml_data/poker_game_one_pair_combs_all.csv'  
-
-        self.all_comb_perm = queue.get()
+        
+        if queue is not None:
+            self.all_comb_perm = queue.get()
 
         self.Game()
         

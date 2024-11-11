@@ -1,6 +1,6 @@
 from django.urls import re_path
-from home.consumers import TestConsumer
+from home.PermutacjeKartConsumer import PermutacjeKartConsumer
 
 websocket_urlpatterns = [
-    re_path(r'ws/$', TestConsumer.as_asgi()),
+    re_path(r'ws/$', PermutacjeKartConsumer.as_asgi()),
 ]

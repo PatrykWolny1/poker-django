@@ -3,6 +3,7 @@ from classes.Deck import Deck
 from classes.Card import Card
 from random import choice
 from home.redis_buffer_singleton import redis_buffer_instance
+from home.ThreadVarManagerSingleton import task_manager
 import sys
 import os
 
@@ -117,8 +118,6 @@ class Player(object):
         self.arrangements.set_cards_after(self.cards)
 
     def cards_permutations(self, rand_arr = False, combs_gen = False, queue = None):
-            from home.views import cache_lock_event_var
-
             if combs_gen == False:
                 # print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
                 if_rand = '1'    #if_rand == '2' if generate random with permutations (too many...)
@@ -161,7 +160,7 @@ class Player(object):
                 arrangement = '8'
                     
             # Gra jednym ukladem kart
-            with cache_lock_event_var:
+            with task_manager.cache_lock_event_var:
                 if combs_gen == True:
                     redis_buffer_instance.redis_1.set('print_gen_combs_perms', "Generowanie kombinacji kart...")
                     # print("Generowanie kombinacji kart...")

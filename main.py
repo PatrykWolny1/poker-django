@@ -18,7 +18,7 @@ def main(data_queue_combinations = None):
         Game(data_queue_combinations)
         thread_cards_permutations.join()
     else:
-        sys.stdout = StdoutRedirector(redis_buffer_instance)
+        # sys.stdout = StdoutRedirector(redis_buffer_instance)
         Game()
 
 

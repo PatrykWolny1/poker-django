@@ -21,10 +21,17 @@ class TestConsumer(AsyncWebsocketConsumer):
         
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
         stop_event_var = redis_buffer_instance_stop.redis_1.get('stop_event_var').decode('utf-8')
-
+     
         # Keep sending progress updates
         # Continuously check for progress updates in cache   
         while not stop_event.is_set():
+            with cache_lock_event_var:
+                print_gen_combs_perms = redis_buffer_instance.redis_1.get('print_gen_combs_perms')
+                processed_print_gen_combs_perms = self.send_data_print(print_gen_combs_perms)
+                print_gen_combs_perms = redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
+                if processed_print_gen_combs_perms != '-1':
+                    await self.send(text_data=json.dumps({'data_script': processed_print_gen_combs_perms}))     
+            
             from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
             from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
         
@@ -46,14 +53,22 @@ class TestConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({'progress': str(processed_progress)}))
 
             with cache_lock_event_var:
-                data_script = redis_buffer_instance.read_from_buffer('prog')   
+                data_script = redis_buffer_instance.redis_1.get('count_arrangements_stop')
                 processed_data_script = self.send_data_print(data_script)
-                if processed_data_script is not None:
+                redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
+                if processed_data_script != '-1':
                     await self.send(text_data=json.dumps({'data_script': str(processed_data_script)}))  
 
             if (processed_progress == 100) or stop_event.is_set():
                 with cache_lock_event_var:
                     redis_buffer_instance.redis_1.set('shared_progress', '100') 
+                    redis_buffer_instance.redis_1.get('count_arrangements')
+                    data_script = redis_buffer_instance.redis_1.get('count_arrangements')
+                    processed_data_script = self.send_data_print(data_script)
+                    redis_buffer_instance.redis_1.set('count_arrangements', '-1')
+
+                if processed_data_script != '-1':
+                    await self.send(text_data=json.dumps({'data_script': str(processed_data_script)}))  
                 break
 
             await asyncio.sleep(0.2)  # Adjust the interval as needed
@@ -62,13 +77,14 @@ class TestConsumer(AsyncWebsocketConsumer):
         print("WebSocket connection closed")
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        if data.get("action") == "request_latest_data_script":
-            with cache_lock_event_var:
-                data_script = redis_buffer_instance.read_from_buffer('prog')
-                processed_data_script = self.send_data_print(data_script)
-                if processed_data_script is not None:
-                    await self.send(text_data=json.dumps({'data_script': str(processed_data_script)}))
+        pass
+        # data = json.loads(text_data)
+        # if data.get("action") == "request_latest_data_script":
+        #     with cache_lock_event_var:
+        #         data_script = redis_buffer_instance.read_from_buffer('prog')
+        #         processed_data_script = self.send_data_print(data_script)
+        #         if processed_data_script is not None:
+        #             await self.send(text_data=json.dumps({'data_script': str(processed_data_script)}))
                     
     def send_data_print(self, data_script):
         data_ready_event.clear()  

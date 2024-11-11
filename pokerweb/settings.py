@@ -27,6 +27,9 @@ DEBUG = True
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_NAME = 'csrftoken'  # This should match the cookie name
+CSRF_COOKIE_SAMESITE = 'Strict'  # You can use 'Strict' or 'Lax' depending on your needs
 
 ALLOWED_HOSTS = []
 CHANNEL_LAYERS = {
@@ -67,11 +70,10 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",
+    'django.middleware.csrf.CsrfViewMiddleware',
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "home.middleware.SecureCookiesMiddleware",
 ]
 
 ROOT_URLCONF = "pokerweb.urls"

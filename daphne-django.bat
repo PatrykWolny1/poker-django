@@ -1,0 +1,1 @@
+daphne -e ssl:8001:privateKey=key.pem:certKey=cert.pem pokerweb.asgi:application

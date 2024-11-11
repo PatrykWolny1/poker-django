@@ -105,9 +105,13 @@ class TaskManager {
         
         // Download button with confirmation
         this.elements.downloadButton.onclick = () => this.confirmDownload();
-
+        window.addEventListener("visibilitychange", () => {
+            if (window.hidden) {
+                this.handleBeforeUnload();
+            }
+        });
         // Stop task on page unload
-        window.addEventListener("beforeunload", () => this.handleBeforeUnload());
+        // window.addEventListener("beforeunload", () => this.handleBeforeUnload());
     }
     updateMaxAllowedValue() {
         // Check which button is disabled to determine the source of maxAllowedValue
@@ -126,20 +130,25 @@ class TaskManager {
             }
         }
     }
-    // Function to get CSRF token from cookies
-    getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
+    // // Function to get CSRF token from cookies
+    // getCookie(name) {
+    //     let cookieValue = null;
+    //     if (document.cookie && document.cookie !== '') {
+    //         const cookies = document.cookie.split(';');
+    //         for (let i = 0; i < cookies.length; i++) {
+    //             const cookie = cookies[i].trim();
+    //             if (cookie.substring(0, name.length + 1) === (name + '=')) {
+    //                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     return cookieValue;
+    // }
+
+    getCSRFToken() {
+        let token = document.cookie.split(';').find(row => row.startsWith('csrftoken='));
+        return token ? token.split('=')[1] : '';
     }
 
     showNumberPopup() {
@@ -175,7 +184,7 @@ class TaskManager {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': this.getCookie('csrftoken')
+                        'X-CSRFToken': this.getCSRFToken(),
                     },
                     body: JSON.stringify({ value: enteredValue })
                 })
@@ -269,21 +278,35 @@ class TaskManager {
     }
 
     initiateTask(url) {
-        fetch(url, { method: 'POST' })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`HTTP error! status: ${response.status}, response: ${text}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => console.log('Task initiated:', data))
-            .catch(error => console.error('Error starting task:', error));
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', // Ensure it's JSON
+                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP error! status: ${response.status}, response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => console.log('Task initiated:', data))
+        .catch(error => console.error('Error starting task:', error));
     }
 
     startTask() {
-        fetch('/start_task_view/', { method: 'POST' })
+        fetch('/start_task_view/', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', // Ensure it's JSON
+                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token
+            },
+            body: JSON.stringify({ /* add any request data here */ })
+        })
         .then(response => response.json())
         .then(() => {
             this.elements.startTaskButton.disabled = true;
@@ -313,36 +336,33 @@ class TaskManager {
         .catch(error => console.error('Error starting task:', error));
     }
 
-    stopTask() {
-        fetch('/stop_task_view/', { 
-            method: 'POST', 
+    stopTask() { 
+        fetch('/stop_task_view/', {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': this.getCookie('csrftoken')  // Include CSRF token if not using @csrf_exempt
+                'X-CSRFToken': this.getCSRFToken(),
             },
+            body: JSON.stringify({}),
+            credentials: 'same-origin'
         })
-        .then(response => response.json())
+        .then(response => response.json())  // Read the JSON data once
         .then(data => {
-            this.elements.startTaskButton.disabled = false;
-            this.elements.downloadButton.disabled = false;
+            console.log(data)
 
-            // Re-enable task buttons after stopping
-            Object.keys(this.taskButtons).forEach(buttonKey => {
-                this.elements[buttonKey].disabled = false;
-            });
-
-            // Restore perms/combs button state based on last selection
-            if (!this.lastClickedPermsCombs) {
-                this.elements.permsButton.disabled = true;
-                this.elements.combsButton.disabled = false;
-            } else {
-                this.elements.combsButton.disabled = true;
-                this.elements.permsButton.disabled = false;
+            if (data.status === 'Task stopped successfully') {
+                console.log('Task stopped successfully');
+                this.finalizeProgress();
+                this.resetProgressBar();
+                this.isTaskStopped = true;
+                this.elements.startTaskButton.disabled = false
             }
-            
-            // clearTimeout(this.progressTimeout);
         })
-        .catch(error => console.error('Error stopping task:', error));
+        .catch(error => {
+            console.error('Error stopping task:', error);
+            alert('An error occurred while stopping the task. Please try again.');
+        });
+ 
     }
 
     confirmDownload() {
@@ -403,8 +423,12 @@ class TaskManager {
         this.lastProgress = this.progress;
         clearTimeout(this.progressTimeout);
         this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 5000);
+
+        // Only disable the start button if the task has not been stopped
+        if (!this.isTaskStopped) {
+            this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
+        }
         
-        this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
         this.elements.progressBar.style.width = this.progress + '%';
         this.elements.progressBar.innerHTML = this.progress + '%';
     }
@@ -433,6 +457,7 @@ class TaskManager {
     }
 
     finalizeProgress() {
+        this.isTaskStopped = false;
         this.elements.downloadButton.disabled = false;
 
            // Enable all task buttons except the last clicked button
@@ -446,7 +471,8 @@ class TaskManager {
         if (this.lastClickedArr) {
             this.lastClickedArr.disabled = true;
         }
-    
+        
+        this.elements.startTaskButton.disabled = false
         this.elements.downloadButton.disabled = false;
         
         // Restore state for perms/combs button based on last selection
@@ -462,7 +488,6 @@ class TaskManager {
     checkProgressHanging() {
         if (this.progress > 0 && this.progress < 100) {
             this.fetchLatestDataScript(); // Fetch the latest data script if progress is hanging
-            this.elements.startTaskButton.disabled = false;
         }
     }
 
@@ -470,30 +495,21 @@ class TaskManager {
         this.elements.progressBar.style.width = 0;
         this.elements.progressBar.innerHTML = '';
     }
-
+    
     handleBeforeUnload() {
-        // Use sendBeacon to make sure the request is sent even on page unload
-        const data = new FormData();
-        data.append('csrfmiddlewaretoken', this.getCookie('csrftoken'));
-
-        // Assuming /stop_task_view/ accepts POST requests
         const url = '/stop_task_view/';
-
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon(url, data);
-        } else {
-            // Fallback to fetch if sendBeacon is not supported
-            fetch(url, { 
-                method: 'POST', 
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': this.getCookie('csrftoken')
-                }
-            })
-            .then(() => console.log('Task stopped on refresh.'))
-            .catch(error => console.error('Error stopping task:', error));
-        }
-
+        // Use fetch instead of sendBeacon to allow custom headers
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',  // Ensure it's JSON
+                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token in the headers
+            },
+            body: JSON.stringify(),  // Send any data you need in the body
+        })
+        .then(() => console.log('Task stopped on refresh.'))
+        .catch(error => console.error('Error stopping task:', error));
+        this.finalizeProgress();
         this.resetProgressBar();
     }
 }

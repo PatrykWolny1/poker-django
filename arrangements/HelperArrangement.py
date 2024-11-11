@@ -150,7 +150,7 @@ class HelperArrangement(object):
                             
         # print("Wylosowany uklad: ", self.rand_int)
         with cache_lock_event_var:
-            print("Ilosc ukladow (CALOSC): ", len(self.cards_all_permutations))
+            redis_buffer_instance.redis_1.set('count_arrangements', ("Ilosc ukladow (CALOSC): " + str(len(self.cards_all_permutations))))
             
         try:
             shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())

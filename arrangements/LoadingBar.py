@@ -78,4 +78,4 @@ class LoadingBar:
         with open(self.helper_arr.helper_file_class.file_path_dst.resolve(), 'r') as file:
             lines = file.readlines()
             line_count = len(lines)
-        print("Ilosc zapisanych ukladów:", int(floor(line_count / 2)))
+        redis_buffer_instance.redis_1.set('count_arrangements_stop', ("Ilosc zapisanych ukladow: " + str(int(floor(line_count / 2)))))

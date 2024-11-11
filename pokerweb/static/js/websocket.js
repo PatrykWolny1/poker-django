@@ -349,16 +349,20 @@ class TaskManager {
         .then(response => response.json())  // Read the JSON data once
         .then(data => {
             console.log(data)
+
             if (data.status === 'Task stopped successfully') {
                 console.log('Task stopped successfully');
-                // Re-enable buttons or other UI elements here
+                this.finalizeProgress();
+                this.resetProgressBar();
+                this.isTaskStopped = true;
+                this.elements.startTaskButton.disabled = false
             }
         })
         .catch(error => {
             console.error('Error stopping task:', error);
             alert('An error occurred while stopping the task. Please try again.');
         });
-        this.resetProgressBar();
+ 
     }
 
     confirmDownload() {
@@ -419,8 +423,12 @@ class TaskManager {
         this.lastProgress = this.progress;
         clearTimeout(this.progressTimeout);
         this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 5000);
+
+        // Only disable the start button if the task has not been stopped
+        if (!this.isTaskStopped) {
+            this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
+        }
         
-        this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
         this.elements.progressBar.style.width = this.progress + '%';
         this.elements.progressBar.innerHTML = this.progress + '%';
     }
@@ -449,6 +457,7 @@ class TaskManager {
     }
 
     finalizeProgress() {
+        this.isTaskStopped = false;
         this.elements.downloadButton.disabled = false;
 
            // Enable all task buttons except the last clicked button
@@ -462,7 +471,8 @@ class TaskManager {
         if (this.lastClickedArr) {
             this.lastClickedArr.disabled = true;
         }
-    
+        
+        this.elements.startTaskButton.disabled = false
         this.elements.downloadButton.disabled = false;
         
         // Restore state for perms/combs button based on last selection
@@ -478,7 +488,6 @@ class TaskManager {
     checkProgressHanging() {
         if (this.progress > 0 && this.progress < 100) {
             this.fetchLatestDataScript(); // Fetch the latest data script if progress is hanging
-            this.elements.startTaskButton.disabled = false;
         }
     }
 
@@ -500,8 +509,7 @@ class TaskManager {
         })
         .then(() => console.log('Task stopped on refresh.'))
         .catch(error => console.error('Error stopping task:', error));
-    
-        // Reset the progress bar (this should be defined elsewhere in your code)
+        this.finalizeProgress();
         this.resetProgressBar();
     }
 }

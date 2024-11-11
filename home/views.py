@@ -33,6 +33,9 @@ def permutacje_kart(request):
     redis_buffer_instance.redis_1.set('choice', '1')
     redis_buffer_instance.redis_1.set('when_one_pair', '0')
     redis_buffer_instance.redis_1.set('prog_when_fast', '-1')
+    redis_buffer_instance.redis_1.set('count_arrangements', '-1')
+    redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
+    redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
     return render(request, 'home/permutacje_kart.html', {'csrf_token': csrf_token})
 
 def gra_jedna_para(request):
@@ -130,6 +133,9 @@ def start_task(request):
     redis_buffer_instance.redis_1.set('choice', '1')
     redis_buffer_instance.redis_1.set('when_one_pair', '0')
     redis_buffer_instance.redis_1.set('prog_when_fast', '-1')
+    redis_buffer_instance.redis_1.set('count_arrangements', '-1')
+    redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
+    redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
 
     if request.method == 'POST':
         # Get the sub-site identifier from the path

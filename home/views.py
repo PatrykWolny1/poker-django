@@ -50,9 +50,7 @@ def gra_jedna_para(request):
     
     global stop_event
     stop_event.clear()  # Clear the stop event if it was previously set
-    
-    thread_result = None
-    
+        
     if request.method == 'POST':
         # Get the sub-site identifier from the path
         subsite_id = request.path.split('/')[1]  # Assuming subsite_id is in the path
@@ -94,7 +92,7 @@ def gra_jedna_para(request):
         if thread_result['task_status'] == 'Thread started':
             return render(request, 'home/gra_jedna_para.html', {'message': 'Thread already running'})
         
-    return render(request, 'home/gra_jedna_para.html', {'thread_id': thread_result['thread_id']})
+    return render(request, 'home/gra_jedna_para.html', {'message': 'No thread running'})
 
 
 def start_thread(request):

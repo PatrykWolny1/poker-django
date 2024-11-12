@@ -19,18 +19,18 @@ def index(request):
     template_data = {'title': 'Poker Simulation'}
     return render(request, 'home/index.html', {'template_data': template_data})
 
-def permutacje_kart(request):
+def cards_permutations(request):
     """Initialize values and render the permutacje_kart template."""
     csrf_token = get_token(request)
     _initialize_redis_values_permutacje()
-    return render(request, 'home/permutacje_kart.html', {'csrf_token': csrf_token})
+    return render(request, 'home/cards_permutations.html', {'csrf_token': csrf_token})
 
-def gra_jedna_para(request):
+def one_pair_game(request):
     """Start thread if not already running, for one-pair game."""
     _initialize_redis_values_gra_jedna_para()
     if request.method == 'POST':
         return _handle_thread(request, subsite_specific=True, template='home/gra_jedna_para.html')
-    return render(request, 'home/gra_jedna_para.html', {'message': 'No thread running'})
+    return render(request, 'home/one_pair_game.html', {'message': 'No thread running'})
 
 def start_task(request):
     """Handle task initiation from POST request."""

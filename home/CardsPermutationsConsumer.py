@@ -4,7 +4,7 @@ from home.ThreadVarManagerSingleton import task_manager
 import json
 import asyncio
 
-class PermutacjeKartConsumer(AsyncWebsocketConsumer):
+class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         """Handle WebSocket connection."""
         await self.accept()

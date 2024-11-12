@@ -3,8 +3,8 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='home.index'),
-    path('permutacje_kart/', views.permutacje_kart, name='home.permutacje_kart'),
-    path('gra_jedna_para/', views.gra_jedna_para, name='home.gra_jedna_para'),
+    path('cards_permutations/', views.cards_permutations, name='home.cards_permutations'),
+    path('one_pair_game/', views.one_pair_game, name='home.one_pair_game'),
     
     path('start_task_view/', views.start_task, name='start_task_view'),
     path('stop_task_view/', views.stop_task, name='stop_task_view'), 

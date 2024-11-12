@@ -19,6 +19,3 @@ class RedisBuffer:
                 self.redis_1.delete(key) # Clear the buffer after reading
                 # sys.__stdout__.write(f"Data read from Redis: {data}\n") # Directly write to system stdout for debugging
         return data
-
-# redis_buffer_instance = RedisBuffer()
-

@@ -376,7 +376,7 @@ class TaskManager {
     }
 
     connectWebSocket() {
-        this.socket = new WebSocket('wss://127.0.0.1:8001/ws/');
+        this.socket = new WebSocket('wss://127.0.0.1:8001/ws/perms_combs/');
         
         this.socket.onopen = () => console.log("WebSocket connection opened");
         this.socket.onmessage = (event) => this.handleSocketMessage(event);

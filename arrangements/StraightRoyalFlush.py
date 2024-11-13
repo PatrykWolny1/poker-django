@@ -7,6 +7,7 @@ from home.redis_buffer_singleton import redis_buffer_instance
 from itertools import permutations
 from pathlib import Path
 import sys
+import time
 
 class StraightRoyalFlush(HelperArrangement):
     
@@ -218,6 +219,7 @@ class StraightRoyalFlush(HelperArrangement):
         else:
             redis_buffer_instance.redis_1.set('min', '0')
             redis_buffer_instance.redis_1.set('max', self.max_1)
+        time.sleep(1)
         
         cards_2d = []
         m = 0

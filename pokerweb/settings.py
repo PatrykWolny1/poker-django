@@ -33,6 +33,7 @@ CSRF_COOKIE_NAME = 'csrftoken'  # This should match the cookie name
 CSRF_COOKIE_SAMESITE = 'Strict'  # You can use 'Strict' or 'Lax' depending on your needs
 
 ALLOWED_HOSTS = []
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
@@ -46,7 +47,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': 'redis://redis:6379/1', #'redis://redis:6379/1', #old worked without docker
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }

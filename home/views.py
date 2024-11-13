@@ -74,6 +74,9 @@ def _initialize_redis_values_permutacje():
     redis_buffer_instance.redis_1.set('count_arrangements', '-1')
     redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
     redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
+    redis_buffer_instance.redis_1.set('min', '-1')
+    redis_buffer_instance.redis_1.set('max', '-1')
+    
 
 def _initialize_redis_values_gra_jedna_para():
     """Initialize Redis values specific to gra_jedna_para."""

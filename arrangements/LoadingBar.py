@@ -56,12 +56,14 @@ class LoadingBar:
                 shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
                                 self.helper_arr.helper_file_class.file_path_dst.resolve())
                 self._log_saved_permutations()
-                time.sleep(3)
+                time.sleep(1)
+                
                 
                 # Clear data structures in helper_arr
                 self.helper_arr.weight_gen.clear()
                 self.helper_arr.cards_all_permutations.clear()
                 
+                redis_buffer_instance.redis_1.set('prog_when_fast', '100')
                 # Signal stop event to Redis buffer
                 redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
             return False  # Stop the loading bar

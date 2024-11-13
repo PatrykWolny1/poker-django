@@ -151,7 +151,10 @@ class Player(object):
             choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
             if choice == '1':
                 arrangement = redis_buffer_instance.redis_1.get('arrangement').decode('utf-8')  # Binary code for Carriage
-                straight_royal_flush = redis_buffer_instance.redis_1.get('straight_royal_flush').decode('utf-8')
+                if redis_buffer_instance.redis_1.get('straight_royal_flush') is not None:
+                    straight_royal_flush = redis_buffer_instance.redis_1.get('straight_royal_flush').decode('utf-8')
+                else:
+                    straight_royal_flush = '-1'
                 if straight_royal_flush == '0':
                     straight_royal_flush = False
                 elif straight_royal_flush == '1':

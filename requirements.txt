@@ -1,0 +1,12 @@
+Django>4.0,<5.0
+django-redis
+django-extensions
+daphne
+redis
+channels
+tensorflow
+numpy
+pandas
+scipy
+seaborn
+scikit-learn

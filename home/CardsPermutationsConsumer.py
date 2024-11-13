@@ -3,6 +3,7 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.ThreadVarManagerSingleton import task_manager
 import json
 import asyncio
+import time
 
 class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -29,22 +30,31 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance.redis_1.set('shared_progress', '0')
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
         redis_buffer_instance.redis_1.set('prog_when_fast', '-1')  # Reset the fast flag
-        # redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
-        # redis_buffer_instance_stop.redis_1.set('count_arrangements', '-1')
-        from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
-        from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
-        print("INITIALIZE: ", from_min, from_max)
+        redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
+        redis_buffer_instance_stop.redis_1.set('count_arrangements', '-1')
+        with task_manager.cache_lock_event_var:
+            if (int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1:
+                from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
+                from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
+        # from_min = None
+        # from_max = None
+        # print("INITIALIZE: ", from_min, from_max)
         task_manager.stop_event.clear()
         
     async def _send_updates(self):
         """Continuously send updates on progress and data script until task_manager.stop_event is set."""
-        from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
-        from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
-
-        while not task_manager.stop_event.is_set():
+        with task_manager.cache_lock_event_var:
+            if (int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1:
+                from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
+                from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
+            else:
+                from_min = None
+                from_max = None
+                
+        while True:
             await self._send_data_script('print_gen_combs_perms')
-            await self._send_progress_update(from_min, from_max)
-            await self._send_data_script('count_arrangements_stop')
+            if from_min is not None and from_max is not None:
+                await self._send_progress_update(from_min, from_max)
 
             if self._should_stop():
                 await self._finalize_progress()
@@ -68,15 +78,9 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     async def _send_data_script(self, key):
         """Retrieve and send the data script if updated."""
-        # Lock only around the Redis get and set operations
-        with task_manager.cache_lock_event_var:
-            if key == 'count_arrangements_stop':
-                data_script = redis_buffer_instance_stop.redis_1.get(key)
-                redis_buffer_instance_stop.redis_1.set(key, '-1')
-            else:
-                data_script = redis_buffer_instance.redis_1.get(key)
-                redis_buffer_instance.redis_1.set(key, '-1')
-                
+        data_script = redis_buffer_instance.redis_1.get(key)
+        redis_buffer_instance.redis_1.set(key, '-1')
+                        
         processed_data_script = self._process_data_script(data_script)
         if processed_data_script != '-1':
             await self.send(text_data=json.dumps({'data_script': processed_data_script}))
@@ -116,9 +120,17 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     async def _finalize_progress(self):
         """Finalize the progress to 100% and send final updates."""
         # Only lock around the Redis set and get operations
+        final_data_script = None
+        
         with task_manager.cache_lock_event_var:
-            final_data_script = redis_buffer_instance.redis_1.get('count_arrangements')
-            redis_buffer_instance.redis_1.set('shared_progress', '100')  # Ensure it's set to 100% once done
+            if redis_buffer_instance_stop.redis_1.get('count_arrangements_stop').decode('utf-8') != '-1':
+                final_data_script = redis_buffer_instance_stop.redis_1.get('count_arrangements_stop')
+                redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
+            if redis_buffer_instance_stop.redis_1.get('count_arrangements').decode('utf-8') != '-1':
+                final_data_script = redis_buffer_instance.redis_1.get('count_arrangements')
+                redis_buffer_instance.redis_1.set('count_arrangements', '-1')
+        
+        redis_buffer_instance.redis_1.set('shared_progress', '100')  # Ensure it's set to 100% once done
 
         processed_data_script = self._process_data_script(final_data_script)
         if processed_data_script is not None:

@@ -30,7 +30,7 @@ class LoadingBar:
                 self._update_cache_with_progress()
             # Complete the progress if at the final step
 
-        if step_count == self.total_steps - 1:       
+        if step_count == self.total_steps:       
             return False 
         return True # Delete with _finish_progress()
     

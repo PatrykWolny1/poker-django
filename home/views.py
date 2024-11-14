@@ -187,3 +187,8 @@ def _toggle_redis_value(request, key, value, status_message):
         redis_buffer_instance.redis_1.set(key, value)
         return JsonResponse({'status': status_message})
     return JsonResponse({'status': 'Invalid request'}, status=400)
+
+#ONE PAIR GAME
+
+def play_button(request):
+    pass

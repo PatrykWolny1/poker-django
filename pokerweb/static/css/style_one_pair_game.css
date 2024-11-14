@@ -115,7 +115,7 @@ h1 {
     color: #00101e;
   }
   
-#progressBar:disabled {
+#playButton:disabled {
     background: linear-gradient(to top, #9be1ff, #d3f2ff);
     color: #00101e; /* White text color */
     cursor: not-allowed; /* Change cursor to indicate it's disabled */
@@ -192,6 +192,7 @@ h1 {
     width: 25%;
     padding: 10px;
     border-radius: 10px;
+    justify-content: space-between;
 }
 
 .player-title {
@@ -217,16 +218,19 @@ h1 {
     background-image: url("https://localhost:8000/static/css/img/AKi.png");
     background-size: cover;
     background-position: center;
+    image-rendering: smooth;
     border-radius: 5px
 }
 
 .next-button {
+    width: 92%;
     background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
     color: #e8f8ff; /* White text color */
     border: 1px solid #001d29; /* No border */
     border-radius: 10px; /* Rounded corners */
     padding: 10px 15px; /* Padding around the text */
     font-size: 20px; /* Font size */
+    text-align: center;
     cursor: pointer; /* Pointer cursor on hover */
     transition: background-color 0.3s; /* Smooth background color transition */
     font-family: 'Cambria Math', sans-serif;

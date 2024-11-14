@@ -1,4 +1,4 @@
-class TaskManager {
+class CardsPermutations {
     constructor() {
         this.lastProgress = 0;
         this.progressTimeout = null;
@@ -514,7 +514,7 @@ class TaskManager {
     }
 }
 
-// Initialize the TaskManager class once the DOM is fully loaded
+// Initialize the CardsPermutations class once the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
-    const taskManager = new TaskManager();
+    const cardsPermutations = new CardsPermutations();
 });

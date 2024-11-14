@@ -32,17 +32,10 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance.redis_1.set('prog_when_fast', '-1')  # Reset the fast flag
         redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
         redis_buffer_instance_stop.redis_1.set('count_arrangements', '-1')
-        with task_manager.cache_lock_event_var:
-            if (int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1:
-                from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
-                from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
-        # from_min = None
-        # from_max = None
-        # print("INITIALIZE: ", from_min, from_max)
         task_manager.stop_event.clear()
         
     async def _send_updates(self):
-        """Continuously send updates on progress and data script until task_manager.stop_event is set."""
+        """Continuously send updates on progress and data script until stop_event_var is set."""
         with task_manager.cache_lock_event_var:
             if (int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1:
                 from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
@@ -74,7 +67,6 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
                 mapped_progress = 100
             if mapped_progress != 0:
                 await self.send(text_data=json.dumps({'progress': str(mapped_progress)}))
-            print(mapped_progress, from_min, from_max)
 
     async def _send_data_script(self, key):
         """Retrieve and send the data script if updated."""

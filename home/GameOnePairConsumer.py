@@ -7,8 +7,10 @@ import asyncio
 class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         """Handle WebSocket connection."""
+        print("Attempting to accept WebSocket connection...")
         await self.accept()
-        
+        print("WebSocket connection accepted")  # Debugging output
+
         # Initialize Redis values for shared progress and stop event
         self._initialize_redis()
         
@@ -44,10 +46,10 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
             if from_min is not None and from_max is not None:
                 await self._send_progress_update(from_min, from_max)
 
-                if self._should_stop():
-                    break
+            if self._should_stop():
+                break
 
-                await asyncio.sleep(0.2)  # Adjust interval as needed
+            await asyncio.sleep(0.2)  # Adjust interval as needed
     
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""

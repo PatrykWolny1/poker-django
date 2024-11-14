@@ -23,7 +23,7 @@ from home import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('', include('home.urls')),
+    # path('', include('home.urls')),
     
     path('', views.index, name='home.index'),
     path('cards_permutations/', views.cards_permutations, name='home.cards_permutations'),

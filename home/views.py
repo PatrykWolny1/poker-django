@@ -28,8 +28,8 @@ def cards_permutations(request):
 def one_pair_game(request):
     """Start thread if not already running, for one-pair game."""
     _initialize_redis_values_gra_jedna_para()
-    if request.method == 'POST':
-        return _handle_thread(request, subsite_specific=True, template='home/gra_jedna_para.html')
+    if request.method == 'GET':
+        return _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html')
     return render(request, 'home/one_pair_game.html', {'message': 'No thread running'})
 
 def start_task(request):
@@ -83,7 +83,7 @@ def _initialize_redis_values_gra_jedna_para():
     redis_buffer_instance.redis_1.set('choice_1', '2')
     redis_buffer_instance.redis_1.set('choice', '2')
     redis_buffer_instance.redis_1.set('when_one_pair', '1')
-    redis_buffer_instance.redis_1.set("entered_value", '10982')
+    redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
     redis_buffer_instance.redis_1.set('game_si_human', '2')
 
 def _initialize_redis_values_start_task():

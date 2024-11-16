@@ -8,7 +8,7 @@
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: light)" type="image/x-icon">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/FFFFFF/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: dark)" type="image/x-icon">
     <script src="{% static 'js/one_pair_game.js' %}" defer></script>
-    <!-- <meta name="csrf-token" content="{{ csrf_token }}"> -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Gra - Jedna Para</title>
 </head>
 <body>
@@ -36,55 +36,68 @@
         <h2 class="decision-tree-header">Strategia gry</h2>
         <div class="game-area">
             <div class="player-area"><p class="player1-area"></p>
-                <div class="circle-container">
-                    <div class="circle">Exchange Cards?</div>
-                    <div class="branch-container">
-                        <div class="branch branch-left">
-                            <div class="line"></div>
-                            <div class="circle">Yes</div>
-                            <div class="circle">92%</div>
-                        </div>
-                        <div class="branch branch-left">
-                            <div class="line"></div>
-                            <div class="circle">No</div>
-                            <div class="circle">7%</div>
-                        </div>
-                        <div class="branch branch-right">
-                            <div class="line"></div>
-                            <div class="circle">Two</div>
-                            <div class="circle">Three</div>
-                        </div>
+                <div class="diagram">
+                    <div class="circle main">Nowe karty?</div>
+                    <div class="circle top-left">Tak</div>
+                    <div class="circle top-right">Nie</div>
+                    <div class="circle bottom-left">Dwie karty</div>
+                    <div class="circle bottom-right">Trzy karty</div>
+                
+                    <div class="line-container top-left-line">
+                        <div class="line line-top-left"></div>
+                        <div class="text">92.8%</div>
+                    </div>
+                    <div class="line-container top-right-line">
+                        <div class="line line-top-right"></div>
+                        <div class="text">7.2%</div>
+                    </div>
+                    <div class="line-container bottom-left-line">
+                        <div class="line line-bottom-left"></div>
+                        <div class="text">20%</div>
+                    </div>
+                    <div class="line-container bottom-right-line">
+                        <div class="line line-bottom-right"></div>
+                        <div class="text">80%</div>
                     </div>
                 </div>
             </div>
             <div class="player-area"><p class="player2-area"></p>
-                <div class="circle-container">
-                    <div class="circle">Exchange Cards?</div>
-                    <div class="branch-container">
-                        <div class="branch branch-left">
-                            <div class="line"></div>
-                            <div class="circle">Yes</div>
-                            <div class="circle">92%</div>
-                        </div>
-                        <div class="branch branch-left">
-                            <div class="line"></div>
-                            <div class="circle">No</div>
-                            <div class="circle">7%</div>
-                        </div>
-                        <div class="branch branch-right">
-                            <div class="line"></div>
-                            <div class="circle">Two</div>
-                            <div class="circle">Three</div>
-                        </div>
+                <div class="diagram">
+                    <div class="circle main">Nowe karty?</div>
+                    <div class="circle top-left">Tak</div>
+                    <div class="circle top-right">Nie</div>
+                    <div class="circle bottom-left">Dwie karty</div>
+                    <div class="circle bottom-right">Trzy karty</div>
+                
+                    <div class="line-container top-left-line">
+                        <div class="line line-top-left"></div>
+                        <div class="text">92.8%</div>
+                    </div>
+                    <div class="line-container top-right-line">
+                        <div class="line line-top-right"></div>
+                        <div class="text">7.2%</div>
+                    </div>
+                    <div class="line-container bottom-left-line">
+                        <div class="line line-bottom-left"></div>
+                        <div class="text">20%</div>
+                    </div>
+                    <div class="line-container bottom-right-line">
+                        <div class="line line-bottom-right"></div>
+                        <div class="text">80%</div>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="grid-container">
+            <h2 class="decision-tree-header">Przebieg gry</h2>
+            <h2 class="decision-tree-header">Drzewo decyzyjne</h2>
+        </div>
+        <div class="border-container"></div>
         <div class="player-info">
             <div class="info">
                 <p class="player-title"></p>
                 <div class="cards-info">
-                    <div class="cards">
+                    <div class="cards-1">
                         <div class="card"></div>
                         <div class="card"></div>
                         <div class="card"></div>
@@ -103,7 +116,7 @@
             <div class="info">
                 <p class="player-title"></p>
                 <div class="cards-info">
-                    <div class="cards">
+                    <div class="cards-2">
                         <div class="card"></div>
                         <div class="card"></div>
                         <div class="card"></div>
@@ -117,14 +130,39 @@
                     <p class="progress-game">Szansa (2 karty):</p>
                     <p class="progress-game">Szansa (3 karty):</p>
                     <p class="progress-game">Ile kart:</p>
+                </div>
+            </div>
+            <div class="diagram-container">
+                <div class="diagram-progress">
+                    <div class="circle main">Nowe karty?</div>
+                    <div class="circle top-left">Tak</div>
+                    <div class="circle top-right">Nie</div>
+                    <div class="circle bottom-left">Dwie karty</div>
+                    <div class="circle bottom-right">Trzy karty</div>
+                
+                    <div class="line-container top-left-line">
+                        <div class="line line-top-left"></div>
+                        <div class="text">92.8%</div>
+                    </div>
+                    <div class="line-container top-right-line">
+                        <div class="line line-top-right"></div>
+                        <div class="text">7.2%</div>
+                    </div>
+                    <div class="line-container bottom-left-line">
+                        <div class="line line-bottom-left"></div>
+                        <div class="text">20%</div>
+                    </div>
+                    <div class="line-container bottom-right-line">
+                        <div class="line line-bottom-right"></div>
+                        <div class="text">80%</div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="result">
             <div class="result-info">
-                <!-- <p class="player-title">Gracz #1</p> -->
-                <div class="cards">
+                <div class="cards-1">
                     <div class="card"></div>
                     <div class="card"></div>
                     <div class="card"></div>
@@ -133,8 +171,7 @@
                 </div>
             </div>
             <div class="result-info">
-                <!-- <p class="player-title">Gracz #2</p> -->
-                <div class="cards">
+                <div class="cards-2">
                     <div class="card"></div>
                     <div class="card"></div>
                     <div class="card"></div>

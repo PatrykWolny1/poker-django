@@ -4,10 +4,13 @@ import uuid
 from django.shortcuts import render
 from django.http import JsonResponse, FileResponse, Http404
 from django.middleware.csrf import get_token
+from django.views.decorators.csrf import csrf_exempt
 from home.redis_buffer_singleton import redis_buffer_instance
 from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
+
+
 
 # Global Variables
 task_threads = {}
@@ -29,6 +32,7 @@ def one_pair_game(request):
     """Start thread if not already running, for one-pair game."""
     _initialize_redis_values_gra_jedna_para()
     if request.method == 'GET':
+        # Register the signal handler
         return _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html')
     return render(request, 'home/one_pair_game.html', {'message': 'No thread running'})
 
@@ -39,9 +43,14 @@ def start_task(request):
         return _handle_thread(request, subsite_specific=False)
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
+@csrf_exempt
 def stop_task(request):
     """Handle task stopping from POST request."""
+    print("CSRF token:", request.META.get('HTTP_X_CSRFTOKEN'))  # Log the CSRF token received.
+    print("AAAAAAAAAAAAAAAAAAAAA")
     if request.method == 'POST':
+        task_manager.stop_event.set()
+        print("in AAAAAAAAAAAAAAAAAAAAA")
         return _stop_thread(request)
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -62,6 +71,21 @@ def submit_number(request):
         redis_buffer_instance.redis_1.set("entered_value", str(number))
         return JsonResponse({"message": "Number received successfully", "value": number})
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+def start_game(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        # player1_name = data.get('player1Name')
+        # player2_name = data.get('player2Name')
+
+        # # Set Redis variable (e.g., game state or progress)
+        # redis_client.set('game_in_progress', 'true')
+        # redis_client.set('player1_name', player1_name)
+        # redis_client.set('player2_name', player2_name)
+
+        return JsonResponse({'status': 'Game started'})
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 # Helper Functions
 
@@ -85,6 +109,8 @@ def _initialize_redis_values_gra_jedna_para():
     redis_buffer_instance.redis_1.set('when_one_pair', '1')
     redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
     redis_buffer_instance.redis_1.set('game_si_human', '2')
+    redis_buffer_instance.redis_1.set('player_number', '0')
+    redis_buffer_instance.redis_1.set('wait_buffer', '0')
 
 def _initialize_redis_values_start_task():
     """Initialize Redis values specific to start_task."""
@@ -117,15 +143,24 @@ def start_thread(request):
     task_manager.stop_event.clear()
     thread_id = str(uuid.uuid4())
     request.session['thread_id'] = thread_id
-    my_thread = MyThread(target=main, thread_id=thread_id)
-    my_thread.start()
-    redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'running')
+    try:
+        # Start threads or tasks
+        my_thread = MyThread(target=main, thread_id=thread_id)
+        my_thread.start()
+        redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'running')
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt caught. Cleaning up...")
+        redis_buffer_instance.redis_1.set('wait_buffer', '1')
+        task_manager.stop_event.set()
+        my_thread.join()
+    
     return {'task_status': 'Thread started', 'thread_id': thread_id}
 
 def _stop_thread(request):
     """Stop the thread based on the thread ID stored in session."""
     thread_key = 'thread_id'
     thread_id = request.session.get(thread_key)
+    task_manager.stop_event.set()
     if thread_id:
         thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{thread_id}')
         if thread_status and thread_status.decode('utf-8') == 'running':
@@ -192,3 +227,11 @@ def _toggle_redis_value(request, key, value, status_message):
 
 def play_button(request):
     pass
+
+def get_redis_value(request):
+    key = request.GET.get('key', '')  # Get the key from the query parameter
+    player_nick = redis_buffer_instance.get('player').decode('utf-8')
+    value = redis_buffer_instance.redis_1.get(f'{key}_{player_nick}')  # Fetch the value from Redis
+    if value is not None:
+        value = value.decode('utf-8')  # Decode bytes to a string
+    return JsonResponse({'key': key}, {'value': value})

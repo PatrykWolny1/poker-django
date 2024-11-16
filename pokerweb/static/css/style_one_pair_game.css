@@ -20,6 +20,7 @@ h1 {
 
 .container {
     width: 70%;
+    height: 100%;
     margin: 20px auto;
 }
 
@@ -141,11 +142,17 @@ h1 {
 }
 
 .border-container {
-    border: 0.5px solid #002c3f;
+    width: 100%; /* Width of the line */
+    border-top: 0.5px solid #002c3f;
+    margin-bottom: 20px;
 }
 
-.decision-tree-header {
-    display: block;
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 0.65fr; /* 1fr each for equal width */
+}
+
+.decision-tree-header {     
     font-size: 48px;
     font-weight: bold;
     unicode-bidi: isolate;
@@ -154,7 +161,8 @@ h1 {
 }
 
 .game-area {
-    height: 200px;
+    width: 100%;
+    height: 350px;
     display: flex;
     justify-content: space-between;
     margin: 20px 0;
@@ -169,8 +177,6 @@ h1 {
     display: flex;
     text-align: left;
     vertical-align: top;
-    font-weight: bold;
-    background: radial-gradient(to bottom, #00435f, rgb(0, 48, 73));
     color: #e0e0e0;
     border-radius: 10px;
     font-size: 16px;
@@ -189,13 +195,14 @@ h1 {
 
 .player-info {
     width: 100%;
+    height: 370px;
     display: flex;
-    justify-content: left;
     gap: 30px;
     margin-left: 0px;
 }
 
 .info {
+    height: 30%;
     width: 25%;
     border-radius: 10px;
     justify-content: space-between;
@@ -207,22 +214,22 @@ h1 {
     margin-bottom: 10px;
 }
 
-.cards-info .cards {
+.cards-info {
+    display: flex;
     height: 100px;
     justify-content: center; /* Centers horizontally */
     align-items: center; /* Centers vertically */
 }
 
-.cards {
+.cards-1, .cards-2 {
     display: flex;
     gap: 10px;
 }
 
 .card {
-    width: 50px;
-    height: 70px;
+    width: 55px;
+    height: 75px;
     border: 1px solid #ccc;
-    background-image: url("https://127.0.0.1:8000/static/css/img/AKi.png");
     background-size: cover;
     background-position: center;
     image-rendering: smooth;
@@ -264,13 +271,14 @@ h1 {
 
 .result {
     display: flex;
+    width: 55%;
     justify-content: left;
     gap: 10px;
     margin-top: 20px;
 }
 
 .result-info {
-    width: 25%;
+    width: 45.5%;
     height: 100px;
     text-align: center;
     padding: 10px;
@@ -278,7 +286,8 @@ h1 {
     border-radius: 10px;
 }
 
-.result-info .cards {
+.result-info {
+    display: flex;
     height: 100px;
     justify-content: center; /* Centers horizontally */
     align-items: center; /* Centers vertically */
@@ -294,71 +303,175 @@ h1 {
     border-radius: 10px;
 }
 
-.circle-container {
-    display: flex;
-    align-items: center;
-    gap: 30px;
+.diagram {
     position: relative;
+    width: 300px;
+    height: 500px;
+    margin: 0 auto;
+}
+
+/* Parent container that centers the diagram */
+.diagram-container {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    height: 505px; /* Full viewport height */
+    width: 500px; /* Full viewport width */
+}
+
+.diagram-progress {
+    position: relative;
+    width: 300px;
+    height: 505px;
+    margin-top: 150px;
+    margin-left: 40px;
 }
 
 .circle {
-    width: 50px;
-    height: 50px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
-    background-color: #4CAF50;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 14px;
-    position: relative;
+    text-align: center;
+    color: #002b40;
+    font-size: 16px;
+    position: absolute;
+    background: linear-gradient(to top, #31c1ff, #5cceff);
+    z-index: 2;
 }
 
-.branch-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    position: relative;
-    margin-left: 30px;
+/* Positioning circles */
+.main {
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
-.branch {
+.top-left {
+    top: 35%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+}
+
+.top-right {
+    top: 35%;
+    left: 70%;
+    transform: translate(-50%, -50%);
+}
+
+.bottom-left {
+    top: 60%;
+    left: 10%;
+    transform: translate(-50%, -50%);
+}
+
+.bottom-right {
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.line-container {
+    position: absolute;
     display: flex;
     align-items: center;
-    position: relative;
-    gap: 20px;
+    z-index: 1;
+    justify-content: center; /* Ensure text is centered */
 }
 
-.branch .circle {
-    margin-left: 30px;
-}
-
-.branch .line {
+/* Lines */
+.line {
     position: absolute;
-    width: 30px;
     height: 2px;
-    background-color: #4CAF50;
-    transform: rotate(45deg); /* Creates the angled line */
+    background: linear-gradient(to top, #31c1ff90, #5cceff82);
+    transform-origin: 0 0;
 }
 
-.branch-left .line {
-    transform: rotate(-45deg); /* Angle line for left branch */
-    left: -15px; /* Adjusts position to connect properly */
-    top: 50%;
+/* Text next to lines */
+.text {
+    font-size: 16px; /* Smaller font size */    
+    position: relative;
+    color: #dbf4ff;
+    z-index: 2;
 }
 
-.branch-right .line {
-    transform: rotate(45deg); /* Angle line for right branch */
-    left: -15px;
-    top: 50%;
+/* Line from Main to Top-Left */
+.line-top-left {
+    top: 13%;
+    left: 30%;
+    width: 95px;
+    transform: rotate(117deg);
 }
 
+/* Line from Main to Top-Right */
+.line-top-right {
+    top: 15%;
+    left: 35%;
+    width: 95px;
+    transform: rotate(62deg);
+}
 
+/* Line from Top-Left to Bottom-Left */
+.line-bottom-left {
+    top: 45%;
+    left: 22%;
+    width: 95px;
+    transform: rotate(117deg) translateX(-30px);
+}
 
+/* Line from Top-Left to Bottom-Right */
+.line-bottom-right {
+    top: 45%;
+    left: 60%;
+    width: 100px;
+    transform: rotate(62deg) translate(-30px, -10px);
+}
 
+/* Ensure the text is placed in the middle of each line */
+.top-left-line .text {
+    left: 50%;
+    transform: translateX(-180%) translateY(130%);
+}
 
+.top-right-line .text {
+    left: 50%;  
+    transform: translateX(50%) translateY(130%);
+}
 
+.bottom-left-line .text {
+    left: 0%;
+    transform: translateX(-120%) translateY(30%);
+}
 
+.bottom-right-line .text {
+    left: 75%;
+    transform: translateX(30%) translateY(-40%);
+}
 
+/* Adjust the line-container positioning */
+.top-left-line {
+    top: 15%; /* Align with the top-left line */
+    left: 42%; /* Position it to the left */
+    justify-content: flex-start; /* Position the text to the left */
+}
 
+.top-right-line {
+    top: 15%; /* Align with the top-right line */
+    left: 50%; /* Position it to the right */
+    justify-content: flex-end; /* Position the text to the right */
+}
 
+.bottom-left-line {
+    top: 43%; /* Align with the bottom-left line */
+    left: 19%; /* Position it to the left */
+    justify-content: flex-start; /* Position the text to the left */
+}
+
+.bottom-right-line {
+    top: 45%; /* Align with the bottom-right line */
+    left: 30%; /* Position it to the right */
+    justify-content: flex-end; /* Position the text to the right */
+}

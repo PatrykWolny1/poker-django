@@ -3,6 +3,7 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.ThreadVarManagerSingleton import task_manager
 import json
 import asyncio
+import time
 
 class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -21,6 +22,9 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
         print("WebSocket connection closed")
+        task_manager.stop_event.set()
+        redis_buffer_instance.redis_1.set('wait_buffer', '1')
+        await self.close()
 
     async def receive(self, text_data):
         """Handle messages received from WebSocket (currently not used)."""
@@ -31,8 +35,14 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance.redis_1.set('shared_progress', '0')
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
         redis_buffer_instance.redis_1.set('prog_when_fast', '-1')  # Reset the fast flag
+        redis_buffer_instance.redis_1.set('cards_0', 'None')
+        redis_buffer_instance.redis_1.set('wait_buffer', '0')
+
+        task_manager.stop_event.clear()
     
     async def _send_updates(self):
+        player_number = 0
+        
         """Continuously send updates on progress and data script until stop_event_var is set."""
         with task_manager.cache_lock_event_var:
             if (int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1:
@@ -49,7 +59,29 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
             if self._should_stop():
                 break
 
-            await asyncio.sleep(0.2)  # Adjust interval as needed
+            await asyncio.sleep(0.3)  # Adjust interval as needed
+        
+        
+        while True:
+            key = 'cards'
+            
+            redis_buffer_instance.redis_1.set('player_number', player_number)
+            print(redis_buffer_instance.redis_1.get(f'{key}_{player_number}').decode('utf-8'))
+
+            if redis_buffer_instance.redis_1.get(f'{key}_{player_number}').decode('utf-8') != 'None':
+                cards_list = json.loads(redis_buffer_instance.redis_1.get(f'{key}_{player_number}'))
+                player_number += 1
+                redis_buffer_instance.redis_1.set('player_number', player_number)
+                if cards_list is not None:
+                    await self.send(text_data=json.dumps({'cards': cards_list}))
+
+            if redis_buffer_instance.redis_1.get('player_number').decode('utf-8') == '2':
+                while redis_buffer_instance.redis_1.get('wait_buffer').decode('utf-8') == '0':
+                    await asyncio.sleep(0.3)
+                break  
+            
+            await asyncio.sleep(0.3)
+        print("EXITED")
     
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""

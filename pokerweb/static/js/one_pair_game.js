@@ -1,8 +1,12 @@
 class OnePairGame {
     constructor() {
+        this.cards = "";
         this.progress = 0;
         this.progressUpdateThreshold = 500; // milliseconds
-        this.lastProgressUpdateTime = Date.now() // To track the last progress update
+        this.lastProgressUpdateTime = Date.now(); // To track the last progress update
+        this.isStopping = false;
+        this.iter = 0;
+        this.cardsContainer = undefined;
         
         // Initialize player names
         this.player1Name = document.getElementById('player1').value;
@@ -10,8 +14,9 @@ class OnePairGame {
         
         this.elements = {
             progressBar: document.getElementById('progressBar'),
+            playButton: document.getElementById('playButton'),
         }
-        progressBar: document.getElementById('progressBar'),
+
         // Update player names immediately when the object is created
         this.updatePlayerNames();
 
@@ -19,17 +24,18 @@ class OnePairGame {
         this.connectWebSocket();
 
         // Attach event listener for the play button
-        const playButton = document.getElementById('playButton');
-        playButton.addEventListener('click', () => {
-            this.updatePlayerNames(); // Update player names when the play button is clicked
+        
+        this.elements.playButton.disabled = true;
+
+        this.elements.playButton.addEventListener('click', () => {
             this.startGame(); // Optional: you can start the game logic here
         });
 
         // Ensure actions before the page is unloaded (on refresh/close)
-        window.addEventListener("visibilitychange", () => {
-            if (window.hidden) {
-                this.handleBeforeUnload();
-            }
+        window.addEventListener("beforeunload", () => {
+            this.handleBeforeUnload();
+            // Optionally inform the user the task is stopping
+            console.log("Stopping background task...");
         });
     }
 
@@ -53,17 +59,42 @@ class OnePairGame {
     handleSocketMessage(event) {
         const data = JSON.parse(event.data);
 
+        if ('cards' in data) {
+            console.log(data.cards); // Debugging: check the card names
+            // Assuming you have 5 cards to display
+            if (this.iter === 0) {
+                this.cardsContainer = document.querySelectorAll('.cards-1 .card');
+            }
+            if (this.iter === 1) {
+                this.cardsContainer = document.querySelectorAll('.cards-2 .card');
+            }
+            this.iter += 1;
+
+            // Loop through the card names and set the corresponding image
+            data.cards.forEach((card, index) => {
+                if (this.cardsContainer[index]) {
+                    // Set the background image for each card element
+                    this.cardsContainer[index].style.backgroundImage = `url("/static/css/img/${card}.png")`;
+                }
+            });
+        }  
         // Update progress
         if ('progress' in data) {
             this.updateProgress(data.progress);
-            this.lastProgressUpdateTime = Date.now(); // Update the last progress time
+            // this.lastProgressUpdateTime = Date.now(); // Update the last progress time
 
             // Clear any existing timeout since we have new progress
-            clearTimeout(this.progressTimeout);
+            // clearTimeout(this.progressTimeout);
+
+            if (data.progress > 0 && data.progress < 100) {
+                this.elements.playButton.disabled = true;
+            }
         }
         if (data.progress == 100) {
+            this.elements.playButton.disabled = false;
             this.finalizeProgress();
         }
+
     }
 
     updateProgress(newProgress) {
@@ -118,39 +149,97 @@ class OnePairGame {
     }
 
     startGame() {
-        // Add any additional logic here to start the game when the play button is clicked
+        // Disable the play button after it's clicked
+        // this.elements.playButton.disabled = true;
+        
         console.log("Game Started");
-        // Optionally, make a request to initialize the game on the server
-        const url = '/start_game/';
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token in the headers
-            },
-            body: JSON.stringify({ player1Name: this.player1Name, player2Name: this.player2Name })
-        })
-        .then(response => response.json())
-        .then(data => console.log('Game started:', data))
-        .catch(error => console.error('Error starting game:', error));
-    }
+        
+        this.updatePlayerNames(); // Update player names when the play button is clicked
 
-    handleBeforeUnload() {
-        const url = '/stop_task_view/';
-        // Use fetch to stop the task when the user refreshes or closes the page
+        // Send a request to initialize the game on the server
+        const url = '/start_game/';
         fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': this.getCSRFToken(),
             },
-            body: JSON.stringify()
+            body: JSON.stringify({ player1Name: this.player1Name, player2Name: this.player2Name })
         })
-        .then(() => console.log('Task stopped on refresh.'))
-        .catch(error => console.error('Error stopping task:', error));
-        
-        this.finalizeProgress();
-        this.resetProgressBar();
+        .then(response => response.json())
+        .then(data => {
+            console.log('Game started:', data);
+        })
+        .catch(error => {
+            console.error('Error starting game:', error);
+            playButton.disabled = false; // Re-enable the button if there's an error
+        });
+    }
+
+    stopTask() {
+        fetch('/stop_task_view/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.getCSRFToken(),
+            },
+            body: JSON.stringify({}),
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())  // Read the JSON data once
+        .then(data => {
+            console.log(data)
+
+            if (data.status === 'Task stopped successfully') {
+                console.log('Task stopped successfully');
+                this.finalizeProgress();
+                this.resetProgressBar();
+            }
+        })
+        .catch(error => {
+            console.error('Error stopping task:', error);
+            alert('An error occurred while stopping the task. Please try again.');
+        });
+    }
+    
+    handleBeforeUnload() {
+        if (this.isStopping) return;
+        this.isStopping = true;
+    
+        const url = '/stop_task_view/';
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', this.getCSRFToken()); // Ensure `getCSRFToken()` returns the correct token.
+    
+        // Convert FormData to a Blob for sendBeacon
+        const body = new URLSearchParams(formData).toString();
+        const blob = new Blob([body], { type: 'application/x-www-form-urlencoded' });
+    
+        const result = navigator.sendBeacon(url, blob);
+    
+        if (!result) {
+            console.error("sendBeacon failed.");
+        }
+        console.log("Stop task request sent.");
+    }
+    // }
+    // handleBeforeUnload() {
+    //     console.log("Attempting to stop task on page unload...");
+    //     this.stopTask();
+    // }
+    
+    fetchRedisValue(key) {
+        // Make a GET request to your API endpoint
+        fetch(`/get_redis_value/?key=${encodeURIComponent(key)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.value !== null) {
+                    console.log(`The value for ${key} is:`, data.value);
+                    // Do something with the value
+                } else {
+                    console.log(`No value found for key: ${key}`);
+                }
+            })
+            .catch(error => console.error('Error fetching Redis value:', error));
     }
 }
 

@@ -34,7 +34,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance_stop.redis_1.set('count_arrangements', '-1')
         task_manager.stop_event.clear()
         
-    async def _send_updates(self):
+    async def _send_updates(self):        
         """Continuously send updates on progress and data script until stop_event_var is set."""
         with task_manager.cache_lock_event_var:
             if (int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1:

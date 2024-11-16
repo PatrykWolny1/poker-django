@@ -11,6 +11,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from operator import itemgetter
 from random import choice
+from home.redis_buffer_singleton import redis_buffer_instance
+from home.ThreadVarManagerSingleton import task_manager
+import json
 import numpy as np
 import sys
 import os
@@ -20,7 +23,8 @@ import tensorflow as tf
 import re
 import logging
 import queue
-    
+import time
+
 class Croupier(object):
 
     def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = False, prediction_mode = True, n = 1):
@@ -91,11 +95,35 @@ class Croupier(object):
         
         self.set_players_nicknames()
 
-        
+        # task_manager.stop_event.clear()
+
         for self.player in self.players:
             self.player.arrangements.print()
+            
+            with task_manager.cache_lock_event_var:
+                redis_buffer_instance.redis_1.set('player', self.player.nick)
+            cards_str = []
+            for card in self.player.arrangements.cards:
+                cards_str.append(card.name + card.color)
+                
+            player_number = int(redis_buffer_instance.redis_1.get('player_number').decode('utf-8'))
+            while player_number == self.player.index:
+                if player_number == self.player.index:
+                    redis_buffer_instance.redis_1.set(f'cards_{player_number}', json.dumps(cards_str))
+                
+                player_number = int(redis_buffer_instance.redis_1.get('player_number').decode('utf-8'))
+
+        
+            print(player_number)
+            if player_number == len(self.players):
+                while redis_buffer_instance.redis_1.get('wait_buffer').decode('utf-8') == '0':
+                    print("In THREAD; USE QUEUE")
+                
+            cards_str.clear()
+            
+            
             # self.player.arrangements.set_rand_int()
-            self.player.arrangements.check_arrangement(game_visible=self.game_visible)
+            # self.player.arrangements.check_arrangement(game_visible=self.game_visible)
         
             
         print()

@@ -7,6 +7,10 @@ class OnePairGame {
         this.isStopping = false;
         this.iter = 0;
         this.cardsContainer = undefined;
+        this.type_arrangement = undefined;
+        this.amount = undefined;
+        this.exchange_cards = undefined;
+        this.chance = undefined
         
         // Initialize player names
         this.player1Name = document.getElementById('player1').value;
@@ -15,6 +19,8 @@ class OnePairGame {
         this.elements = {
             progressBar: document.getElementById('progressBar'),
             playButton: document.getElementById('playButton'),
+            nextButton1: document.getElementById('nextButton1'),
+            nextButton2: document.getElementById('nextButton2'),
         }
 
         // Update player names immediately when the object is created
@@ -27,8 +33,17 @@ class OnePairGame {
         
         this.elements.playButton.disabled = true;
 
+        this.elements.nextButton1.addEventListener('click', () => {
+            this.fetchRedisValue('wait_buffer')
+
+        });
+        
+        this.elements.nextButton2.addEventListener('click', () => {
+            this.fetchRedisValue('wait_buffer')
+        });
+
         this.elements.playButton.addEventListener('click', () => {
-            this.startGame(); // Optional: you can start the game logic here
+           
         });
 
         // Ensure actions before the page is unloaded (on refresh/close)
@@ -69,7 +84,6 @@ class OnePairGame {
                 this.cardsContainer = document.querySelectorAll('.cards-2 .card');
             }
             this.iter += 1;
-
             // Loop through the card names and set the corresponding image
             data.cards.forEach((card, index) => {
                 if (this.cardsContainer[index]) {
@@ -78,8 +92,23 @@ class OnePairGame {
                 }
             });
         }  
+
+        if ('type_arrangement' in data) {
+            console.log(data.type_arrangement)
+        }
+        if ('exchange_cards' in data) {
+            console.log(data.exchange_cards)
+        }
+        if ('amount' in data) {
+            console.log(data.amount)
+            if ('chance' in data) {
+                console.log(data.chance)
+            }
+        }
+
         // Update progress
         if ('progress' in data) {
+            console.log("IN PROGRESS")
             this.updateProgress(data.progress);
             // this.lastProgressUpdateTime = Date.now(); // Update the last progress time
 
@@ -228,18 +257,26 @@ class OnePairGame {
     // }
     
     fetchRedisValue(key) {
-        // Make a GET request to your API endpoint
-        fetch(`/get_redis_value/?key=${encodeURIComponent(key)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.value !== null) {
-                    console.log(`The value for ${key} is:`, data.value);
-                    // Do something with the value
-                } else {
-                    console.log(`No value found for key: ${key}`);
+        // Send a POST request with the value in the body
+
+        fetch("/get_redis_value/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": this.getCSRFToken(), // Include CSRF token for POST
+            },
+            body: JSON.stringify({ key: key }), // Send the key in the request body
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                return response.json();
             })
-            .catch(error => console.error('Error fetching Redis value:', error));
+            .then(data => {
+                console.log("Response from the server:", data);
+            })
+            .catch(error => console.error("Error sending value to the view:", error));
     }
 }
 

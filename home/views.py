@@ -30,9 +30,8 @@ def cards_permutations(request):
 
 def one_pair_game(request):
     """Start thread if not already running, for one-pair game."""
-    _initialize_redis_values_gra_jedna_para()
     if request.method == 'GET':
-        # Register the signal handler
+        _initialize_redis_values_gra_jedna_para()
         return _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html')
     return render(request, 'home/one_pair_game.html', {'message': 'No thread running'})
 
@@ -43,13 +42,11 @@ def start_task(request):
         return _handle_thread(request, subsite_specific=False)
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
-@csrf_exempt
 def stop_task(request):
     """Handle task stopping from POST request."""
     print("CSRF token:", request.META.get('HTTP_X_CSRFTOKEN'))  # Log the CSRF token received.
     print("AAAAAAAAAAAAAAAAAAAAA")
     if request.method == 'POST':
-        task_manager.stop_event.set()
         print("in AAAAAAAAAAAAAAAAAAAAA")
         return _stop_thread(request)
     return JsonResponse({'status': 'Invalid request'}, status=400)
@@ -109,8 +106,19 @@ def _initialize_redis_values_gra_jedna_para():
     redis_buffer_instance.redis_1.set('when_one_pair', '1')
     redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
     redis_buffer_instance.redis_1.set('game_si_human', '2')
+
+    for player in range(0, 2):
+        redis_buffer_instance.redis_1.delete(f'arr_{player}')
+        redis_buffer_instance.redis_1.delete(f'cards_{player}')
+        
     redis_buffer_instance.redis_1.set('player_number', '0')
     redis_buffer_instance.redis_1.set('wait_buffer', '0')
+    redis_buffer_instance.redis_1.delete('arrangement')
+    redis_buffer_instance.redis_1.delete('exchange_cards')
+    redis_buffer_instance.redis_1.delete('type_arrangement')
+    redis_buffer_instance.redis_1.delete('chance')
+    redis_buffer_instance.redis_1.delete('amount')
+    
 
 def _initialize_redis_values_start_task():
     """Initialize Redis values specific to start_task."""
@@ -121,7 +129,7 @@ def _initialize_redis_values_start_task():
     redis_buffer_instance.redis_1.set('count_arrangements', '-1')
     redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
     redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
-
+    
 def _handle_thread(request, subsite_specific=False, template=None):
     """Handle the starting and managing of threads for different requests."""
     thread_key = f'thread_data_{request.path.split("/")[1]}' if subsite_specific else 'thread_id'
@@ -229,9 +237,22 @@ def play_button(request):
     pass
 
 def get_redis_value(request):
-    key = request.GET.get('key', '')  # Get the key from the query parameter
-    player_nick = redis_buffer_instance.get('player').decode('utf-8')
-    value = redis_buffer_instance.redis_1.get(f'{key}_{player_nick}')  # Fetch the value from Redis
-    if value is not None:
-        value = value.decode('utf-8')  # Decode bytes to a string
-    return JsonResponse({'key': key}, {'value': value})
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        body = json.loads(request.body)
+        key = body.get("key")  # Extract the key from the JSON body
+        if not key:
+            return JsonResponse({"error": "Key is missing"}, status=400)
+
+        redis_buffer_instance.redis_1.set(key, '1')
+
+        
+        # Use the value (key) as needed
+        print(f"Received key: {key}")
+
+        # Example response
+        return JsonResponse({"message": f"Key '{key}' received successfully"})
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)

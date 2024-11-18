@@ -172,6 +172,7 @@ class OnePair(HelperArrangement):
 
                                         once_3 = True
                             once_2 = True
+        
 
         # Jesli pojedyncza karta wystepuje 3 razy oraz wystepuje 1 para to zakoncz
         if one_count_1 == 3 and one_count_2 == 2:
@@ -210,6 +211,8 @@ class OnePair(HelperArrangement):
         else:
             self.weight_arrangement = 0
             self.weight_arrangement_part = []
+            
+         
 
 
     def one_pair_generating(self, random, if_combs):

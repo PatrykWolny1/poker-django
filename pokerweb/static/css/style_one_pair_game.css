@@ -236,7 +236,7 @@ h1 {
     border-radius: 5px
 }
 
-.next-button {
+.next-button-1, .next-button-2 {
     width: 92%;
     background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
     color: #e8f8ff; /* White text color */
@@ -253,7 +253,7 @@ h1 {
     font-family: 'Cambria Math', sans-serif;
 }
 
-.next-button:hover {
+.next-button-1:hover, .next-button-2:hover {
     background: linear-gradient(to top, #31c1ff, #5cceff);
     color: #00101e;
 }

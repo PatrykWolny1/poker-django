@@ -45,12 +45,18 @@ class Croupier(object):
         self.rand_i:int = 0
         self.rand_j:int = 0
         self.n:int = n
+        self.player:int = 0
+        self.idx_p:int = 0
+        
 
         self.exchange:str = ''
         
         self.game_visible:bool = game_visible
         self.tree_visible:bool = tree_visible
         self.prediction_mode:bool = prediction_mode
+        self.second:bool = True
+        self.p:bool = False
+
         
         pd.set_option('display.max_columns', 100)
         
@@ -96,46 +102,48 @@ class Croupier(object):
         self.set_players_nicknames()
 
         # task_manager.stop_event.clear()
+        cards_str = []
 
         for self.player in self.players:
-            self.player.arrangements.print()
-            
+            # self.player.arrangements.print()
+            # print(self.player.arrangements.check_arrangement(game_visible=False))
             with task_manager.cache_lock_event_var:
                 redis_buffer_instance.redis_1.set('player', self.player.nick)
-            cards_str = []
+                cards_str.clear()
+            
             for card in self.player.arrangements.cards:
                 cards_str.append(card.name + card.color)
-                
-            player_number = int(redis_buffer_instance.redis_1.get('player_number').decode('utf-8'))
-            while player_number == self.player.index:
-                if player_number == self.player.index:
-                    redis_buffer_instance.redis_1.set(f'cards_{player_number}', json.dumps(cards_str))
-                
-                player_number = int(redis_buffer_instance.redis_1.get('player_number').decode('utf-8'))
-
-        
-            print(player_number)
-            if player_number == len(self.players):
-                while redis_buffer_instance.redis_1.get('wait_buffer').decode('utf-8') == '0':
-                    print("In THREAD; USE QUEUE")
-                
-            cards_str.clear()
             
+            self.player_number = int(redis_buffer_instance.redis_1.get('player_number').decode('utf-8'))     
+
+            if self.player_number == self.player.index:                                            
+                str_arr = self.player.arrangements.check_arrangement(game_visible=False)
+                with task_manager.cache_lock_event_var:
+                    redis_buffer_instance.redis_1.set(f'cards_{self.player_number}', json.dumps(cards_str))
+                    redis_buffer_instance.redis_1.set('type_arrangement', str_arr)
+                time.sleep(1)
+            if self.player_number == len(self.players) - 1:
+                while redis_buffer_instance.redis_1.get('wait_buffer').decode('utf-8') == '0':
+                    print("IN CROUPIER CARDS", self.player_number)
+                    time.sleep(0.5)   
+                redis_buffer_instance.redis_1.set('wait_buffer', '0')
+                
+
+
             
             # self.player.arrangements.set_rand_int()
-            # self.player.arrangements.check_arrangement(game_visible=self.game_visible)
-        
+            
             
         print()
         
         ########################################################
 
         # Dla testowania wybranych uklaldow
-        self.set_cards()
-        player1 = Player(self.deck, cards = self.cards)
-        player1.arrangements.set_cards(self.cards)
-        player1.print()
-        player1.arrangements.check_arrangement(game_visible=self.game_visible)
+        # self.set_cards()
+        # player1 = Player(self.deck, cards = self.cards)
+        # player1.arrangements.set_cards(self.cards)
+        # player1.print()
+        # player1.arrangements.check_arrangement(game_visible=self.game_visible)
 
         ########################################################
 
@@ -165,9 +173,10 @@ class Croupier(object):
         # oprocz tych ktore definuja uklad ([2 2] 3 4 5) dla wybranej strategii, strategii
         for self.player in self.players:
             if self.game_visible == True:
-                self.player.print(False) 
+                pass
+                # self.player.print(False) 
                 
-            self.player.arrangements.check_arrangement(game_visible=self.game_visible)
+            self.player.arrangements.check_arrangement(game_visible=False)
             self.player.arrangements.set_weights()
             self.player.arrangements.set_data_frame_ml(DataFrameML(nick=self.player.nick, id_arr=self.player.arrangements.get_id(), 
                                                                  weight=self.player.arrangements.get_weight()))
@@ -187,7 +196,8 @@ class Croupier(object):
             strategy.build_tree()
             
             if self.game_visible == True:
-                print(str(strategy.root))
+                pass
+                # print(str(strategy.root))
 
         # Wymiana kart graczy na inne
         self.cards_check_exchange_add_weights()
@@ -361,10 +371,11 @@ class Croupier(object):
     def cards_check_exchange_add_weights(self):
         for self.player in self.players:
             if self.game_visible == True:
-                self.player.print(False)
+                pass
+                # self.player.print(False)
             
             # Ustawienie wag oraz wyswietlenie rodzaju ukladu 
-            self.player.arrangements.check_arrangement(game_visible=self.game_visible)
+            self.player.arrangements.check_arrangement(game_visible=False)
             self.player.arrangements.set_weights()
            
             if self.game_visible == True:
@@ -374,19 +385,28 @@ class Croupier(object):
             
             # Jesli gra SI to do zmiennej exchange przypisywany jest losowy wynik 
             # zgodnie z drzewem decyzyjnym
-            
+
             if self.player.si_boolean == True:
                 self.exchange = np.random.choice(['n', 't'], size=1, 
                                     p=[float(self.one_pair_strategy[self.num].root.internal_nodes[0][0].branches[0]),
-                                       float(self.one_pair_strategy[self.num].root.internal_nodes[0][0].branches[1])])    
+                                       float(self.one_pair_strategy[self.num].root.internal_nodes[0][0].branches[1])]) 
+                with task_manager.cache_lock_event_var:
+                    redis_buffer_instance.redis_1.set('player', self.player.nick)
+                
+                    self.player_number = int(redis_buffer_instance.redis_1.get('player_number').decode('utf-8'))     
+
+                    if self.player_number == self.player.index:                                            
+                        redis_buffer_instance.redis_1.set('exchange_cards', str(self.exchange[0]))  
+                             
             else:
                 self.exchange = str(input("Wymiana kart [T/N]: ")).lower()            
             
             self.exchange_list.append(self.exchange)
 
             if self.game_visible == True:
-                print(self.exchange)
-                print("Wymiana kart: ", self.exchange)  
+                # print(self.exchange)
+                # print("Wymiana kart: ", self.exchange)
+                pass  
             
             # Wymiana kart lub nie
             if self.exchange == 't':
@@ -410,9 +430,10 @@ class Croupier(object):
             # Przypisanie do ramki danych wymienionych kart dla danego gracza
             [self.player.arrangements.data_frame_ml.set_cards_exchanged(card.weight) for card in self.player.cards_exchanged]
             if self.game_visible == True:
-                print()
-                print("------------------------------------------------------------")
-                print()
+                pass
+                # print()
+                # print("------------------------------------------------------------")
+                # print()
 
     # Rozdawanie kart do graczy
     def deal_cards(self):
@@ -420,7 +441,6 @@ class Croupier(object):
             self.player.take_cards(self.deck)
 
     def cards_exchange(self):
-       
         # Preprocessing danych do przewidywania prawdopodobienstwa wygranej gracza
         if self.player.si_boolean == True:
             
@@ -485,7 +505,35 @@ class Croupier(object):
 
                     # Prawdopodobienstwo wygranej z dwiena lub trzema kartami
                     if self.game_visible == True:
-                        print("Szansa na wygrana przy wymianie " + str(amount) + " kart: ", y_preds * 100)
+                        pass
+                        # print("Szansa na wygrana przy wymianie " + str(amount) + " kart: ", y_preds * 100)
+            
+                    print(self.player_number, self.player.index, amount, str(y_preds*100))
+
+                    if self.player.index == self.player_number:
+                        with task_manager.cache_lock_event_var:
+                            redis_buffer_instance.redis_1.set('chance', str(y_preds * 100))
+                            redis_buffer_instance.redis_1.set('number_exchange', str(amount))
+                        time.sleep(1)
+                    
+                    
+                    if self.player_number == len(self.players) - 1:
+                        self.idx_p += 1
+                        if self.idx_p == 2:
+                            self.p = True
+                    
+                    if self.player_number == len(self.players) - 1 and self.p:
+                        while redis_buffer_instance.redis_1.get('wait_buffer').decode('utf-8') == '0':
+                            print("IN CROUPIER CARDS", self.player_number)
+                            time.sleep(0.5) 
+                        self.idx_p = 0
+                        self.p = False
+                    if redis_buffer_instance.redis_1.get('wait_buffer').decode('utf-8') == '1':  
+                        redis_buffer_instance.redis_1.set('wait_buffer', '0')
+                      
+                
+
+            
             
             # Wybieranie ilosci kart do wymiany zgodnie z prawdopodobienstwem
             self.amount = np.random.choice([2, 3], size=1, 
@@ -493,7 +541,9 @@ class Croupier(object):
                                        float(self.one_pair_strategy[self.num].root.internal_nodes[1][0].branches[1])])
             
             self.amount = int(self.amount)
-        
+            
+
+    
         # Gracz: Czlowiek
         else:
             self.amount = int(input("Ile kart do wymiany [0-5][-1 COFNIJ]: "))
@@ -531,8 +581,9 @@ class Croupier(object):
         self.amount_list.append(self.amount)
         
         if self.game_visible == True:
-            print("Ile kart do wymiany: ", self.amount)
-            print()
+            # print("Ile kart do wymiany: ", self.amount)
+            # print()
+            pass
 
         if self.amount == -1:
             return
@@ -542,7 +593,8 @@ class Croupier(object):
                                                      self.player.arrangements.get_part_weight(), game_visible=False,
                                                      si_boolean=self.player.si_boolean)
         if self.game_visible == True:
-            print(self.amount)
+            pass
+            # print(self.amount)
             
         # Rozdawanie kart przez krupiera
         self.deal_cards()
@@ -551,13 +603,14 @@ class Croupier(object):
         self.player.arrangements.set_cards(self.player.cards)
         
         if self.game_visible == True:
-            print()
-            print("------------------------------------------------------------")
-            print()
+            # print()
+            # print("------------------------------------------------------------")
+            # print()
 
-            self.player.print(False)
+            # self.player.print(False)
+            pass
             
-        self.player.arrangements.check_arrangement(game_visible=self.game_visible)
+        self.player.arrangements.check_arrangement(game_visible=False)
         self.player.arrangements.set_weights()
         
         # Inicjalizacja ramki danych 

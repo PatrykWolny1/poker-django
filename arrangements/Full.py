@@ -36,7 +36,8 @@ class Full(HelperArrangement):
         self.num_arr:int = 0                     #Liczenie ukladow kart w kolejnych iteracjach
         self.c_idx6:int  = 0
         self.rand_int:int  = 0
-
+        self.weight_arrangement:int = 0
+        
         self.if_perm_weights:bool = True
         self.random:bool = False                  #Jesli jest losowanie ukladu
         self.example:bool = False                 #Jesli jest recznie wpisany uklad

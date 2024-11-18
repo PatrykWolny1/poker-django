@@ -16,17 +16,17 @@ def enablePrint():
 class Player(object):
     it_cards:int = 0
     cards_2d:list = []
-    
+   
     def __init__(self, deck = Deck(), nick = "Nick", index = None, perm = None, if_deck = None, 
                  cards = [], if_show_perm = None, si_boolean = None):
         deck.shuffling()
         self.cards_exchanged:list = []
         self.nick:str = nick
-        self.index:int = index
         self.arrangements:Arrangements = Arrangements()
         self.cards:list = []
         self.all_comb_perm:list = []
         self.si_boolean:bool = si_boolean
+        self.index:int = index
         
         if if_deck == True and if_show_perm == False:
 

@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, FileResponse, Http404
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt
-from home.redis_buffer_singleton import redis_buffer_instance
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
 from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
@@ -101,23 +101,25 @@ def _initialize_redis_values_permutacje():
 
 def _initialize_redis_values_gra_jedna_para():
     """Initialize Redis values specific to gra_jedna_para."""
+    redis_buffer_instance_one_pair_game.redis_1.flushdb()
     redis_buffer_instance.redis_1.set('choice_1', '2')
     redis_buffer_instance.redis_1.set('choice', '2')
     redis_buffer_instance.redis_1.set('when_one_pair', '1')
     redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
     redis_buffer_instance.redis_1.set('game_si_human', '2')
-
-    for player in range(0, 2):
-        redis_buffer_instance.redis_1.delete(f'arr_{player}')
-        redis_buffer_instance.redis_1.delete(f'cards_{player}')
+    redis_buffer_instance.redis_1.set('min', '-1')
+    redis_buffer_instance.redis_1.set('max', '-1')
+    # for player in range(0, 2):
+    #     redis_buffer_instance.redis_1.delete(f'arr_{player}')
+    #     redis_buffer_instance.redis_1.delete(f'cards_{player}')
         
     redis_buffer_instance.redis_1.set('player_number', '0')
     redis_buffer_instance.redis_1.set('wait_buffer', '0')
-    redis_buffer_instance.redis_1.delete('arrangement')
-    redis_buffer_instance.redis_1.delete('exchange_cards')
-    redis_buffer_instance.redis_1.delete('type_arrangement')
-    redis_buffer_instance.redis_1.delete('chance')
-    redis_buffer_instance.redis_1.delete('amount')
+    # redis_buffer_instance.redis_1.delete('arrangement')
+    # redis_buffer_instance.redis_1.delete('exchange_cards')
+    # redis_buffer_instance.redis_1.delete('type_arrangement')
+    # redis_buffer_instance.redis_1.delete('chance')
+    # redis_buffer_instance.redis_1.delete('amount')
     
 
 def _initialize_redis_values_start_task():

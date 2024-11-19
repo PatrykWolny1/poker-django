@@ -7,10 +7,10 @@ class OnePairGame {
         this.isStopping = false;
         this.iter = 0;
         this.cardsContainer = undefined;
-        this.type_arrangement = undefined;
-        this.amount = undefined;
-        this.exchange_cards = undefined;
-        this.chance = undefined
+        // this.type_arrangement = undefined;
+        // this.amount = undefined;
+        // this.exchange_cards = undefined;
+        // this.chances = undefined
         
         // Initialize player names
         this.player1Name = document.getElementById('player1').value;
@@ -99,12 +99,13 @@ class OnePairGame {
         if ('exchange_cards' in data) {
             console.log(data.exchange_cards)
         }
+        if ('chances' in data) {
+            console.log(data.chances)
+        }
         if ('amount' in data) {
             console.log(data.amount)
-            if ('chance' in data) {
-                console.log(data.chance)
-            }
         }
+   
 
         // Update progress
         if ('progress' in data) {

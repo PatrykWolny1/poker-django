@@ -511,8 +511,8 @@ class Croupier(object):
                         pass
                     print(self.player.index, self.player_number, "AAAAAAAAAAA")
                     if self.player.index == self.player_number:
-                        redis_buffer_instance_one_pair_game.redis_1.set('chance', str(y_preds[0] * 100))
-                        time.sleep(0.5)         
+                        redis_buffer_instance_one_pair_game.redis_1.set('chance', str(round(y_preds[0] * 100, 2)))
+                        time.sleep(1)         
                                        
                     if self.player_number == 0 and self.p:
                         self.idx_p = 1
@@ -528,15 +528,14 @@ class Croupier(object):
                                        float(self.one_pair_strategy[self.num].root.internal_nodes[1][0].branches[1])])
             
             self.amount = int(self.amount)
-            print(self.amount, "AMOUNT: ")
             redis_buffer_instance_one_pair_game.redis_1.set('number_exchange', str(self.amount))
             time.sleep(3)
             
-            # if (self.player_number == self.idx_p - 1):
-            #     while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
-            #         time.sleep(1)   
-            #     if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':  
-            #         redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
+            if (self.player_number == self.idx_p - 1):
+                while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
+                    time.sleep(1)   
+                if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':  
+                    redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
             
     
         # Gracz: Czlowiek

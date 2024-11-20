@@ -31,6 +31,7 @@ urlpatterns = [
     
     path('start_task_view/', views.start_task, name='start_task_view'),
     path('stop_task_view/', views.stop_task, name='stop_task_view'), 
+    # path('stop_thread_view/', views.stop_thread, name='stop_thread_view'), 
     path('permutacje_view/', views.permutacje, name='permutacje_view'),
     path('kombinacje_view/', views.kombinacje, name='kombinacje_view'),
     path('high_card_view/', views.high_card, name='high_card_view'),

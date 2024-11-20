@@ -7,10 +7,12 @@ class OnePairGame {
         this.isStopping = false;
         this.iter = 0;
         this.cardsContainer = undefined;
-        // this.type_arrangement = undefined;
-        // this.amount = undefined;
-        // this.exchange_cards = undefined;
-        // this.chances = undefined
+        this.progressGameBorders1 = document.querySelectorAll('.progress-game-border-1');
+        this.progressGameBorders2 = document.querySelectorAll('.progress-game-border-2');
+        this.progressGameBorders = undefined;
+        this.count = 0;
+        this.isProgressGameBorders = false;
+        this.isChances = true;
         
         // Initialize player names
         this.player1Name = document.getElementById('player1').value;
@@ -45,12 +47,17 @@ class OnePairGame {
         this.elements.playButton.addEventListener('click', () => {
            
         });
-
+        // window.addEventListener("visibilitychange", () => {
+        //     if (window.hidden) {
+        //         this.handleBeforeUnload();
+        //     }
+        // });
         // Ensure actions before the page is unloaded (on refresh/close)
         window.addEventListener("beforeunload", () => {
-            this.handleBeforeUnload();
-            // Optionally inform the user the task is stopping
-            console.log("Stopping background task...");
+                this.socket.close()
+                this.handleBeforeUnload();
+                // Optionally inform the user the task is stopping
+                console.log("Stopping background task...");
         });
     }
 
@@ -69,6 +76,49 @@ class OnePairGame {
             console.log("WebSocket connection closed");
             this.socket.close();
         };
+    }
+    
+    updateBorders(progressGames, isFirstSet, data) {
+        if (!progressGames) return;
+
+        if ('exchange_cards' in data) {
+            const exchange_cards = data.exchange_cards;
+            if (progressGames[0]) progressGames[0].textContent = `Wymiana kart: ${exchange_cards}`;
+        }
+
+        if ('chances' in data) {
+            const chances = data.chances;
+            if (this.isChances) {
+                if (progressGames[1]) progressGames[1].textContent = `Szansa (2 karty): ${chances}%`;
+                this.isChances = false;
+            } else if (!this.isChances) {
+                if (progressGames[2]) progressGames[2].textContent = `Szansa (3 karty): ${chances}%`;
+                this.isChances = true;
+            }
+        }
+
+        if ('amount' in data) {
+            const amount = data.amount;
+            if (progressGames[3]) progressGames[3].textContent = `Ile kart: ${amount}`;
+            // Toggle the flag for the next set
+            this.isProgressGameBorders = !isFirstSet;
+        }
+
+      
+    };
+
+    // Function to dynamically update the text
+    updateProgressGameText(data) {
+        // Update the appropriate border
+        if (this.isProgressGameBorders === false && this.progressGameBorders1) {
+            const progressGames = this.progressGameBorders1[0].querySelectorAll('.progress-game');
+            console.log("1")
+            this.updateBorders(progressGames, false, data);
+        } else if (this.isProgressGameBorders === true && this.progressGameBorders2) {
+            const progressGames = this.progressGameBorders2[0].querySelectorAll('.progress-game');
+            console.log("2")
+            this.updateBorders(progressGames, false, data);
+        }
     }
 
     handleSocketMessage(event) {
@@ -93,18 +143,7 @@ class OnePairGame {
             });
         }  
 
-        if ('type_arrangement' in data) {
-            console.log(data.type_arrangement)
-        }
-        if ('exchange_cards' in data) {
-            console.log(data.exchange_cards)
-        }
-        if ('chances' in data) {
-            console.log(data.chances)
-        }
-        if ('amount' in data) {
-            console.log(data.amount)
-        }
+        this.updateProgressGameText(data);
    
 
         // Update progress
@@ -233,23 +272,7 @@ class OnePairGame {
     }
     
     handleBeforeUnload() {
-        if (this.isStopping) return;
-        this.isStopping = true;
-    
-        const url = '/stop_task_view/';
-        const formData = new FormData();
-        formData.append('csrfmiddlewaretoken', this.getCSRFToken()); // Ensure `getCSRFToken()` returns the correct token.
-    
-        // Convert FormData to a Blob for sendBeacon
-        const body = new URLSearchParams(formData).toString();
-        const blob = new Blob([body], { type: 'application/x-www-form-urlencoded' });
-    
-        const result = navigator.sendBeacon(url, blob);
-    
-        if (!result) {
-            console.error("sendBeacon failed.");
-        }
-        console.log("Stop task request sent.");
+        this.stopTask();
     }
     // }
     // handleBeforeUnload() {

@@ -68,7 +68,6 @@ class OnePair(HelperArrangement):
 
     def remove_multiples(self, cards_comb):
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
-
         for i in range(0, len(self.helper_arr.get_indices_2d_1())):
             if len(self.helper_arr.get_indices_2d_1()[i]) in range(2, 4):  # Jesli w wierszu tablicy znajduja sie 2 lub 3 takie same elementy
                 return True
@@ -264,10 +263,13 @@ class OnePair(HelperArrangement):
             self.helper_arr.clear_indices_2d_1()
 
             self.helper_arr.get_indices_1(cards_comb_rest[idx_1])
-            
+            try:
             # Usuwanie powtorek powtarzajacych sie kart (2 lub 3)
-            if_remove_comb_1 = self.remove_multiples(cards_comb_rest[idx_1])
-            
+                if_remove_comb_1 = self.remove_multiples(cards_comb_rest[idx_1])
+            except:
+                print(cards_comb_rest[idx_1])
+                print(self.helper_arr.indices_2d)
+                
             if if_remove_comb_1 == True:
                 cards_comb_rest[idx_1] = []
                 cards_comb_rest = list(filter(None, cards_comb_rest))

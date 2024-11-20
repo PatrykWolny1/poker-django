@@ -11,3 +11,4 @@ class MyThread(threading.Thread):
     def run(self):
         redis_buffer_instance.redis_1.set(f'thread_data_{self.thread_id}', 'running')
         self._target(self.data_queue)
+        

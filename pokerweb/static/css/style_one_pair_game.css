@@ -258,7 +258,13 @@ h1 {
     color: #00101e;
 }
 
-.progress-game-border {
+.progress-game-border-1 {
+    border: 1px solid #002c3f;
+    border-radius: 10px;
+    margin-left: 15px;
+}
+
+.progress-game-border-2 {
     border: 1px solid #002c3f;
     border-radius: 10px;
     margin-left: 15px;

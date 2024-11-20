@@ -4,7 +4,7 @@ import uuid
 from django.shortcuts import render
 from django.http import JsonResponse, FileResponse, Http404
 from django.middleware.csrf import get_token
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
 from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
@@ -45,9 +45,7 @@ def start_task(request):
 def stop_task(request):
     """Handle task stopping from POST request."""
     print("CSRF token:", request.META.get('HTTP_X_CSRFTOKEN'))  # Log the CSRF token received.
-    print("AAAAAAAAAAAAAAAAAAAAA")
     if request.method == 'POST':
-        print("in AAAAAAAAAAAAAAAAAAAAA")
         return _stop_thread(request)
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
@@ -98,7 +96,6 @@ def _initialize_redis_values_permutacje():
     redis_buffer_instance.redis_1.set('min', '-1')
     redis_buffer_instance.redis_1.set('max', '-1')
     
-
 def _initialize_redis_values_gra_jedna_para():
     """Initialize Redis values specific to gra_jedna_para."""
     redis_buffer_instance_one_pair_game.redis_1.flushdb()
@@ -109,18 +106,10 @@ def _initialize_redis_values_gra_jedna_para():
     redis_buffer_instance.redis_1.set('game_si_human', '2')
     redis_buffer_instance.redis_1.set('min', '-1')
     redis_buffer_instance.redis_1.set('max', '-1')
-    # for player in range(0, 2):
-    #     redis_buffer_instance.redis_1.delete(f'arr_{player}')
-    #     redis_buffer_instance.redis_1.delete(f'cards_{player}')
-        
+    redis_buffer_instance.redis_1.set('shared_progress', '0')
     redis_buffer_instance.redis_1.set('player_number', '0')
     redis_buffer_instance.redis_1.set('wait_buffer', '0')
-    # redis_buffer_instance.redis_1.delete('arrangement')
-    # redis_buffer_instance.redis_1.delete('exchange_cards')
-    # redis_buffer_instance.redis_1.delete('type_arrangement')
-    # redis_buffer_instance.redis_1.delete('chance')
-    # redis_buffer_instance.redis_1.delete('amount')
-    
+
 
 def _initialize_redis_values_start_task():
     """Initialize Redis values specific to start_task."""
@@ -153,23 +142,23 @@ def start_thread(request):
     task_manager.stop_event.clear()
     thread_id = str(uuid.uuid4())
     request.session['thread_id'] = thread_id
-    try:
-        # Start threads or tasks
-        my_thread = MyThread(target=main, thread_id=thread_id)
-        my_thread.start()
-        redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'running')
-    except KeyboardInterrupt:
-        print("KeyboardInterrupt caught. Cleaning up...")
-        redis_buffer_instance.redis_1.set('wait_buffer', '1')
-        task_manager.stop_event.set()
-        my_thread.join()
     
+    redis_buffer_instance_one_pair_game.redis_1.set('curr_thread_id', thread_id)
+    
+    # Start threads or tasks
+    my_thread = MyThread(target=main, thread_id=thread_id)
+    my_thread.start()
+    redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'running')
+        
+    task_threads[thread_id] = my_thread
+        
     return {'task_status': 'Thread started', 'thread_id': thread_id}
 
 def _stop_thread(request):
     """Stop the thread based on the thread ID stored in session."""
     thread_key = 'thread_id'
     thread_id = request.session.get(thread_key)
+    print(thread_id)
     task_manager.stop_event.set()
     if thread_id:
         thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{thread_id}')

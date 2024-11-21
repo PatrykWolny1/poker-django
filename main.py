@@ -15,8 +15,9 @@ def main(data_queue_combinations = None):
     if when_game_one_pair == '1':
         thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
         thread_cards_permutations.start()
-        Game(data_queue_combinations)
+        time.sleep(3)
         thread_cards_permutations.join()
+        Game(data_queue_combinations)
     else:
         # sys.stdout = StdoutRedirector(redis_buffer_instance)
         Game()

@@ -53,15 +53,16 @@ class OnePairGame {
         //     }
         // });
         // Ensure actions before the page is unloaded (on refresh/close)
-        window.addEventListener("beforeunload", () => {
-                this.socket.close()
-                this.handleBeforeUnload();
-                // Optionally inform the user the task is stopping
-                console.log("Stopping background task...");
-        });
+        // Bind the `beforeunload` event listener
+        window.addEventListener("beforeunload", this.handleBeforeUnload.bind(this));
     }
 
     connectWebSocket() {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            console.log("WebSocket already open");
+            this.socket.close();  // Prevent opening a new WebSocket if one is already open
+        }
+
         this.socket = new WebSocket('wss://127.0.0.1:8000/ws/op_game/');
 
         this.socket.onopen = () => {
@@ -74,15 +75,20 @@ class OnePairGame {
 
         this.socket.onclose = () => {
             console.log("WebSocket connection closed");
-            this.socket.close();
         };
     }
     
     updateBorders(progressGames, isFirstSet, data) {
         if (!progressGames) return;
-
+        
         if ('exchange_cards' in data) {
-            const exchange_cards = data.exchange_cards;
+            let exchange_cards = data.exchange_cards;
+            console.log(data.exchange_cards)
+            if (exchange_cards === 't') {
+                exchange_cards = 'TAK'
+            } else if (exchange_cards === 'n') {
+                exchange_cards = 'NIE'
+            }
             if (progressGames[0]) progressGames[0].textContent = `Wymiana kart: ${exchange_cards}`;
         }
 
@@ -134,6 +140,7 @@ class OnePairGame {
                 this.cardsContainer = document.querySelectorAll('.cards-2 .card');
             }
             this.iter += 1;
+
             // Loop through the card names and set the corresponding image
             data.cards.forEach((card, index) => {
                 if (this.cardsContainer[index]) {
@@ -272,7 +279,15 @@ class OnePairGame {
     }
     
     handleBeforeUnload() {
+        console.log("beforeunload triggered");
+        console.log(this.socket)
+     
+        console.log("Stopping background task.....");
         this.stopTask();
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            console.log("Closing WebSocket...");
+            this.socket.close();
+        }   
     }
     // }
     // handleBeforeUnload() {

@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'home',
     'channels',
+    'daphne', 
 ]
 
 ASGI_APPLICATION = 'pokerweb.asgi.application'

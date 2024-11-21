@@ -6,31 +6,67 @@ import json
 import asyncio
 import time
 import logging
+import sys
+import signal
+import os
 logger = logging.getLogger(__name__)
 
-class GameOnePairConsumer(AsyncWebsocketConsumer):    
+class GameOnePairConsumer(AsyncWebsocketConsumer):  
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Register signal handlers for SIGINT (CTRL+C) and SIGTSTP (CTRL+Z)
+        signal.signal(signal.SIGINT, self.handle_signal)
+        signal.signal(signal.SIGABRT, self.handle_signal)
+        
     async def connect(self):
         """Handle WebSocket connection."""
         print("Attempting to accept WebSocket connection...")
         await self.accept()
         print("WebSocket connection accepted")  # Debugging output
+        print(f"WebSocket connection accepted with channel: {self.channel_name}")
         # Initialize Redis values for shared progress and stop event
         self._initialize_redis()
         # Start sending updates until task_manager.stop_event is triggered
         await self._send_updates()
+        
         print("WebSocket connection accepted")  # Debugging output
         await self._send_updates_info_cards()
 
     async def disconnect(self, close_code):
         print("WebSocket connection closed", flush=True)
-        redis_buffer_instance_one_pair_game.redis_1.flushdb()
-        task_manager.stop_event.set()
-        await self.close()
+
+        await super().disconnect(close_code)
                 
     async def receive(self, text_data):
         """Handle messages received from WebSocket (currently not used)."""
         pass
+    
+    def handle_signal(self, sig, frame):
+        """Handle signals (SIGINT and SIGTSTP)."""
+        print(f"Signal {sig} received, cleaning up...")
+        # Close WebSocket connection
 
+        redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
+        task_manager.stop_event.set()
+                
+        # Schedule asynchronous cleanup
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(self.async_cleanup())
+        else:
+            loop.run_until_complete(self.async_cleanup())
+        
+        print("Exiting gracefully...") 
+        
+        # Perform any additional cleanup if necessary
+        os._exit(0)
+    
+    async def async_cleanup(self):
+        """Handle asynchronous cleanup."""
+        print("Starting asynchronous cleanup...")
+        await self.disconnect(close_code=1000)
+        print("Asynchronous cleanup complete.")
+        
     def _initialize_redis(self):
         """Initialize Redis values for shared progress and stop event."""
         redis_buffer_instance.redis_1.set('shared_progress', '0')
@@ -43,6 +79,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance.redis_1.set('game_si_human', '2')
         redis_buffer_instance_one_pair_game.redis_1.set('player_number', '0')
         redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
+        redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '0')
         task_manager.stop_event.clear()
     
     async def _send_updates(self):
@@ -63,16 +100,21 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
 
             if self._should_stop():
                 break
-
+            
+            print("In _send_updates()")
+            
             await asyncio.sleep(0.3)  # Adjust interval as needed
         
-        self._initialize_redis()
+        # self._initialize_redis()
 
-    async def _send_updates_info_cards(self):
+    async def _send_updates_info_cards(self):     
+        task_manager.stop_event.clear()
         player_number = 0
-        while not task_manager.stop_event.is_set():   
+
+        while redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8') == '0':   
             if player_number < 2:
                 redis_buffer_instance_one_pair_game.redis_1.set('player_number', str(player_number)) 
+                
                 if redis_buffer_instance_one_pair_game.redis_1.get(f'cards_{player_number}') is not None:
                     cards_list = json.loads(redis_buffer_instance_one_pair_game.redis_1.get(f'cards_{player_number}'))   
                     print(cards_list)
@@ -89,7 +131,8 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
 
                     if type_arr_str is not None:
                         await self.send(text_data=json.dumps({'type_arrangement': type_arr_str}))  
-                    
+                        redis_buffer_instance_one_pair_game.redis_1.delete('type_arrangement')
+
                     player_number += 1     
                     redis_buffer_instance_one_pair_game.redis_1.set('player_number', str(player_number)) 
 
@@ -126,26 +169,25 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                     player_number += 1  
 
             if redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8') == '2':
-                redis_buffer_instance_one_pair_game.redis_1.flushdb()
-                # for player in range(0, 2):
-                #     redis_buffer_instance_one_pair_game.redis_1.delete(f'arr_{player}')
-                #     redis_buffer_instance_one_pair_game.redis_1.delete(f'cards_{player}')
-                    
+                for player in range(0, player_number):
+                    redis_buffer_instance_one_pair_game.redis_1.delete(f'cards_{player}')
                 player_number = 0
+        
                 redis_buffer_instance_one_pair_game.redis_1.set('player_number', '0')
                 redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
                 redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
-                # redis_buffer_instance_one_pair_game.redis_1.delete('arrangement')
-                # redis_buffer_instance_one_pair_game.redis_1.delete('exchange_cards')
-                # redis_buffer_instance_one_pair_game.redis_1.delete('type_arrangement')
-                # redis_buffer_instance_one_pair_game.redis_1.delete('chance')
-                # redis_buffer_instance_one_pair_game.redis_1.delete('amount')
+
                 
-                print("IN CONSUMER")
                 while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
+                    print("In wait_buffer loop...")
+                    print(redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8'))
+                    if redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8') == '1':
+                        print("Return from _send_updates_info_cards()...")
+                        return 
                     await asyncio.sleep(0.2)          
                 if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':
                     redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
+            print("In _send_updates_info_cards()...")
             await asyncio.sleep(0.8)
     
     async def _send_progress_update(self, from_min, from_max):

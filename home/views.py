@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import time
 from django.shortcuts import render
 from django.http import JsonResponse, FileResponse, Http404
 from django.middleware.csrf import get_token
@@ -9,7 +10,6 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
-
 
 
 # Global Variables
@@ -45,6 +45,7 @@ def start_task(request):
 def stop_task(request):
     """Handle task stopping from POST request."""
     print("CSRF token:", request.META.get('HTTP_X_CSRFTOKEN'))  # Log the CSRF token received.
+    redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
     if request.method == 'POST':
         return _stop_thread(request)
     return JsonResponse({'status': 'Invalid request'}, status=400)
@@ -98,7 +99,6 @@ def _initialize_redis_values_permutacje():
     
 def _initialize_redis_values_gra_jedna_para():
     """Initialize Redis values specific to gra_jedna_para."""
-    redis_buffer_instance_one_pair_game.redis_1.flushdb()
     redis_buffer_instance.redis_1.set('choice_1', '2')
     redis_buffer_instance.redis_1.set('choice', '2')
     redis_buffer_instance.redis_1.set('when_one_pair', '1')
@@ -109,6 +109,7 @@ def _initialize_redis_values_gra_jedna_para():
     redis_buffer_instance.redis_1.set('shared_progress', '0')
     redis_buffer_instance.redis_1.set('player_number', '0')
     redis_buffer_instance.redis_1.set('wait_buffer', '0')
+    # redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '0')
 
 
 def _initialize_redis_values_start_task():
@@ -140,16 +141,18 @@ def _handle_thread(request, subsite_specific=False, template=None):
 def start_thread(request):
     """Start a new thread and store it in Redis and session."""
     task_manager.stop_event.clear()
-    thread_id = str(uuid.uuid4())
-    request.session['thread_id'] = thread_id
-    
-    redis_buffer_instance_one_pair_game.redis_1.set('curr_thread_id', thread_id)
-    
     # Start threads or tasks
-    my_thread = MyThread(target=main, thread_id=thread_id)
+    
+    my_thread = MyThread(target=main)
     my_thread.start()
+    thread_id = my_thread.get_id()
+    request.session['thread_id'] = thread_id
+    print(request.session.get('thread_id'))
+    redis_buffer_instance_one_pair_game.redis_1.set('curr_thread_id', thread_id)
+
+    print("GET ID: ", my_thread.get_id(), "IN START THREAD")
+    
     redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'running')
-        
     task_threads[thread_id] = my_thread
         
     return {'task_status': 'Thread started', 'thread_id': thread_id}
@@ -158,9 +161,14 @@ def _stop_thread(request):
     """Stop the thread based on the thread ID stored in session."""
     thread_key = 'thread_id'
     thread_id = request.session.get(thread_key)
-    print(thread_id)
+    print("GET ID: ", thread_id, "IN STOP THREAD")
+
     task_manager.stop_event.set()
     if thread_id:
+        # task_threads[thread_id].raise_exception()
+        # task_threads[thread_id].join()
+        print("AAA")
+        return JsonResponse({'status': 'Task stopped successfully', 'thread_id': thread_id})
         thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{thread_id}')
         if thread_status and thread_status.decode('utf-8') == 'running':
             task_manager.stop_event.set()

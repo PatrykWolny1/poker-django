@@ -122,7 +122,7 @@ class Croupier(object):
                     redis_buffer_instance_one_pair_game.redis_1.set('type_arrangement', str_arr)
                 if self.player_number == len(self.players) - 1:
                     while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
-                        time.sleep(1)   
+                        time.sleep(0.5)   
                     if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':
                         redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
                     break

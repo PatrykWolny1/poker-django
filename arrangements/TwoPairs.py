@@ -232,10 +232,6 @@ class TwoPairs(HelperArrangement):
                     self.file.write("\n")
                     self.file.flush()
 
-                    self.c_idx1 = idx
-                    self.arrangement_recogn()
-                    
-                    self.helper_arr.clear_indices_2d_1()
 
                     if not self.loading_bar_combs.update_progress(self.num_arr):
                         self.helper_arr.check_if_weights_larger(False)
@@ -245,6 +241,9 @@ class TwoPairs(HelperArrangement):
                     if not self.loading_bar_combs.check_stop_event():
                         sys.exit()
                    
+                    self.c_idx1 = idx
+                    self.arrangement_recogn()
+                    
                     self.helper_arr.clear_indices_2d_1()
 
                     self.helper_arr.append_cards_all_permutations(self.cards_comb[idx])

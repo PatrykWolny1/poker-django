@@ -1,10 +1,16 @@
 import redis
 import threading 
 import sys
+from urllib.parse import urlparse
+import os
+
+redis_url = os.getenv('REDIS_URL')
 
 class RedisBuffer:
     def __init__(self):
-        self.redis_1 = redis.StrictRedis(host='localhost', port=6379, db=0)
+        self.redis_1 = redis.Redis.from_url(redis_url)
+        
+        #self.redis_1 = redis.Redis.from_url()
         self.lock = threading.Lock() # Initialize a lock
     
     def write_to_buffer(self, key, data):
@@ -19,6 +25,3 @@ class RedisBuffer:
                 self.redis_1.delete(key) # Clear the buffer after reading
                 # sys.__stdout__.write(f"Data read from Redis: {data}\n") # Directly write to system stdout for debugging
         return data
-
-# redis_buffer_instance = RedisBuffer()
-

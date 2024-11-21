@@ -1,0 +1,483 @@
+[data-bs-theme=dark] {
+color-scheme: dark;
+}
+
+body {
+    font-family: 'Cambria Math', sans-serif;
+    background: radial-gradient(circle, #001d37, #00101e);
+}
+
+h1 {
+    display: block;
+    font-size: 64px;
+    font-weight: bold;
+    unicode-bidi: isolate;
+    background: linear-gradient(to bottom, #a4e4ff, rgb(165, 224, 255));
+    -webkit-background-clip: text; /* For Safari */
+    -webkit-text-fill-color: transparent; /* Make the fill color transparent */
+    background-clip: text; /* For other browsers */
+}
+
+.container {
+    width: 70%;
+    height: 100%;
+    margin: 20px auto;
+}
+
+.container-perms-combs {
+    height: 200px;
+    display: flex;
+    flex-direction: column; /* Stack elements vertically inside the container */
+    align-items: center; /* Center align children in the container */
+    font-family: 'Cambria Math', sans-serif; /* Specify the font family */ 
+}
+
+.header {
+    height: 200px;
+    display: flex;
+    justify-content: column;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column; /* This stacks the divs vertically */
+    gap: 10px;
+}
+
+.input-section {
+    display: flex;
+    align-items: center;
+}
+
+.input-section label {
+    color: #fff;
+    margin-right: 15px;
+}
+
+.input-section input {
+    width: 200px;
+    height: 20px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 16px; /* Font size for better readability */
+    color: #333; /* Text color */
+    background-color: #f9f9f9; /* Light background color */
+    transition: border-color 0.3s; /* Smooth transition for border color */
+}
+
+.input-section input:focus {
+    border-color: #31c1ff; /* Change border color on focus */
+    outline: none; /* Remove default outline */
+    box-shadow: 0 0 5px rgba(49, 193, 255, 0.5); /* Optional shadow effect */
+}
+
+.player1-text {
+    color: #fff;
+    font-size: 20px; /* Font size for better readability */
+}
+
+.player2-text {
+    color: #fff;
+    font-size: 20px; /* Font size for better readability */
+}
+
+.play-button {
+    width: 100px;
+    height: 100px;
+    padding: 10px 20px;
+    background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
+    color: #e8f8ff; /* White text color */
+    border: 1px solid #001d29; /* No border */
+    border-radius: 10px; /* Rounded corners */
+    padding: 10px 15px; /* Padding around the text */
+    font-size: 20px; /* Font size */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Smooth background color transition */
+    font-family: 'Cambria Math', sans-serif;
+}
+
+.play-button:hover {
+    background: linear-gradient(to top, #31c1ff, #5cceff);
+    color: #00101e;
+  }
+  
+#playButton:disabled {
+    background: linear-gradient(to top, #9be1ff, #d3f2ff);
+    color: #00101e; /* White text color */
+    cursor: not-allowed; /* Change cursor to indicate it's disabled */
+}
+
+.progress-container {
+    width: 58%; /* Set the progress bar width to 40% */
+    height: 40px;
+    background: linear-gradient(to top, #a8e5ff, #aae6ff);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+@keyframes flashShadow {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(0, 166, 255, 0.8), 0 0 10px rgba(0, 166, 255, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 0 rgba(0, 166, 255, 0.8), 0 0 25px rgba(0, 166, 255, 0.8);
+    }
+}
+
+.progress-bar {
+    height: 40px;
+    width: 0; /* Initial width */
+    background: linear-gradient(to top, #31c1ff, #5cceff);
+    color: #00101e;
+    text-align: center;
+    line-height: 40px; /* Vertical centering */
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    animation: flashShadow 0.5s infinite;
+    overflow: hidden;
+}
+
+.border-container {
+    width: 100%; /* Width of the line */
+    border-top: 0.5px solid #002c3f;
+    margin-bottom: 20px;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 0.65fr; /* 1fr each for equal width */
+}
+
+.decision-tree-header {     
+    font-size: 48px;
+    font-weight: bold;
+    unicode-bidi: isolate;
+    color: rgb(194, 234, 255);
+    font-family: 'Cambria Math', sans-serif; /* Specify the font family */
+}
+
+.game-area {
+    width: 100%;
+    height: 350px;
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    font-family: 'Cambria Math', sans-serif;
+
+}
+
+.player-area {
+    width: 49.5%;
+    height: 100%;
+    border: 1px solid #002c3f;
+    display: flex;
+    text-align: left;
+    vertical-align: top;
+    color: #e0e0e0;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Cambria Math', sans-serif !important;
+}
+
+.player1-area {
+    color: #fff;
+    margin-left: 15px;
+}
+
+.player2-area {
+    color: #fff;
+    margin-left: 15px
+}
+
+.player-info {
+    width: 100%;
+    height: 370px;
+    display: flex;
+    gap: 30px;
+    margin-left: 0px;
+}
+
+.info {
+    height: 30%;
+    width: 25%;
+    border-radius: 10px;
+    justify-content: space-between;
+}
+
+.player-title {
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.cards-info {
+    display: flex;
+    height: 100px;
+    justify-content: center; /* Centers horizontally */
+    align-items: center; /* Centers vertically */
+}
+
+.cards-1, .cards-2 {
+    display: flex;
+    gap: 10px;
+}
+
+.card {
+    width: 55px;
+    height: 75px;
+    border: 1px solid #ccc;
+    background-size: cover;
+    background-position: center;
+    image-rendering: smooth;
+    border-radius: 5px
+}
+
+.next-button-1, .next-button-2 {
+    width: 92%;
+    background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
+    color: #e8f8ff; /* White text color */
+    border: 1px solid #001d29; /* No border */
+    border-radius: 10px; /* Rounded corners */
+    padding: 10px 15px; /* Padding around the text */
+    margin-top: 15px;
+    margin-bottom: 15px;
+    margin-left: 18px;
+    font-size: 20px; /* Font size */
+    text-align: center;
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Smooth background color transition */
+    font-family: 'Cambria Math', sans-serif;
+}
+
+.next-button-1:hover, .next-button-2:hover {
+    background: linear-gradient(to top, #31c1ff, #5cceff);
+    color: #00101e;
+}
+
+.progress-game-border-1 {
+    border: 1px solid #002c3f;
+    border-radius: 10px;
+    margin-left: 15px;
+}
+
+.progress-game-border-2 {
+    border: 1px solid #002c3f;
+    border-radius: 10px;
+    margin-left: 15px;
+}
+
+.progress-game {
+    color: #fff;
+    margin-left: 15px;
+}
+
+.result {
+    display: flex;
+    width: 55%;
+    justify-content: left;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.result-info {
+    width: 45.5%;
+    height: 100px;
+    text-align: center;
+    padding: 10px;
+    background-color: #002b40;
+    border-radius: 10px;
+}
+
+.result-info {
+    display: flex;
+    height: 100px;
+    justify-content: center; /* Centers horizontally */
+    align-items: center; /* Centers vertically */
+}
+
+.cards-info {
+    width: 100%;
+    height: 100px;
+    justify-content: center; /* Centers horizontally */
+    align-items: center; /* Centers vertically */
+    padding: 0 10px 0 10px;
+    background-color: #002b40;
+    border-radius: 10px;
+}
+
+.diagram {
+    position: relative;
+    width: 300px;
+    height: 500px;
+    margin: 0 auto;
+}
+
+/* Parent container that centers the diagram */
+.diagram-container {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    height: 505px; /* Full viewport height */
+    width: 500px; /* Full viewport width */
+}
+
+.diagram-progress {
+    position: relative;
+    width: 300px;
+    height: 505px;
+    margin-top: 150px;
+    margin-left: 40px;
+}
+
+.circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #002b40;
+    font-size: 16px;
+    position: absolute;
+    background: linear-gradient(to top, #31c1ff, #5cceff);
+    z-index: 2;
+}
+
+/* Positioning circles */
+.main {
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.top-left {
+    top: 35%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+}
+
+.top-right {
+    top: 35%;
+    left: 70%;
+    transform: translate(-50%, -50%);
+}
+
+.bottom-left {
+    top: 60%;
+    left: 10%;
+    transform: translate(-50%, -50%);
+}
+
+.bottom-right {
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.line-container {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+    justify-content: center; /* Ensure text is centered */
+}
+
+/* Lines */
+.line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(to top, #31c1ff90, #5cceff82);
+    transform-origin: 0 0;
+}
+
+/* Text next to lines */
+.text {
+    font-size: 16px; /* Smaller font size */    
+    position: relative;
+    color: #dbf4ff;
+    z-index: 2;
+}
+
+/* Line from Main to Top-Left */
+.line-top-left {
+    top: 13%;
+    left: 30%;
+    width: 95px;
+    transform: rotate(117deg);
+}
+
+/* Line from Main to Top-Right */
+.line-top-right {
+    top: 15%;
+    left: 35%;
+    width: 95px;
+    transform: rotate(62deg);
+}
+
+/* Line from Top-Left to Bottom-Left */
+.line-bottom-left {
+    top: 45%;
+    left: 22%;
+    width: 95px;
+    transform: rotate(117deg) translateX(-30px);
+}
+
+/* Line from Top-Left to Bottom-Right */
+.line-bottom-right {
+    top: 45%;
+    left: 60%;
+    width: 100px;
+    transform: rotate(62deg) translate(-30px, -10px);
+}
+
+/* Ensure the text is placed in the middle of each line */
+.top-left-line .text {
+    left: 50%;
+    transform: translateX(-180%) translateY(130%);
+}
+
+.top-right-line .text {
+    left: 50%;  
+    transform: translateX(50%) translateY(130%);
+}
+
+.bottom-left-line .text {
+    left: 0%;
+    transform: translateX(-120%) translateY(30%);
+}
+
+.bottom-right-line .text {
+    left: 75%;
+    transform: translateX(30%) translateY(-40%);
+}
+
+/* Adjust the line-container positioning */
+.top-left-line {
+    top: 15%; /* Align with the top-left line */
+    left: 42%; /* Position it to the left */
+    justify-content: flex-start; /* Position the text to the left */
+}
+
+.top-right-line {
+    top: 15%; /* Align with the top-right line */
+    left: 50%; /* Position it to the right */
+    justify-content: flex-end; /* Position the text to the right */
+}
+
+.bottom-left-line {
+    top: 43%; /* Align with the bottom-left line */
+    left: 19%; /* Position it to the left */
+    justify-content: flex-start; /* Position the text to the left */
+}
+
+.bottom-right-line {
+    top: 45%; /* Align with the bottom-right line */
+    left: 30%; /* Position it to the right */
+    justify-content: flex-end; /* Position the text to the right */
+}

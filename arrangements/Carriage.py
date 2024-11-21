@@ -4,9 +4,11 @@ from arrangements.HelperFileClass import HelperFileClass
 from arrangements.LoadingBar import LoadingBar
 from arrangements.CardMarkings import CardMarkings
 from home.redis_buffer_singleton import redis_buffer_instance
+from home.ThreadVarManagerSingleton import task_manager
 from pathlib import Path
 import itertools
 import sys
+import time
 
 class Carriage(HelperArrangement):
     
@@ -238,13 +240,13 @@ class Carriage(HelperArrangement):
         self.random = random
         self.if_combs = if_combs
         
-        if self.if_combs:        
+        if self.if_combs:     
             redis_buffer_instance.redis_1.set('min', '0')
             redis_buffer_instance.redis_1.set('max', self.max_combs)
         else:
             redis_buffer_instance.redis_1.set('min', '0')
             redis_buffer_instance.redis_1.set('max', self.max_1)
-            
+        time.sleep(1)
         shift = 0
 
         #Iterowanie po figurach

@@ -7,6 +7,7 @@ from home.redis_buffer_singleton import redis_buffer_instance
 from itertools import permutations
 from pathlib import Path
 import sys
+import time
 
 class StraightRoyalFlush(HelperArrangement):
     
@@ -218,6 +219,7 @@ class StraightRoyalFlush(HelperArrangement):
         else:
             redis_buffer_instance.redis_1.set('min', '0')
             redis_buffer_instance.redis_1.set('max', self.max_1)
+        time.sleep(1)
         
         cards_2d = []
         m = 0
@@ -276,7 +278,8 @@ class StraightRoyalFlush(HelperArrangement):
 
                         self.c_idx2 = idx1
                         self.arrangement_recogn()
-                        
+                        self.helper_arr.append_cards_all_permutations(self.temp[idx1][self.step1:self.step2])
+
                         if not self.loading_bar_combs.update_progress(self.num_arr):
                                 self.helper_arr.check_if_weights_larger(False)
                                 self.file.close()
@@ -285,7 +288,6 @@ class StraightRoyalFlush(HelperArrangement):
                         if not self.loading_bar_combs.check_stop_event():
                                 sys.exit() 
 
-                        self.helper_arr.append_cards_all_permutations(self.temp[idx1][self.step1:self.step2])
                     
                     if not self.if_royal_flush and not self.straight_royal_flush:
                         for idx11 in range(0, len(self.temp[idx1][self.step1:self.step2])):
@@ -293,9 +295,10 @@ class StraightRoyalFlush(HelperArrangement):
                                 #print()
                         self.file.write("\n")
                         self.file.flush()
-
+                        
                         self.c_idx2 = idx1
                         self.arrangement_recogn()
+                        self.helper_arr.append_cards_all_permutations(self.temp[idx1][self.step1:self.step2])
                         
                         if not self.loading_bar_combs.update_progress(self.num_arr):
                                 self.helper_arr.check_if_weights_larger(False)
@@ -305,8 +308,7 @@ class StraightRoyalFlush(HelperArrangement):
                         if not self.loading_bar_combs.check_stop_event():
                                 sys.exit() 
 
-                        self.helper_arr.append_cards_all_permutations(self.temp[idx1][self.step1:self.step2])
-                        
+
                 if not self.if_combs:               
                         #Generowanie tablicy permutacji   
                         self.perm = list(permutations(self.temp[idx1][self.step1:self.step2]))
@@ -323,9 +325,10 @@ class StraightRoyalFlush(HelperArrangement):
                                     #print()
                                     self.file.write("\n")
                                     self.file.flush()
-
+                                    
                                     self.c_idx2 = idx2
                                     self.arrangement_recogn()
+                                    self.helper_arr.append_cards_all_permutations(self.perm[idx2])
                             
                                     if not self.loading_bar.update_progress(self.num_arr):
                                         self.helper_arr.check_if_weights_larger(False)
@@ -335,7 +338,7 @@ class StraightRoyalFlush(HelperArrangement):
                                     if not self.loading_bar.check_stop_event():
                                         sys.exit()   
                                         
-                                    self.helper_arr.append_cards_all_permutations(self.perm[idx2])
+
                                 
                             if not self.if_royal_flush and not self.straight_royal_flush:
                                 if self.random == False:
@@ -347,7 +350,8 @@ class StraightRoyalFlush(HelperArrangement):
                                     self.file.flush()
 
                                     self.c_idx2 = idx2
-                                    self.arrangement_recogn()
+                                    self.arrangement_recogn()     
+                                    self.helper_arr.append_cards_all_permutations(self.perm[idx2])
                             
                                     if not self.loading_bar.update_progress(self.num_arr):
                                             self.helper_arr.check_if_weights_larger(False)
@@ -357,7 +361,7 @@ class StraightRoyalFlush(HelperArrangement):
                                     if not self.loading_bar.check_stop_event():
                                         sys.exit()   
                                         
-                                    self.helper_arr.append_cards_all_permutations(self.perm[idx2])
+
                     
         self.helper_arr.check_if_weights_larger()
 

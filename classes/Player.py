@@ -3,6 +3,7 @@ from classes.Deck import Deck
 from classes.Card import Card
 from random import choice
 from home.redis_buffer_singleton import redis_buffer_instance
+from home.ThreadVarManagerSingleton import task_manager
 import sys
 import os
 
@@ -15,17 +16,17 @@ def enablePrint():
 class Player(object):
     it_cards:int = 0
     cards_2d:list = []
-    
+   
     def __init__(self, deck = Deck(), nick = "Nick", index = None, perm = None, if_deck = None, 
                  cards = [], if_show_perm = None, si_boolean = None):
         deck.shuffling()
         self.cards_exchanged:list = []
         self.nick:str = nick
-        self.index:int = index
         self.arrangements:Arrangements = Arrangements()
         self.cards:list = []
         self.all_comb_perm:list = []
         self.si_boolean:bool = si_boolean
+        self.index:int = index
         
         if if_deck == True and if_show_perm == False:
 
@@ -117,8 +118,6 @@ class Player(object):
         self.arrangements.set_cards_after(self.cards)
 
     def cards_permutations(self, rand_arr = False, combs_gen = False, queue = None):
-            from home.views import cache_lock_event_var
-
             if combs_gen == False:
                 # print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
                 if_rand = '1'    #if_rand == '2' if generate random with permutations (too many...)
@@ -152,7 +151,10 @@ class Player(object):
             choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
             if choice == '1':
                 arrangement = redis_buffer_instance.redis_1.get('arrangement').decode('utf-8')  # Binary code for Carriage
-                straight_royal_flush = redis_buffer_instance.redis_1.get('straight_royal_flush').decode('utf-8')
+                if redis_buffer_instance.redis_1.get('straight_royal_flush') is not None:
+                    straight_royal_flush = redis_buffer_instance.redis_1.get('straight_royal_flush').decode('utf-8')
+                else:
+                    straight_royal_flush = '-1'
                 if straight_royal_flush == '0':
                     straight_royal_flush = False
                 elif straight_royal_flush == '1':
@@ -161,7 +163,7 @@ class Player(object):
                 arrangement = '8'
                     
             # Gra jednym ukladem kart
-            with cache_lock_event_var:
+            with task_manager.cache_lock_event_var:
                 if combs_gen == True:
                     redis_buffer_instance.redis_1.set('print_gen_combs_perms', "Generowanie kombinacji kart...")
                     # print("Generowanie kombinacji kart...")

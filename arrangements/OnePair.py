@@ -68,7 +68,6 @@ class OnePair(HelperArrangement):
 
     def remove_multiples(self, cards_comb):
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
-
         for i in range(0, len(self.helper_arr.get_indices_2d_1())):
             if len(self.helper_arr.get_indices_2d_1()[i]) in range(2, 4):  # Jesli w wierszu tablicy znajduja sie 2 lub 3 takie same elementy
                 return True
@@ -172,6 +171,7 @@ class OnePair(HelperArrangement):
 
                                         once_3 = True
                             once_2 = True
+        
 
         # Jesli pojedyncza karta wystepuje 3 razy oraz wystepuje 1 para to zakoncz
         if one_count_1 == 3 and one_count_2 == 2:
@@ -210,6 +210,8 @@ class OnePair(HelperArrangement):
         else:
             self.weight_arrangement = 0
             self.weight_arrangement_part = []
+            
+         
 
 
     def one_pair_generating(self, random, if_combs):
@@ -261,10 +263,13 @@ class OnePair(HelperArrangement):
             self.helper_arr.clear_indices_2d_1()
 
             self.helper_arr.get_indices_1(cards_comb_rest[idx_1])
-            
+            try:
             # Usuwanie powtorek powtarzajacych sie kart (2 lub 3)
-            if_remove_comb_1 = self.remove_multiples(cards_comb_rest[idx_1])
-            
+                if_remove_comb_1 = self.remove_multiples(cards_comb_rest[idx_1])
+            except:
+                print(cards_comb_rest[idx_1])
+                print(self.helper_arr.indices_2d)
+                
             if if_remove_comb_1 == True:
                 cards_comb_rest[idx_1] = []
                 cards_comb_rest = list(filter(None, cards_comb_rest))
@@ -371,6 +376,8 @@ class OnePair(HelperArrangement):
                 
                     if not self.loading_bar_combs.check_stop_event():
                         sys.exit()
+                        
+                 
 
                 # for idx2 in range(0, len(self.cards_comb[idx1])):
                 #     self.cards_comb[idx1][idx2].print()
@@ -391,10 +398,7 @@ class OnePair(HelperArrangement):
                                 self.file.write("\n")
                                 self.file.flush()
                         
-                        self.c_idx1 = idx2
-                        self.arrangement_recogn() 
-                        # Zapisanie indeksu uzywanego w funkcji one_pair()
-                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
+     
 
                         if not self.loading_bar.update_progress(self.num_arr):
                             self.helper_arr.check_if_weights_larger(False)
@@ -404,6 +408,10 @@ class OnePair(HelperArrangement):
                         if not self.loading_bar.check_stop_event():
                             sys.exit()
                         
+                        self.c_idx1 = idx2
+                        self.arrangement_recogn() 
+                        # Zapisanie indeksu uzywanego w funkcji one_pair()
+                        self.helper_arr.append_cards_all_permutations(self.perm[idx2])
              
                             
 

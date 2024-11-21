@@ -1,4 +1,4 @@
-class TaskManager {
+class CardsPermutations {
     constructor() {
         this.lastProgress = 0;
         this.progressTimeout = null;
@@ -376,7 +376,7 @@ class TaskManager {
     }
 
     connectWebSocket() {
-        this.socket = new WebSocket('wss://127.0.0.1:8001/ws/');
+        this.socket = new WebSocket('wss://127.0.0.1:8000/ws/perms_combs/');
         
         this.socket.onopen = () => console.log("WebSocket connection opened");
         this.socket.onmessage = (event) => this.handleSocketMessage(event);
@@ -514,7 +514,7 @@ class TaskManager {
     }
 }
 
-// Initialize the TaskManager class once the DOM is fully loaded
+// Initialize the CardsPermutations class once the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
-    const taskManager = new TaskManager();
+    const cardsPermutations = new CardsPermutations();
 });

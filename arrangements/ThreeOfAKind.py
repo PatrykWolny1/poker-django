@@ -276,11 +276,6 @@ class ThreeOfAKind(HelperArrangement):
                             self.file.write("\n")
                             self.file.flush()
 
-                            self.c_idx1 = idx1
-                            self.arrangement_recogn()
-                            
-                            self.helper_arr.clear_indices_2d_1()
-
                             if not self.loading_bar_combs.update_progress(self.num_arr):
                                 self.helper_arr.check_if_weights_larger(False)
                                 self.file.close()
@@ -289,6 +284,11 @@ class ThreeOfAKind(HelperArrangement):
                             if not self.loading_bar_combs.check_stop_event():
                                 sys.exit()
 
+                            self.c_idx1 = idx1
+                            self.arrangement_recogn()
+                            
+                            self.helper_arr.clear_indices_2d_1()
+                            
                             self.helper_arr.append_cards_all_permutations(self.cards_comb[idx1])
                             
                 self.cards_comb = [x for x in self.cards_comb if x != []]
@@ -307,12 +307,6 @@ class ThreeOfAKind(HelperArrangement):
                             #print()
                             self.file.write("\n")
                             self.file.flush()
-
-                            # Pomocnicza, indeks do petli for w funkcji three_of_a_kind() - do listy perm
-                            self.c_idx1 = idx1
-                            self.arrangement_recogn()
-
-                            self.helper_arr.clear_indices_2d_1()
                             
                             if not self.loading_bar.update_progress(self.num_arr):
                                 self.helper_arr.check_if_weights_larger(False)
@@ -321,7 +315,13 @@ class ThreeOfAKind(HelperArrangement):
                             
                             if not self.loading_bar.check_stop_event():
                                 sys.exit()
-            
+                            
+                            # Pomocnicza, indeks do petli for w funkcji three_of_a_kind() - do listy perm
+                            self.c_idx1 = idx1
+                            self.arrangement_recogn()
+
+                            self.helper_arr.clear_indices_2d_1()
+                            
                             self.helper_arr.append_cards_all_permutations(self.perm[idx1])
 
                 # Liczenie ilosci kombinacji

@@ -21,6 +21,7 @@ class Arrangements(object):
     
     def __init__(self, cards = []):
         self.id_arr:int = 0
+        self.ids_arr:list = []
         self.data_frame_ml:DataFrameML = DataFrameML()
         self.cards:list = cards
         self.cards_after:list = []
@@ -64,10 +65,15 @@ class Arrangements(object):
         for x in self.arrangements:
             x.set_rand_int(self.rand_int)
             self.ids_arr.append(x.arrangement_recogn()) 
+            
+            if isinstance(x, OnePair):
+                arr_str = "Jedna Para: " + str(x.weight_arrangement) + " Wysoka karta: " + x.high_card.print_str() + "\n"
         
         if game_visible == False:
             enablePrint()
         #print(self.ids_arr)
+        
+        return arr_str
 
     def set_rand_int(self, rand_int):
         self.rand_int = rand_int

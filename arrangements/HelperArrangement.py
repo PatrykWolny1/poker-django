@@ -5,7 +5,8 @@ import time
 import shutil
 import os
 from pathlib import Path
-from home.redis_buffer_singleton import redis_buffer_instance
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
+from home.ThreadVarManagerSingleton import task_manager
 
 class HelperArrangement(object):
     indices_2d:list = []                     #Indeksy ukladow kart figury
@@ -102,7 +103,6 @@ class HelperArrangement(object):
                 # print()
 
     def random_arrangement(self, if_combs=True):
-        from home.views import stop_event, cache_lock_event_var
         #Zerowanie pustych wierszy
         self.cards_all_permutations = [ele for ele in self.cards_all_permutations if ele != []]
         
@@ -149,21 +149,18 @@ class HelperArrangement(object):
         #         iter_idx += 1   
                             
         # print("Wylosowany uklad: ", self.rand_int)
-        with cache_lock_event_var:
-            redis_buffer_instance.redis_1.set('count_arrangements', ("Ilosc ukladow (CALOSC): " + str(len(self.cards_all_permutations))))
-            
+        with task_manager.cache_lock_event_var:
+            redis_buffer_instance.redis_1.set('count_arrangements', "Ilosc ukladow (CALOSC): " + str(len(self.cards_all_permutations)))
+
         try:
             shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
         except Exception as e:
             print(f"Error copying file: {e}")
-            
-        time.sleep(2)
         
         redis_buffer_instance.redis_1.set('prog_when_fast', '100')
 
-        stop_event.set()
-        stop_event.clear()
-        
+        redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')     
+
         HelperArrangement.weight_gen.clear()
         HelperArrangement.cards_all_permutations.clear()
 

@@ -1,6 +1,8 @@
 from django.urls import re_path
-from home.consumers import TestConsumer
+from home.CardsPermutationsConsumer import CardsPermutationsConsumer
+from home.GameOnePairConsumer import GameOnePairConsumer
 
 websocket_urlpatterns = [
-    re_path(r'ws/$', TestConsumer.as_asgi()),
+    re_path(r'^ws/perms_combs/$', CardsPermutationsConsumer.as_asgi()),
+    re_path(r'^ws/op_game/$', GameOnePairConsumer.as_asgi()),
 ]

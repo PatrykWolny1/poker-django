@@ -11,12 +11,13 @@ import pstats
 
 def main(data_queue_combinations = None):
     when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
-
+    print(when_game_one_pair)
     if when_game_one_pair == '1':
         thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
         thread_cards_permutations.start()
-        Game(data_queue_combinations)
+        time.sleep(3)
         thread_cards_permutations.join()
+        Game(data_queue_combinations)
     else:
         # sys.stdout = StdoutRedirector(redis_buffer_instance)
         Game()

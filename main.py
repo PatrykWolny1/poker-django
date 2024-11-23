@@ -1,7 +1,9 @@
 from classes.Game import Game
 from classes.Player import Player
-from home.redis_buffer_singleton import redis_buffer_instance
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
 from home.std_out_redirector import StdoutRedirector
+from home.MyThread import MyThread
+import json
 import sys
 import threading
 import queue
@@ -15,7 +17,6 @@ def main(data_queue_combinations = None):
     if when_game_one_pair == '1':
         thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
         thread_cards_permutations.start()
-        time.sleep(3)
         thread_cards_permutations.join()
         Game(data_queue_combinations)
     else:

@@ -29,7 +29,7 @@ class HelperArrangement(object):
 
     def get_indices_1(self, cards):        
         size = len(cards)
-        #self.indices_2d = []
+        self.indices_2d = []
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
         if self.dim(cards) == 2:
             cards = [item for sublist in cards for item in sublist]
@@ -107,10 +107,14 @@ class HelperArrangement(object):
         self.cards_all_permutations = [ele for ele in self.cards_all_permutations if ele != []]
         
         self.rand_int = random.sample(range(0, len(self.weight_gen) - 1), 2)
-
+        cards = None
+        try:
         #if if_combs == True:
-        cards = [self.cards_all_permutations[self.rand_int[0]],  
-                self.cards_all_permutations[self.rand_int[1]]]
+            cards = [self.cards_all_permutations[self.rand_int[0]],  
+                    self.cards_all_permutations[self.rand_int[1]]]
+        except IndexError:
+            print("INDEX ERROR: ", self.rand_int[0], self.rand_int[1], len(self.weight_gen), len(self.cards_all_permutations))
+        
         #else:
          #   cards = self.cards_all_permutations[self.rand_int[0]]
         
@@ -161,9 +165,9 @@ class HelperArrangement(object):
 
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')     
 
-        HelperArrangement.weight_gen.clear()
-        HelperArrangement.cards_all_permutations.clear()
-
+        # HelperArrangement.weight_gen.clear()
+        # HelperArrangement.cards_all_permutations.clear()
+        
         return cards, self.rand_int, self.cards_all_permutations
         
     def get_indices_2d_1(self):

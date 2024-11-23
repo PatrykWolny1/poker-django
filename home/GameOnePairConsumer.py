@@ -11,6 +11,8 @@ import signal
 import os
 logger = logging.getLogger(__name__)
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 class GameOnePairConsumer(AsyncWebsocketConsumer):  
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,6 +26,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         await self.accept()
         print("WebSocket connection accepted")  # Debugging output
         print(f"WebSocket connection accepted with channel: {self.channel_name}")
+        
         # Initialize Redis values for shared progress and stop event
         self._initialize_redis()
         # Start sending updates until task_manager.stop_event is triggered
@@ -77,6 +80,8 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance.redis_1.set('when_one_pair', '1')
         redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
         redis_buffer_instance.redis_1.set('game_si_human', '2')
+        for player in range(0, 2):
+            redis_buffer_instance_one_pair_game.redis_1.delete(f'cards_{player}')
         redis_buffer_instance_one_pair_game.redis_1.set('player_number', '0')
         redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
         redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '0')
@@ -101,31 +106,29 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
             if self._should_stop():
                 break
             
-            print("In _send_updates()")
+            # print("In _send_updates()")
             
-            await asyncio.sleep(0.3)  # Adjust interval as needed
-        
-        # self._initialize_redis()
+            await asyncio.sleep(0.5)  # Adjust interval as needed
 
-    async def _send_updates_info_cards(self):     
+    async def _send_updates_info_cards(self):  
+        print("Begin: _send_updates_info_cards")   
         task_manager.stop_event.clear()
         player_number = 0
 
         while redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8') == '0':   
-            if player_number < 2:
+            if player_number < 2: 
                 redis_buffer_instance_one_pair_game.redis_1.set('player_number', str(player_number)) 
-                
                 if redis_buffer_instance_one_pair_game.redis_1.get(f'cards_{player_number}') is not None:
-                    cards_list = json.loads(redis_buffer_instance_one_pair_game.redis_1.get(f'cards_{player_number}'))   
-                    print(cards_list)
                     
-                
+                    cards_list = json.loads(redis_buffer_instance_one_pair_game.redis_1.get(f'cards_{player_number}'))   
+
                     if cards_list is not None:
+                        # print(cards_list)
                         await self.send(text_data=json.dumps({'cards': cards_list}))
                       
                 if redis_buffer_instance_one_pair_game.redis_1.get('type_arrangement') is not None:
                     type_arr_str = redis_buffer_instance_one_pair_game.redis_1.get('type_arrangement').decode('utf-8')
-                    print(type_arr_str)
+                    # print(type_arr_str)
                     
                     redis_buffer_instance_one_pair_game.redis_1.set('player_number', str(player_number))   
 
@@ -143,20 +146,14 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                     if exchange_cards is not None:
                         await self.send(text_data=json.dumps({'exchange_cards': exchange_cards})) 
                         redis_buffer_instance_one_pair_game.redis_1.delete('exchange_cards')
-
-                if (redis_buffer_instance_one_pair_game.redis_1.get('chance') is not None):
-                    print(player_number, int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8')))
-                    if player_number != int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8')):
-                        player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8')) 
-                    redis_buffer_instance_one_pair_game.redis_1.set('player_number', str(player_number))
-              
-                    chance = redis_buffer_instance_one_pair_game.redis_1.get('chance').decode('utf-8')
+                
+                chance = redis_buffer_instance_one_pair_game.redis_1.get('chance')
+                
+                if chance is not None:            
                     
-                    print(chance)
-                    
-                    await self.send(text_data=json.dumps({'chances': chance}))
+                    await self.send(text_data=json.dumps({'chances': chance.decode('utf-8')}))
                     redis_buffer_instance_one_pair_game.redis_1.delete('chance')
-                    
+                            
                 if (redis_buffer_instance_one_pair_game.redis_1.get('number_exchange') is not None):   
                                      
                     amount = redis_buffer_instance_one_pair_game.redis_1.get('number_exchange').decode('utf-8')                    
@@ -167,9 +164,12 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                     
                     redis_buffer_instance_one_pair_game.redis_1.set('player_number', str(player_number))
                     player_number += 1  
-
+                if redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8') == '1':
+                    print("Return from _send_updates_info_cards()...")
+                    await self.disconnect(close_code=1000)
+                    
             if redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8') == '2':
-                for player in range(0, player_number):
+                for player in range(0, 2):
                     redis_buffer_instance_one_pair_game.redis_1.delete(f'cards_{player}')
                 player_number = 0
         
@@ -177,18 +177,8 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                 redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
                 redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
 
-                
-                while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
-                    print("In wait_buffer loop...")
-                    print(redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8'))
-                    if redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8') == '1':
-                        print("Return from _send_updates_info_cards()...")
-                        return 
-                    await asyncio.sleep(0.2)          
-                if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':
-                    redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
-            print("In _send_updates_info_cards()...")
-            await asyncio.sleep(0.8)
+       
+            await asyncio.sleep(0.1)
     
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""

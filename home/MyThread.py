@@ -9,13 +9,13 @@ class MyThread(threading.Thread):
         super().__init__(target=target, args=(data_queue, ))
         self.thread_id = thread_id  # Use this ID to separate data
         self.data_queue = data_queue if data_queue is not None else queue.Queue()
+        self.daemon = False
 
     def run(self):
         redis_buffer_instance.redis_1.set(f'thread_data_{self.thread_id}', 'running')
         self._target(self.data_queue)
     
     def get_id(self):
-
         # returns id of the respective thread
         if hasattr(self, '_thread_id'):
             return self._thread_id
@@ -30,4 +30,3 @@ class MyThread(threading.Thread):
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
             print('Exception raise failure')
-        print("EXCEPTION")

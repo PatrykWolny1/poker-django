@@ -258,6 +258,12 @@ h1 {
     color: #00101e;
 }
 
+.next-button-1:disabled, .next-button-2:disabled {
+    background: linear-gradient(to top, #9be1ff, #d3f2ff);
+    color: #00101e; /* White text color */
+    cursor: not-allowed; /* Change cursor to indicate it's disabled */
+}
+
 .progress-game-border-1 {
     border: 1px solid #002c3f;
     border-radius: 10px;

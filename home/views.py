@@ -10,7 +10,7 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
-
+import threading
 
 # Global Variables
 task_threads = {}
@@ -30,8 +30,8 @@ def cards_permutations(request):
 
 def one_pair_game(request):
     """Start thread if not already running, for one-pair game."""
+    _initialize_redis_values_gra_jedna_para()
     if request.method == 'GET':
-        _initialize_redis_values_gra_jedna_para()
         return _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html')
     return render(request, 'home/one_pair_game.html', {'message': 'No thread running'})
 
@@ -44,8 +44,10 @@ def start_task(request):
 
 def stop_task(request):
     """Handle task stopping from POST request."""
-    print("CSRF token:", request.META.get('HTTP_X_CSRFTOKEN'))  # Log the CSRF token received.
+    # print("CSRF token:", request.META.get('HTTP_X_CSRFTOKEN'))  # Log the CSRF token received.
     redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
+    redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '1')
+    # redis_buffer_instance.redis_1.delete('thread_id')
     if request.method == 'POST':
         return _stop_thread(request)
     return JsonResponse({'status': 'Invalid request'}, status=400)
@@ -99,6 +101,7 @@ def _initialize_redis_values_permutacje():
     
 def _initialize_redis_values_gra_jedna_para():
     """Initialize Redis values specific to gra_jedna_para."""
+    redis_buffer_instance_one_pair_game.redis_1.flushall()
     redis_buffer_instance.redis_1.set('choice_1', '2')
     redis_buffer_instance.redis_1.set('choice', '2')
     redis_buffer_instance.redis_1.set('when_one_pair', '1')
@@ -109,8 +112,8 @@ def _initialize_redis_values_gra_jedna_para():
     redis_buffer_instance.redis_1.set('shared_progress', '0')
     redis_buffer_instance.redis_1.set('player_number', '0')
     redis_buffer_instance.redis_1.set('wait_buffer', '0')
-    # redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '0')
-
+    redis_buffer_instance.redis_1.set('stop_event_send_updates', '0')
+    
 
 def _initialize_redis_values_start_task():
     """Initialize Redis values specific to start_task."""
@@ -125,61 +128,105 @@ def _initialize_redis_values_start_task():
 def _handle_thread(request, subsite_specific=False, template=None):
     """Handle the starting and managing of threads for different requests."""
     thread_key = f'thread_data_{request.path.split("/")[1]}' if subsite_specific else 'thread_id'
-    existing_thread_id = request.session.get(thread_key)
-    if existing_thread_id:
-        thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{existing_thread_id}')
-        if thread_status and thread_status.decode('utf-8') == 'running':
-            task_manager.stop_event.set()
-            redis_buffer_instance.redis_1.set(f'thread_data_{existing_thread_id}', 'stopped')
-            request.session.pop(thread_key, None)
-    task_manager.stop_event.clear()
-    task_manager.data_ready_event.clear()
+    # existing_thread_id = None
+    # if redis_buffer_instance.redis_1.get('thread_id') is not None:
+    #     existing_thread_id = int(redis_buffer_instance.redis_1.get('thread_id').decode('utf-8'))
+    # print("IN HANDLE THREAD: ", request.session.get('thread_id'))
+
+    # if existing_thread_id:
+    #     # task_threads[existing_thread_id].raise_exception()
+    #     # task_threads[existing_thread_id].join()
+    #     thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{existing_thread_id}')
+    #     if thread_status and thread_status.decode('utf-8') == 'running':
+    #         task_manager.stop_event.set()
+    #         redis_buffer_instance.redis_1.set(f'thread_data_{existing_thread_id}', 'stopped')
+    #         request.session.pop(thread_key, None)
+    # task_manager.stop_event.clear()
+    # task_manager.data_ready_event.clear()
     thread_result = start_thread(request)
     request.session[thread_key] = thread_result['thread_id']
     return render(request, template, {'message': 'Thread already running'}) if template else JsonResponse({'status': 'arrangement started'})
 
 def start_thread(request):
     """Start a new thread and store it in Redis and session."""
+    global task_threads
+
     task_manager.stop_event.clear()
     # Start threads or tasks
     
     my_thread = MyThread(target=main)
     my_thread.start()
+    
     thread_id = my_thread.get_id()
     request.session['thread_id'] = thread_id
     print(request.session.get('thread_id'))
-    redis_buffer_instance_one_pair_game.redis_1.set('curr_thread_id', thread_id)
 
     print("GET ID: ", my_thread.get_id(), "IN START THREAD")
-    
+    redis_buffer_instance.redis_1.set('thread_id', thread_id)
+
     redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'running')
     task_threads[thread_id] = my_thread
         
     return {'task_status': 'Thread started', 'thread_id': thread_id}
 
 def _stop_thread(request):
+    global task_threads
     """Stop the thread based on the thread ID stored in session."""
-    thread_key = 'thread_id'
-    thread_id = request.session.get(thread_key)
-    print("GET ID: ", thread_id, "IN STOP THREAD")
 
+    redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
+    
+    thread_id_2 = None
+    
+    if redis_buffer_instance_one_pair_game.redis_1.get('thread_id_cards_perm') is not None:
+        thread_id_2 = int(redis_buffer_instance_one_pair_game.redis_1.get('thread_id_cards_perm').decode('utf-8'))
+    
+    print("Cards perm ID: ", thread_id_2)
+    print("CARDS: ", task_threads.keys())
+    
     task_manager.stop_event.set()
-    if thread_id:
-        # task_threads[thread_id].raise_exception()
-        # task_threads[thread_id].join()
-        print("AAA")
-        return JsonResponse({'status': 'Task stopped successfully', 'thread_id': thread_id})
-        thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{thread_id}')
-        if thread_status and thread_status.decode('utf-8') == 'running':
-            task_manager.stop_event.set()
-            task_thread = task_threads.get(thread_id)
-            if task_thread and task_thread.is_alive():
-                task_thread.join()
-            redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'stopped')
-            request.session.pop(thread_key, None)
-            task_threads.pop(thread_id, None)
-            return JsonResponse({'status': 'Task stopped successfully', 'thread_id': thread_id})
-    return JsonResponse({'status': 'No running task found for this sub-site'}, status=400)
+    keys = list(task_threads.keys())
+    print(keys)
+    c_threads = 0
+    while c_threads < len(keys):
+        for thread_id, thread in threading._active.items():  
+            print(thread_id, len(keys), keys, c_threads, keys[c_threads])          
+            if thread_id == keys[c_threads]:
+                print("ID: ", thread_id)
+                try:
+                    task_threads[keys[c_threads]].raise_exception()
+                    
+                    del task_threads[keys[c_threads]]
+                except Exception as e:
+                    print(f"Raised exception {e}")
+        c_threads += 1
+              
+    #         t.join()
+    #         return JsonResponse({'status': 'success', 'message': 'Task stopped'}, status=200)
+            
+    return JsonResponse({'status': 'success', 'message': 'No threads to stop'}, status=200)
+
+    # return JsonResponse({'status': 'error', 'message': f'Failed to stop task'}, status=500)
+    # if task_threads:
+    #     print("AAA")
+    #     print(task_threads)
+    #     try:
+    #         print("A")
+    #         # task_threads[thread_id].raise_exception()
+    #         return JsonResponse({'status': 'success', 'message': 'Task stopped'})
+    #     except:
+    #         return JsonResponse({'status': 'error', 'message': 'Failed to stop task'}, status=500)
+
+    #     thread_status = redis_buffer_instance.redis_1.get(f'thread_data_{thread_id}')
+    #     if thread_status and thread_status.decode('utf-8') == 'running':
+    #         task_manager.stop_event.set()
+    #         task_thread = task_threads.get(thread_id)
+    #         if task_thread and task_thread.is_alive():
+    #             task_thread.join()
+    #         redis_buffer_instance.redis_1.set(f'thread_data_{thread_id}', 'stopped')
+    #         request.session.pop(thread_key, None)
+    #         task_threads.pop(thread_id, None)
+    #         return JsonResponse({'status': 'Task stopped successfully', 'thread_id': thread_id})
+    # return JsonResponse({'status': 'No running task found for this sub-site'}, status=200)
 
 # Game State Management Views
 

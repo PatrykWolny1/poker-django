@@ -35,25 +35,29 @@ class OnePairGame {
         
         this.elements.playButton.disabled = true;
 
+        this.elements.nextButton1.disabled = true;
+        this.elements.nextButton2.disabled = true;
+  
         this.elements.nextButton1.addEventListener('click', () => {
             this.fetchRedisValue('wait_buffer')
-
-        });
+            this.elements.nextButton1.disabled = true;
+            this.elements.nextButton2.disabled = true;
+            setTimeout(() => {
+                this.elements.nextButton1.disabled = true;
+                this.elements.nextButton2.disabled = false;            
+            }, 3500);  
+         });
         
         this.elements.nextButton2.addEventListener('click', () => {
             this.fetchRedisValue('wait_buffer')
+            this.elements.nextButton1.disabled = true;
+            this.elements.nextButton2.disabled = true;
         });
 
         this.elements.playButton.addEventListener('click', () => {
            
         });
-        // window.addEventListener("visibilitychange", () => {
-        //     if (window.hidden) {
-        //         this.handleBeforeUnload();
-        //     }
-        // });
-        // Ensure actions before the page is unloaded (on refresh/close)
-        // Bind the `beforeunload` event listener
+
         window.addEventListener("beforeunload", this.handleBeforeUnload.bind(this));
     }
 
@@ -64,7 +68,7 @@ class OnePairGame {
         }
 
         this.socket = new WebSocket('wss://127.0.0.1:8000/ws/op_game/');
-
+    
         this.socket.onopen = () => {
             console.log("WebSocket connection opened");
         };
@@ -83,7 +87,6 @@ class OnePairGame {
         
         if ('exchange_cards' in data) {
             let exchange_cards = data.exchange_cards;
-            console.log(data.exchange_cards)
             if (exchange_cards === 't') {
                 exchange_cards = 'TAK'
             } else if (exchange_cards === 'n') {
@@ -92,17 +95,17 @@ class OnePairGame {
             if (progressGames[0]) progressGames[0].textContent = `Wymiana kart: ${exchange_cards}`;
         }
 
-        if ('chances' in data) {
-            const chances = data.chances;
-            if (this.isChances) {
-                if (progressGames[1]) progressGames[1].textContent = `Szansa (2 karty): ${chances}%`;
-                this.isChances = false;
-            } else if (!this.isChances) {
-                if (progressGames[2]) progressGames[2].textContent = `Szansa (3 karty): ${chances}%`;
-                this.isChances = true;
-            }
-        }
-
+        // if ('chances' in data) {
+        //     const chances = data.chances;
+        //     if (this.isChances) {
+        //         if (progressGames[1]) progressGames[1].textContent = `Szansa (2 karty): ${chances}%`;
+        //         this.isChances = false;
+        //     } else if (!this.isChances) {
+        //         if (progressGames[2]) progressGames[2].textContent = `Szansa (3 karty): ${chances}%`;
+        //         this.isChances = true;
+        //     }
+        // }
+        this.waitForSzansa(data, progressGames)
         if ('amount' in data) {
             const amount = data.amount;
             if (progressGames[3]) progressGames[3].textContent = `Ile kart: ${amount}`;
@@ -112,6 +115,33 @@ class OnePairGame {
 
       
     };
+    
+    waitForSzansa(data, progressGames) {
+        const interval = setInterval(() => {
+            if ('chances' in data) {
+                const chances = data.chances;
+    
+                if (this.isChances) {
+                    if (progressGames[1]) {
+                        progressGames[1].textContent = `Szansa (2 karty): ${chances}%`;
+                    }
+                    this.isChances = false;
+                } else {
+                    if (progressGames[2]) {
+                        progressGames[2].textContent = `Szansa (3 karty): ${chances}%`;
+                    }
+                    this.isChances = true;
+                }
+    
+                // Check if both elements have been updated
+                const chances_2 = progressGames[1]?.textContent.includes("Szansa (2 karty)");
+                const chances_3 = progressGames[2]?.textContent.includes("Szansa (3 karty)");
+                if (chances_2 && chances_3) {
+                    clearInterval(interval); // Stop checking when both conditions are met
+                }
+            }
+        }, 100); // Check every 100 milliseconds
+    }
 
     // Function to dynamically update the text
     updateProgressGameText(data) {
@@ -150,9 +180,16 @@ class OnePairGame {
             });
         }  
 
+        if (this.iter == 2) {
+            setTimeout(() => {
+                this.elements.nextButton1.disabled = false;
+                this.elements.nextButton2.disabled = true;            
+            }, 4500);  
+            this.iter += 1   
+        }
+
         this.updateProgressGameText(data);
    
-
         // Update progress
         if ('progress' in data) {
             console.log("IN PROGRESS")
@@ -279,21 +316,13 @@ class OnePairGame {
     }
     
     handleBeforeUnload() {
-        console.log("beforeunload triggered");
-        console.log(this.socket)
-     
         console.log("Stopping background task.....");
         this.stopTask();
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             console.log("Closing WebSocket...");
             this.socket.close();
-        }   
+        }
     }
-    // }
-    // handleBeforeUnload() {
-    //     console.log("Attempting to stop task on page unload...");
-    //     this.stopTask();
-    // }
     
     fetchRedisValue(key) {
         // Send a POST request with the value in the body

@@ -27,7 +27,7 @@ import time
 
 class Croupier(object):
 
-    def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = False, prediction_mode = True, n = 1):
+    def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, prediction_mode = True, n = 1):
         #self.deck:Deck = Deck()
         self.cards:list = []
         self.players:list = []
@@ -191,12 +191,11 @@ class Croupier(object):
         
         # Wyswietlenie drzewa decyzyjnego danej strategii kazdego gracza
         for strategy in self.one_pair_strategy:
-            strategy.set_root(visited=False)
+            strategy.set_root(visited=True)
             strategy.build_tree()
             
             if self.game_visible == True:
-                pass
-                # print(str(strategy.root))
+                print(str(strategy.root))
 
         # Wymiana kart graczy na inne
         self.cards_check_exchange_add_weights()
@@ -207,6 +206,8 @@ class Croupier(object):
             print("------------------------------------------------------------")
             print()
         
+        cards_str = []
+        
         # Inicjalizacja wag, ramki danych po wymianie kart
         for self.player in self.players:
             if self.game_visible == True:
@@ -216,16 +217,37 @@ class Croupier(object):
             self.player.arrangements.set_weights()
             self.player.arrangements.data_frame_ml.set_id_arr_after(self.player.arrangements.get_id())
 
-        
+            redis_buffer_instance_one_pair_game.redis_1.set('player', self.player.nick)
+            cards_str.clear()
+
+            for card in self.player.cards:
+                cards_str.append(card.name + card.color)
+                        
+            self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
+
+            while self.player_number == self.player.index:
+                if self.player_number == self.player.index:    
+                    str_arr = self.player.arrangements.check_arrangement(game_visible=False)    
+                    redis_buffer_instance_one_pair_game.redis_1.set(f'cards_result_{self.player_number}', json.dumps(cards_str))
+                    redis_buffer_instance_one_pair_game.redis_1.set('type_arrangement_result', str_arr)
+                if self.player_number == len(self.players) - 1:
+                    while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
+                        time.sleep(0.2)   
+                    if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':
+                        redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
+                    break
+                self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
+            print(self.player_number)
+            
+            
         if self.game_visible == True:
-            pass
-            # print("Wagi ukladow graczy: ", self.weights)
+            print("Wagi ukladow graczy: ", self.weights)
         
         # Podsumowanie wynikow
         self.compare_players_weights()
         # self.one_pair_strategy[self.num].set_root(visited=True, amount=self.amount, exchange=self.exchange)
-        # self.one_pair_strategy.build_tree()
-        # print(str(self.one_pair_strategy.root))
+        # self.one_pair_strategy[self.num].build_tree()
+        # print(str(self.one_pair_strategy[self.num].root))
         
         # Wyswietlenie drzewa decyzyjnego po zakonczeniu gry
         num_1 = 0
@@ -241,15 +263,17 @@ class Croupier(object):
                 
             strategy.set_root(visited=True, amount=self.amount_list[num_1], exchange=self.exchange_list[num_1])
             strategy.build_tree()
-            
+
             if self.tree_visible == True:
                 print(str(strategy.root))
-            
+                redis_buffer_instance_one_pair_game.redis_1.set('strategy', num_1)
+                time.sleep(0.1)
             if self.tree_visible == True:
                 print("\n")
                 print("-"*100)
             num_1 += 1
-        
+            
+        redis_buffer_instance_one_pair_game.redis_1.delete('strategy')
         
 
     def set_cards(self):
@@ -420,8 +444,6 @@ class Croupier(object):
                 self.player.arrangements.data_frame_ml.exchange = self.exchange
                 [self.player.arrangements.data_frame_ml.set_cards_after(0) for i in range(0, 5)]
                 [self.player.arrangements.data_frame_ml.set_cards_exchanged(0) for i in range(0, 3)]
-
-
             
             self.num += 1
             
@@ -537,6 +559,7 @@ class Croupier(object):
             
             redis_buffer_instance_one_pair_game.redis_1.set('number_exchange', str(self.amount))
             
+            # if (self.player_number == self.idx_p - 1):
             if (self.player_number == self.idx_p - 1):
                 while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
                     time.sleep(0.5)   
@@ -628,9 +651,8 @@ class Croupier(object):
             # print("------------------------------------------------------------")
             # print("------------------------------------------------------------")
             # print()
-
+        
         for self.player in self.players:
-
             if self.player.index == max_weight[0]:
                 if self.game_visible == True:
                     pass
@@ -640,17 +662,14 @@ class Croupier(object):
                 self.player.win_or_not = True
 
                 if self.game_visible == True:
-                    pass
-                    # self.player.print(False)
+                    self.player.print(False)
                 
-                self.player.arrangements.check_arrangement(game_visible=False)
+                self.player.arrangements.check_arrangement(game_visible=True)
 
             else:
                 self.player.win_or_not = False
             
             self.player.arrangements.data_frame_ml.win_or_not = self.player.win_or_not
-        
-        redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
 
         for self.player in self.players:
             if self.tree_visible == True or self.game_visible == True:

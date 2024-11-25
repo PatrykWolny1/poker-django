@@ -29,7 +29,7 @@ class HelperArrangement(object):
 
     def get_indices_1(self, cards):        
         size = len(cards)
-        self.indices_2d = []
+
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
         if self.dim(cards) == 2:
             cards = [item for sublist in cards for item in sublist]

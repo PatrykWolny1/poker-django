@@ -221,7 +221,7 @@ h1 {
     align-items: center; /* Centers vertically */
 }
 
-.cards-1, .cards-2 {
+.cards-1, .cards-2 , .cards-3, .cards-4 {
     display: flex;
     gap: 10px;
 }
@@ -355,8 +355,29 @@ h1 {
     z-index: 2;
 }
 
+.circle.active {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #002b40;
+    font-size: 16px;
+    position: absolute;
+    background: linear-gradient(to top, #913030, #d51a1a) !important;
+    z-index: 2;
+}
+
 /* Positioning circles */
 .main {
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.main.active {
     top: 10%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -399,6 +420,13 @@ h1 {
     position: absolute;
     height: 2px;
     background: linear-gradient(to top, #31c1ff90, #5cceff82);
+    transform-origin: 0 0;
+}
+
+.line.active {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(to top, #913030, #d51a1a) !important;
     transform-origin: 0 0;
 }
 

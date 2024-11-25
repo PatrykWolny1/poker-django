@@ -13,6 +13,8 @@ class OnePairGame {
         this.count = 0;
         this.isProgressGameBorders = false;
         this.isChances = true;
+        this.socket = undefined;
+        this.isResult = false;
         
         // Initialize player names
         this.player1Name = document.getElementById('player1').value;
@@ -45,13 +47,13 @@ class OnePairGame {
             setTimeout(() => {
                 this.elements.nextButton1.disabled = true;
                 this.elements.nextButton2.disabled = false;            
-            }, 3500);  
+            }, 4500);  
          });
         
         this.elements.nextButton2.addEventListener('click', () => {
             this.fetchRedisValue('wait_buffer')
             this.elements.nextButton1.disabled = true;
-            this.elements.nextButton2.disabled = true;
+            this.elements.nextButton2.disabled = false;
         });
 
         this.elements.playButton.addEventListener('click', () => {
@@ -86,37 +88,103 @@ class OnePairGame {
         if (!progressGames) return;
         
         if ('exchange_cards' in data) {
-            let exchange_cards = data.exchange_cards;
-            if (exchange_cards === 't') {
-                exchange_cards = 'TAK'
-            } else if (exchange_cards === 'n') {
-                exchange_cards = 'NIE'
-            }
-            if (progressGames[0]) progressGames[0].textContent = `Wymiana kart: ${exchange_cards}`;
+            const exchangeCardsText = data.exchange_cards === 't' ? 'TAK' : 'NIE';
+            if (progressGames[0]) progressGames[0].textContent = `Wymiana kart: ${exchangeCardsText}`;
         }
 
-        // if ('chances' in data) {
-        //     const chances = data.chances;
-        //     if (this.isChances) {
-        //         if (progressGames[1]) progressGames[1].textContent = `Szansa (2 karty): ${chances}%`;
-        //         this.isChances = false;
-        //     } else if (!this.isChances) {
-        //         if (progressGames[2]) progressGames[2].textContent = `Szansa (3 karty): ${chances}%`;
-        //         this.isChances = true;
-        //     }
-        // }
-        this.waitForSzansa(data, progressGames)
+        this.waitForChances(data, progressGames)
+
         if ('amount' in data) {
             const amount = data.amount;
             if (progressGames[3]) progressGames[3].textContent = `Ile kart: ${amount}`;
             // Toggle the flag for the next set
             this.isProgressGameBorders = !isFirstSet;
         }
+        
+        // Handle strategies
+        if ('strategy_one' in data || 'strategy_two' in data) {
+            console.log(data.strategy_one || data.strategy_two);
+            this.processStrategyData(data);
+        }
 
-      
+
+        if (this.hasRequiredKeys(data)) {
+            // If data contains one of the required keys, process it
+            // console.log("Valid data:", data);
+            this.processStrategyData(data);
+        }  
     };
+
+    toggleClass(elementClass, className) {
+        const element = document.querySelector(`.diagram-progress .${elementClass}`);
+        console.log(element)
+        if (element) {
+            element.classList.add(className);
+        } else {
+            console.warn(`Element with class "${elementClass}" not found.`);
+        }
+    }
     
-    waitForSzansa(data, progressGames) {
+    // Function to check if required keys are in the data
+    hasRequiredKeys(data) {
+        // Define the keys you're expecting in `data`
+        const requiredKeys = ['p1_2x_1', 'p1_2x_0', 'p2x', 'p1x', 'yes_no', 'cards_2_3'];
+        return requiredKeys.some(key => key in data);  // Returns true if any of the required keys exist in `data`
+    }
+    processStrategyData(data) {
+        const keysToUpdate = {
+            p1_2x_1: 'top-left-text',
+            p1_2x_0: 'top-right-text',
+            p2x: 'bottom-left-text',
+            p1x: 'bottom-right-text',
+        };
+        this.toggleClass('main', 'active');
+        for (const [key, value] of Object.entries(data)) {
+            if (key.includes('yes_no') || key.includes('cards_2_3')) {
+                if (value.startsWith('Yes')) {
+                    this.toggleClass('top-left', 'active');
+                    this.toggleClass('line-top-left', 'active');
+                    console.log(value)
+                } else if (value.includes('No')) {
+                    this.toggleClass('top-right', 'active');
+                    this.toggleClass('line-top-right', 'active');
+                    console.log(value)
+                } else if (value.startsWith('Two')) {
+                    this.toggleClass('bottom-left', 'active');
+                    this.toggleClass('line-bottom-left', 'active');
+                    console.log(value)
+                } else if (value.startsWith('Three')) {
+                    this.toggleClass('bottom-right', 'active');
+                    this.toggleClass('line-bottom-right', 'active');
+                    console.log(value)
+                }
+
+            }
+            if (key in keysToUpdate) {
+                const extractedText = this.extractText(value);
+                const rounded = (parseFloat(extractedText) * 100).toFixed(1);
+                this.updatePercentage(keysToUpdate[key], rounded);
+            } else {
+                this.logStrategyKey(key, value);
+            }
+        }
+    }
+    
+    logStrategyKey(key, value) {
+        const strategyKeys = ['yes_no', 'strategy_one', 'strategy_two'];
+        if (strategyKeys.includes(key)) {
+            console.log(`Received ${key}: ${value}`);
+        }
+    }
+    
+    updatePercentage(id, newValue) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = `${newValue}%`;
+        }
+    }
+
+    waitForChances(data, progressGames) {
         const interval = setInterval(() => {
             if ('chances' in data) {
                 const chances = data.chances;
@@ -148,11 +216,9 @@ class OnePairGame {
         // Update the appropriate border
         if (this.isProgressGameBorders === false && this.progressGameBorders1) {
             const progressGames = this.progressGameBorders1[0].querySelectorAll('.progress-game');
-            console.log("1")
             this.updateBorders(progressGames, false, data);
         } else if (this.isProgressGameBorders === true && this.progressGameBorders2) {
             const progressGames = this.progressGameBorders2[0].querySelectorAll('.progress-game');
-            console.log("2")
             this.updateBorders(progressGames, false, data);
         }
     }
@@ -164,10 +230,18 @@ class OnePairGame {
             console.log(data.cards); // Debugging: check the card names
             // Assuming you have 5 cards to display
             if (this.iter === 0) {
-                this.cardsContainer = document.querySelectorAll('.cards-1 .card');
+                if (this.isResult) {
+                    this.cardsContainer = document.querySelectorAll('.cards-3 .card');
+                } else {
+                    this.cardsContainer = document.querySelectorAll('.cards-1 .card');
+                }
             }
             if (this.iter === 1) {
-                this.cardsContainer = document.querySelectorAll('.cards-2 .card');
+                if (this.isResult) {
+                    this.cardsContainer = document.querySelectorAll('.cards-4 .card');
+                } else {
+                    this.cardsContainer = document.querySelectorAll('.cards-2 .card');
+                }
             }
             this.iter += 1;
 
@@ -184,12 +258,14 @@ class OnePairGame {
             setTimeout(() => {
                 this.elements.nextButton1.disabled = false;
                 this.elements.nextButton2.disabled = true;            
-            }, 4500);  
-            this.iter += 1   
+            }, 5500);  
+            this.iter = 0;
+            this.isResult = true;
         }
 
         this.updateProgressGameText(data);
-   
+      
+
         // Update progress
         if ('progress' in data) {
             console.log("IN PROGRESS")
@@ -208,6 +284,11 @@ class OnePairGame {
             this.finalizeProgress();
         }
 
+    }
+
+    extractText(input) {
+        const match = input.match(/^\d+\((.*?)\)$/);
+        return match ? match[1] : ''; // Return the captured group or an empty string if no match
     }
 
     updateProgress(newProgress) {
@@ -317,11 +398,12 @@ class OnePairGame {
     
     handleBeforeUnload() {
         console.log("Stopping background task.....");
-        this.stopTask();
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             console.log("Closing WebSocket...");
             this.socket.close();
         }
+        this.stopTask();
+
     }
     
     fetchRedisValue(key) {

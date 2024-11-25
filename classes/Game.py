@@ -89,7 +89,7 @@ class Game(object):
             if game_si_human == '1':
                 croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
             if game_si_human == '2':
-                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
+                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=True)
             if game_si_human == '3':
                 croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
                 
@@ -97,7 +97,7 @@ class Game(object):
             return 0
         
         if choice == '3':
-            croupier = Croupier(game_visible=True, tree_visible=False)
+            croupier = Croupier(game_visible=True, tree_visible=True)
             croupier.play()
         
         if choice == '4':

@@ -5,15 +5,31 @@ from home.redis_buffer_singleton import redis_buffer_instance
 import ctypes
 
 class MyThread(threading.Thread):
-    def __init__(self, target, data_queue=None, thread_id=None):
-        super().__init__(target=target, args=(data_queue, ))
-        self.thread_id = thread_id  # Use this ID to separate data
-        self.data_queue = data_queue if data_queue is not None else queue.Queue()
+    def __init__(self, target, data_queue=None, flag1=None, flag2=None):
+        super().__init__(target=target, args=(data_queue))
+        self.data_queue = data_queue if isinstance(data_queue, queue.Queue) else queue.Queue()
+        self.flag1 = flag1
+        self.flag2 = flag2
         self.daemon = False
 
     def run(self):
-        redis_buffer_instance.redis_1.set(f'thread_data_{self.thread_id}', 'running')
-        self._target(self.data_queue)
+        # Example: Set a Redis key indicating the thread is running
+        thread_id = threading.get_ident()  # Get unique thread identifier
+        print(f"Thread {thread_id} is starting with flags: {self.flag1}, {self.flag2}")
+        try:
+            # Assuming redis_buffer_instance.redis_1 is properly configured elsewhere
+            if self._target:
+                if self.flag1 is not None and self.flag2 is not None:
+                    self._target(self.flag1, self.flag2, self.data_queue)
+                else:
+                    
+                    self._target(self.data_queue)  # Call target without flags
+
+        except Exception as e:
+            print(f"Exception in thread {thread_id}: {e}")
+        finally:
+            # Cleanup or status update
+            print(f"Thread {thread_id} has stopped.")
     
     def get_id(self):
         # returns id of the respective thread

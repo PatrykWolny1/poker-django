@@ -6,6 +6,10 @@ class OnePairGame {
         this.lastProgressUpdateTime = Date.now(); // To track the last progress update
         this.isStopping = false;
         this.iter = 0;
+        this.iter1 = 0;
+        this.arrayTemp = new Array();
+        this.arrayRouteBinTree1 = new Array()
+        this.arrayRouteBinTree2 = new Array()
         this.cardsContainer = undefined;
         this.progressGameBorders1 = document.querySelectorAll('.progress-game-border-1');
         this.progressGameBorders2 = document.querySelectorAll('.progress-game-border-2');
@@ -113,7 +117,76 @@ class OnePairGame {
             // console.log("Valid data:", data);
             this.processStrategyData(data);
         }  
+
+        if (this.iter1 === 2) {
+            this.animateBinaryTree();
+        }
+    
     };
+
+    animateBinaryTree() {
+        const delay = 1000; // Delay between steps in milliseconds
+        const animationContainer = [
+            { array: this.arrayRouteBinTree1, label: "Tree 1" },
+            { array: this.arrayRouteBinTree2, label: "Tree 2" },
+        ];
+    
+        const processArray = (array, callback) => {
+            array.forEach((element, index) => {
+                setTimeout(() => {
+                    // Reset all active classes before starting
+                    this.resetClasses();
+    
+                    if (element.startsWith("Yes")) {
+                        this.toggleClass("top-left", "active");
+                        this.toggleClass("line-top-left", "active");
+                    } else if (element.includes("No")) {
+                        this.toggleClass("top-right", "active");
+                        this.toggleClass("line-top-right", "active");
+                    } else if (element.startsWith("Two")) {
+                        this.toggleClass("bottom-left", "active");
+                        this.toggleClass("line-bottom-left", "active");
+                    } else if (element.startsWith("Three")) {
+                        this.toggleClass("bottom-right", "active");
+                        this.toggleClass("line-bottom-right", "active");
+                    }
+    
+                    // After the last element, invoke the callback
+                    if (index === array.length - 1 && callback) {
+                        setTimeout(callback, delay);
+                    }
+                }, index * delay);
+            });
+        };
+    
+        // Animate the first tree, then animate the second tree, and then loop back
+        processArray(animationContainer[0].array, () => {
+            processArray(animationContainer[1].array, () => {
+                // Call `animateBinaryTree` again to loop endlessly
+                this.animateBinaryTree();
+            });
+        });
+    }
+    
+    // Helper function to reset all classes
+    resetClasses() {
+        const container = document.querySelector(".diagram-container");
+        const allClasses = [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+            "line-top-left",
+            "line-top-right",
+            "line-bottom-left",
+            "line-bottom-right",
+        ];
+        allClasses.forEach((className) => {
+            const element = container.querySelector(`.${className}`);
+
+            element.classList.remove("active");
+        });
+    }
 
     toggleClass(elementClass, className) {
         const element = document.querySelector(`.diagram-progress .${elementClass}`);
@@ -131,6 +204,8 @@ class OnePairGame {
         const requiredKeys = ['p1_2x_1', 'p1_2x_0', 'p2x', 'p1x', 'yes_no', 'cards_2_3'];
         return requiredKeys.some(key => key in data);  // Returns true if any of the required keys exist in `data`
     }
+
+    //TODO: wykonac poprawke dla odpowiedzi 'NIE' - dla jednego i drugiego gracza zachowuje sie inaczej; animacja dla drzewa decyzyjnego 
     processStrategyData(data) {
         const keysToUpdate = {
             p1_2x_1: 'top-left-text',
@@ -138,28 +213,47 @@ class OnePairGame {
             p2x: 'bottom-left-text',
             p1x: 'bottom-right-text',
         };
-        this.toggleClass('main', 'active');
+
+        const playerName = document.querySelector('.player-name-text');
+        
+        playerName.textContent = this.player1Name;
+
+        // this.toggleClass('main', 'active');
         for (const [key, value] of Object.entries(data)) {
             if (key.includes('yes_no') || key.includes('cards_2_3')) {
                 if (value.startsWith('Yes')) {
-                    this.toggleClass('top-left', 'active');
-                    this.toggleClass('line-top-left', 'active');
+                    // this.toggleClass('top-left', 'active');
+                    // this.toggleClass('line-top-left', 'active');
+                    this.arrayTemp.push(value)
                     console.log(value)
                 } else if (value.includes('No')) {
-                    this.toggleClass('top-right', 'active');
-                    this.toggleClass('line-top-right', 'active');
+                    // this.toggleClass('top-right', 'active');
+                    // this.toggleClass('line-top-right', 'active');
+                    this.arrayTemp.push(value)
                     console.log(value)
                 } else if (value.startsWith('Two')) {
-                    this.toggleClass('bottom-left', 'active');
-                    this.toggleClass('line-bottom-left', 'active');
+                    // this.toggleClass('bottom-left', 'active');
+                    // this.toggleClass('line-bottom-left', 'active');
+                    this.arrayTemp.push(value)
                     console.log(value)
                 } else if (value.startsWith('Three')) {
-                    this.toggleClass('bottom-right', 'active');
-                    this.toggleClass('line-bottom-right', 'active');
+                    // this.toggleClass('bottom-right', 'active');
+                    // this.toggleClass('line-bottom-right', 'active');
+                    this.arrayTemp.push(value)
                     console.log(value)
                 }
 
+                if (this.iter1 === 0 && this.arrayTemp.length == 2) {
+                    this.arrayRouteBinTree1 = this.arrayTemp;
+                    this.arrayTemp = new Array()
+                    this.iter1 += 1;
+                } else if (this.iter1 === 1 && this.arrayTemp.length == 2) {
+                    this.arrayRouteBinTree2 = this.arrayTemp;
+                    this.iter1 += 1;
+                }
+        
             }
+
             if (key in keysToUpdate) {
                 const extractedText = this.extractText(value);
                 const rounded = (parseFloat(extractedText) * 100).toFixed(1);
@@ -168,6 +262,9 @@ class OnePairGame {
                 this.logStrategyKey(key, value);
             }
         }
+    
+      
+    
     }
     
     logStrategyKey(key, value) {
@@ -258,7 +355,7 @@ class OnePairGame {
             setTimeout(() => {
                 this.elements.nextButton1.disabled = false;
                 this.elements.nextButton2.disabled = true;            
-            }, 5500);  
+            }, 6500);  
             this.iter = 0;
             this.isResult = true;
         }

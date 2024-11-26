@@ -222,7 +222,8 @@ class Croupier(object):
 
             for card in self.player.cards:
                 cards_str.append(card.name + card.color)
-                        
+            
+            
             self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
 
             while self.player_number == self.player.index:
@@ -416,7 +417,7 @@ class Croupier(object):
                 self.exchange = np.random.choice(['n', 't'], size=1, 
                                     p=[float(self.one_pair_strategy[self.num].root.internal_nodes[0][0].branches[0]),
                                        float(self.one_pair_strategy[self.num].root.internal_nodes[0][0].branches[1])]) 
-                
+                    
                 redis_buffer_instance_one_pair_game.redis_1.set('player', self.player.nick)
             
                 self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))     
@@ -426,6 +427,7 @@ class Croupier(object):
                     
                 if self.player_number == self.player.index:                                            
                     redis_buffer_instance_one_pair_game.redis_1.set('exchange_cards', str(self.exchange[0]))  
+                    
             else:
                 self.exchange = str(input("Wymiana kart [T/N]: ")).lower()            
             
@@ -441,10 +443,11 @@ class Croupier(object):
                 self.cards_exchange()
             if self.exchange == 'n':
                 self.amount_list.append(0)
+                self.cards_exchange()
                 self.player.arrangements.data_frame_ml.exchange = self.exchange
                 [self.player.arrangements.data_frame_ml.set_cards_after(0) for i in range(0, 5)]
                 [self.player.arrangements.data_frame_ml.set_cards_exchanged(0) for i in range(0, 3)]
-            
+                    
             self.num += 1
             
             # Przypisanie do ramki danych liczby kart do wymiany dla danego gracza
@@ -533,30 +536,52 @@ class Croupier(object):
                     if self.game_visible == True:
                         pass
                     print("NUMBERS: ", self.player_number, self.player.index)
-                    while self.player_number != self.player.index:
-                        self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
-                        
-                    # if self.player.index == self.player_number:
-                    redis_buffer_instance_one_pair_game.redis_1.set('chance', str(round(y_preds[0] * 100, 2)))
-                    print(redis_buffer_instance_one_pair_game.redis_1.get('chance').decode('utf-8'))
+                    
+                    if self.exchange == 't':
+                        while self.player_number != self.player.index:
+                            self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
+                            
+                        # if self.player.index == self.player_number:
+                        redis_buffer_instance_one_pair_game.redis_1.set('chance', str(round(y_preds[0] * 100, 2)))
+                        print(redis_buffer_instance_one_pair_game.redis_1.get('chance').decode('utf-8'))
 
-                    if self.player_number == 0:
-                        self.idx_p = 1
-                        self.p = True
-                        continue
+                        if self.player_number == 0:
+                            self.idx_p = 1
+                            self.p = True
+                            continue
 
-                    if self.player_number == len(self.players) - 1:
-                        self.idx_p = len(self.players)
-                        self.p = False
-                        time.sleep(0.2)
+                        if self.player_number == len(self.players) - 1:
+                            self.idx_p = len(self.players)
+                            self.p = False
+                            time.sleep(0.2)
+                    else:
+                        while self.player_number != self.player.index:
+                            self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
+                            
+                        # if self.player.index == self.player_number:
+                        redis_buffer_instance_one_pair_game.redis_1.set('chance',   'N/A')
+                        print(redis_buffer_instance_one_pair_game.redis_1.get('chance').decode('utf-8'))
 
-            # Wybieranie ilosci kart do wymiany zgodnie z prawdopodobienstwem
-            self.amount = np.random.choice([2, 3], size=1, 
-                                    p=[float(self.one_pair_strategy[self.num].root.internal_nodes[1][0].branches[0]),
-                                       float(self.one_pair_strategy[self.num].root.internal_nodes[1][0].branches[1])])
-            
-            self.amount = int(self.amount)
-            
+                        if self.player_number == 0:
+                            self.idx_p = 1
+                            self.p = True
+                            continue
+
+                        if self.player_number == len(self.players) - 1:
+                            self.idx_p = len(self.players)
+                            self.p = False
+                            time.sleep(0.2)
+
+            if self.exchange == 't':
+                # Wybieranie ilosci kart do wymiany zgodnie z prawdopodobienstwem
+                self.amount = np.random.choice([2, 3], size=1, 
+                                        p=[float(self.one_pair_strategy[self.num].root.internal_nodes[1][0].branches[0]),
+                                        float(self.one_pair_strategy[self.num].root.internal_nodes[1][0].branches[1])])
+                
+                self.amount = int(self.amount)
+            else:
+                self.amount = 0
+                
             redis_buffer_instance_one_pair_game.redis_1.set('number_exchange', str(self.amount))
             
             # if (self.player_number == self.idx_p - 1):

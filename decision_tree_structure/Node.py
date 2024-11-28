@@ -57,7 +57,7 @@ class Node(object):
         self.redis.set('p2x', str(self.internal_nodes[1][0].branches[1]))
         
         str_result += '\n'
-        
+
         # Two Cards
         if self.amount == 2 or self.visited == False:
             str_result += (('\t'*5) if self.visited == False else ('\t'*5)) + str(self.internal_nodes[1][0].leaf_nodes[0])
@@ -69,5 +69,10 @@ class Node(object):
             str_result += (('\t'*3) if self.visited == False else ('\t'*9)) + str(self.internal_nodes[1][0].leaf_nodes[1])
             if self.visited:
                 self.redis.set('cards_2_3', str(self.internal_nodes[1][0].leaf_nodes[1]))
-                                                                
+        
+        if self.amount == 0:
+            if self.visited:
+                self.redis.set('cards_2_3', '0')
+
+                                                      
         return str_result

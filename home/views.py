@@ -70,16 +70,11 @@ def submit_number(request):
     return JsonResponse({"error": "Invalid request"}, status=400)
 
 def start_game(request):
+    _initialize_redis_values_gra_jedna_para()
+    redis_buffer_instance.redis_1.set('when_one_pair', '0')
     if request.method == 'POST':
-        data = json.loads(request.body)
-        # player1_name = data.get('player1Name')
-        # player2_name = data.get('player2Name')
-
-        # # Set Redis variable (e.g., game state or progress)
-        # redis_client.set('game_in_progress', 'true')
-        # redis_client.set('player1_name', player1_name)
-        # redis_client.set('player2_name', player2_name)
-
+        start_thread(request)
+        
         return JsonResponse({'status': 'Game started'})
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=400)
@@ -133,6 +128,8 @@ def _handle_thread(request, subsite_specific=False, template=None):
     thread_result = start_thread(request)
     request.session[thread_key] = thread_result['thread_id']
     return render(request, template, {'message': 'Thread started'}) if template else JsonResponse({'status': 'Cards permutations started'})
+
+# TODO: graj button, reset cards, result and player info in js, check all_comb_perms in Game() function
 
 def start_thread(request):
     """Start a new thread and store it in Redis and session."""

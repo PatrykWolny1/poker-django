@@ -143,7 +143,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                 await self._process_player_cards_result(redis, player_number)
 
                 player_number = await self._process_type_arrangement_result(redis, player_number)
-                print(player_number)
+                # print(player_number)
                 # Check if stop event is triggered
                 if redis.get('stop_event_send_updates') and redis.get('stop_event_send_updates').decode('utf-8') == '1':
                     print("Return from _send_updates_info_cards()...")

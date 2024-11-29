@@ -228,7 +228,7 @@ class Croupier(object):
 
             while self.player_number == self.player.index:
                 if self.player_number == self.player.index:    
-                    str_arr = self.player.arrangements.check_arrangement(game_visible=False)    
+                    str_arr = self.player.arrangements.check_arrangement(game_visible=False, is_result=True)    
                     redis_buffer_instance_one_pair_game.redis_1.set(f'cards_result_{self.player_number}', json.dumps(cards_str))
                     redis_buffer_instance_one_pair_game.redis_1.set('type_arrangement_result', str_arr)
                 if self.player_number == len(self.players) - 1:
@@ -238,7 +238,7 @@ class Croupier(object):
                         redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
                     break
                 self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
-            print(self.player_number)
+            # print(self.player_number)
             
             
         if self.game_visible == True:

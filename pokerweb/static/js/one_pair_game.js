@@ -44,18 +44,22 @@ class OnePairGame {
         // Attach event listener for the play button
         
         this.elements.playButton.disabled = true;
-
         this.elements.nextButton1.disabled = true;
         this.elements.nextButton2.disabled = true;
-  
+        
+        this.elements.playButton.addEventListener('click', () => {
+            this.elements.playButton.disabled = true;
+            this.startGame();
+        });
+
         this.elements.nextButton1.addEventListener('click', () => {
             this.fetchRedisValue('wait_buffer')
+            // this.elements.nextButton1.disabled = true;
+            // this.elements.nextButton2.disabled = true;
+            // setTimeout(() => {
             this.elements.nextButton1.disabled = true;
-            this.elements.nextButton2.disabled = true;
-            setTimeout(() => {
-                this.elements.nextButton1.disabled = true;
-                this.elements.nextButton2.disabled = false;            
-            }, 4500);  
+            this.elements.nextButton2.disabled = false;            
+            // }, 5500);  
          });
         
         this.elements.nextButton2.addEventListener('click', () => {
@@ -131,11 +135,13 @@ class OnePairGame {
             } else if (firstSecond === '1') {
                 this.toggleClass("result-info-2", "active", 'result');
             }
+            this.elements.nextButton1.disabled = true;
+            this.elements.nextButton2.disabled = true; 
         }
 
         // Handle strategies
         if ('strategy_one' in data || 'strategy_two' in data) {
-            console.log(data.strategy_one || data.strategy_two);
+            // console.log(data.strategy_one || data.strategy_two);
             this.processStrategyData(data);
         }
 
@@ -164,7 +170,7 @@ class OnePairGame {
                 setTimeout(() => {
                     // Reset all active classes before starting
                     this.resetClasses();
-                    console.log(element)
+                    // console.log(element)
                     if (element.includes("main")) {
                         this.toggleClass("main", "active", "diagram-container");
                     } else if (element.startsWith("Yes")) {
@@ -258,19 +264,19 @@ class OnePairGame {
         // this.toggleClass('main', 'active');
         for (const [key, value] of Object.entries(data)) {
             if (key.includes('yes_no') || key.includes('cards_2_3')) {
-                console.log(data)
+                // console.log(data)
                 if (value.startsWith('Yes')) {
                     this.arrayTemp.push(value)
-                    console.log(value)
+                    // console.log(value)
                 } else if (value.includes('No')) {
                     this.arrayTemp.push(value)
-                    console.log(value)
+                    // console.log(value)
                 } else if (value.startsWith('Two')) {
                     this.arrayTemp.push(value)
-                    console.log(value)
+                    // console.log(value)
                 } else if (value.startsWith('Three')) {
                     this.arrayTemp.push(value)
-                    console.log(value)
+                    // console.log(value)
                 }
 
                 if (this.iter1 === 0 && (this.arrayTemp.length === 2 || this.arrayTemp[0] === 'No')) {
@@ -396,10 +402,15 @@ class OnePairGame {
         }
 
         if (this.iter == 2) {
-            setTimeout(() => {
-                this.elements.nextButton1.disabled = false;
-                this.elements.nextButton2.disabled = true;            
-            }, 6500);  
+            
+            if (!this.isResult) {
+                setTimeout(() => {
+                    this.elements.nextButton1.disabled = false;
+                    this.elements.nextButton2.disabled = true;            
+                }, 7000);  
+            }
+
+            
             this.iter = 0;
             this.isResult = true;
         }
@@ -484,30 +495,26 @@ class OnePairGame {
     }
 
     startGame() {
-        // Disable the play button after it's clicked
-        // this.elements.playButton.disabled = true;
-        
-        console.log("Game Started");
-        
-        this.updatePlayerNames(); // Update player names when the play button is clicked
-
-        // Send a request to initialize the game on the server
-        const url = '/start_game/';
-        fetch(url, {
+        fetch('/start_game_view/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': this.getCSRFToken(),
             },
-            body: JSON.stringify({ player1Name: this.player1Name, player2Name: this.player2Name })
+            body: JSON.stringify({}),
+            credentials: 'same-origin'
         })
-        .then(response => response.json())
+        .then(response => response.json())  // Read the JSON data once
         .then(data => {
-            console.log('Game started:', data);
+            console.log(data)
+
+            if (data.status === 'Task stopped successfully') {
+                console.log('Task stopped successfully');
+            }
         })
         .catch(error => {
-            console.error('Error starting game:', error);
-            playButton.disabled = false; // Re-enable the button if there's an error
+            console.error('Error stopping task:', error);
+            alert('An error occurred while stopping the task. Please try again.');
         });
     }
 

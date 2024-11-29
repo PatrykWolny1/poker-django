@@ -199,6 +199,7 @@ h1 {
     display: flex;
     gap: 30px;
     margin-left: 0px;
+    margin-bottom: 90px;
 }
 
 .info {
@@ -298,7 +299,7 @@ h1 {
 }
 
 .result-info-1.active, .result-info-2.active {
-    background: linear-gradient(to top, #9be1ff, #d3f2ff);
+    background: linear-gradient(to top, #063549, #085576);
 }
 
 .arrangement-result-1, .arrangement-result-2 {

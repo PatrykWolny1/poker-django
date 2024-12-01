@@ -1,5 +1,5 @@
 class OnePairGame {
-    constructor() {
+    constructor(executeFunction) {
         this.cards = "";
         this.progress = 0;
         this.progressUpdateThreshold = 500; // milliseconds
@@ -10,19 +10,24 @@ class OnePairGame {
         this.iter2 = 0;
         this.iter3 = 0;
         this.iter4 = 0;
+        this.iter5 = 0;
+        this.iter6 = 0;
+        this.iter7 = 0;
         this.arrayTemp = new Array();
-        this.arrayRouteBinTree1 = new Array()
-        this.arrayRouteBinTree2 = new Array()
+        this.arrayRouteBinTree1 = new Array();
+        this.arrayRouteBinTree2 = new Array();
         this.cardsContainer = undefined;
         this.progressGameBorders1 = document.querySelectorAll('.progress-game-border-1');
         this.progressGameBorders2 = document.querySelectorAll('.progress-game-border-2');
         this.progressGameBorders = undefined;
-        this.count = 0;
         this.isProgressGameBorders = false;
         this.isChances = true;
-        this.socket = undefined;
         this.isResult = false;
         this.isName = true;
+        this.noAnimateBT = false;
+        this.timeoutIds = [];
+        this.socket = undefined;
+        this.executeFunction = executeFunction;
         
         // Initialize player names
         this.player1Name = document.getElementById('player1').value;
@@ -38,51 +43,44 @@ class OnePairGame {
         // Update player names immediately when the object is created
         this.updatePlayerNames();
 
-        // Now connect the WebSocket
-        this.connectWebSocket();
+            // Now connect the WebSocket
+        this.initializeWebSocket();
 
         // Attach event listener for the play button
-        
         this.elements.playButton.disabled = true;
+        
         this.elements.nextButton1.disabled = true;
         this.elements.nextButton2.disabled = true;
         
         this.elements.playButton.addEventListener('click', () => {
-            this.elements.playButton.disabled = true;
             this.startGame();
         });
 
         this.elements.nextButton1.addEventListener('click', () => {
             this.fetchRedisValue('wait_buffer')
-            // this.elements.nextButton1.disabled = true;
-            // this.elements.nextButton2.disabled = true;
-            // setTimeout(() => {
             this.elements.nextButton1.disabled = true;
             this.elements.nextButton2.disabled = false;            
-            // }, 5500);  
          });
         
         this.elements.nextButton2.addEventListener('click', () => {
             this.fetchRedisValue('wait_buffer')
             this.elements.nextButton1.disabled = true;
-            this.elements.nextButton2.disabled = false;
-        });
-
-        this.elements.playButton.addEventListener('click', () => {
-           
+            this.elements.nextButton2.disabled = true;
+            setTimeout(() => {
+                this.elements.nextButton1.disabled = true;
+                this.elements.nextButton2.disabled = false;            
+            }, 1500); 
+            
         });
 
         window.addEventListener("beforeunload", this.handleBeforeUnload.bind(this));
     }
-
-    connectWebSocket() {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            console.log("WebSocket already open");
-            this.socket.close();  // Prevent opening a new WebSocket if one is already open
-        }
-
-        this.socket = new WebSocket('wss://127.0.0.1:8000/ws/op_game/');
     
+    // Method to initialize WebSocket
+    initializeWebSocket() {
+        this.socket = new WebSocket('wss://127.0.0.1:8000/ws/op_game/');
+        console.log("WebSocket instance created:", this.socket);
+
         this.socket.onopen = () => {
             console.log("WebSocket connection opened");
         };
@@ -91,9 +89,102 @@ class OnePairGame {
             this.handleSocketMessage(event);
         };
 
-        this.socket.onclose = () => {
-            console.log("WebSocket connection closed");
+        this.socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
         };
+
+        this.socket.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
+    }
+
+    // Method to reset instance variables
+    resetInstanceVariables() {
+        this.cards = "";
+        this.progress = 0;
+        this.progressUpdateThreshold = 500;
+        this.lastProgressUpdateTime = Date.now();
+        this.isStopping = false;
+        this.iter = 0;
+        this.iter1 = 0;
+        this.iter2 = 0;
+        this.iter3 = 0;
+        this.iter4 = 0;
+        this.iter5 = 0;
+        this.arrayTemp = [];
+        this.arrayRouteBinTree1 = [];
+        this.arrayRouteBinTree2 = [];
+        this.cardsContainer = undefined;
+        this.progressGameBorders1 = document.querySelectorAll('.progress-game-border-1');
+        this.progressGameBorders2 = document.querySelectorAll('.progress-game-border-2');
+        this.progressGameBorders = undefined;
+        this.isProgressGameBorders = false;
+        this.isChances = true;
+        this.isResult = false;
+        this.isName = true;
+        this.player1Name = document.getElementById('player1').value;
+        this.player2Name = document.getElementById('player2').value;
+        this.socket = null;
+        
+        const progressGames1 = this.progressGameBorders1[0].querySelectorAll('.progress-game');
+        progressGames1[0].textContent = null;
+        progressGames1[1].textContent = null;
+        progressGames1[2].textContent = null;
+        progressGames1[3].textContent = null;
+
+        const progressGames2 = this.progressGameBorders2[0].querySelectorAll('.progress-game');
+        progressGames2[0].textContent = null;
+        progressGames2[1].textContent = null;
+        progressGames2[2].textContent = null;
+        progressGames2[3].textContent = null;
+
+        const arrangement_result_1 = document.querySelector('.arrangement-result-1');
+        arrangement_result_1.textContent = null;
+
+        const arrangement_result_2 = document.querySelector('.arrangement-result-2');
+        arrangement_result_2.textContent = null;
+
+        // Select all the containers for the cards
+        const cardContainers = [
+            ...document.querySelectorAll('.cards-3'),
+            ...document.querySelectorAll('.cards-1'),
+            ...document.querySelectorAll('.cards-4'),
+            ...document.querySelectorAll('.cards-2')
+        ];
+
+        // Loop through each container
+        cardContainers.forEach(container => {
+            // Find all the individual card elements within the container
+            const cards = container.querySelectorAll('.card');
+            
+            // Loop over each card and reset the background image
+            cards.forEach(card => {
+                card.style.backgroundImage = null;  // Remove any background image
+            });
+        });
+
+        const container = document.querySelector(".result");
+        const allClasses = [
+            "result-info-1",
+            "result-info-2",
+        ];
+        allClasses.forEach((className) => {
+            const element = container.querySelector(`.${className}`);
+            element.classList.remove("active");
+        })
+
+        this.elements.playButton.disabled = false;
+    }
+
+    // Method to reinitialize the instance
+    reinitializeInstance() {
+        console.log("Reinitializing instance...");
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.close();
+        }
+
+        this.resetInstanceVariables();
+        this.initializeWebSocket();
     }
     
     updateBorders(progressGames, isFirstSet, data) {
@@ -155,7 +246,6 @@ class OnePairGame {
             this.animateBinaryTree();
         }
         
-
     };
 
     animateBinaryTree() {
@@ -165,11 +255,14 @@ class OnePairGame {
             { array: this.arrayRouteBinTree2, label: "Tree 2" },
         ];
 
-        const processArray = (array, callback) => {        
+        const processArray = (array, callback) => {      
+            this.timeoutIds = [];
+
             array.forEach((element, index) => {
-                setTimeout(() => {
+                const timeoutId = setTimeout(() => {
                     // Reset all active classes before starting
                     this.resetClasses();
+        
                     // console.log(element)
                     if (element.includes("main")) {
                         this.toggleClass("main", "active", "diagram-container");
@@ -187,13 +280,15 @@ class OnePairGame {
                         this.toggleClass("line-bottom-right", "active", "diagram-container");
                     }
 
-
                     // After the last element, invoke the callback
                     if (index === array.length - 1 && callback) {
                         setTimeout(callback, delay);
                     }
                 }, index * delay);
+
+                this.timeoutIds.push(timeoutId);
             });
+            this.resetClasses();
         };
         const playerName = document.querySelector('.player-name-text');
         
@@ -207,7 +302,6 @@ class OnePairGame {
                 this.iter2 = 0;
             }
             processArray(animationContainer[1].array, () => {
-             
                 this.animateBinaryTree();
             });
         });
@@ -237,11 +331,13 @@ class OnePairGame {
 
     toggleClass(elementClass, className, whichQuery) {
         const element = document.querySelector(`.${whichQuery} .${elementClass}`);
-        console.log(element)
-        if (element) {
+        
+        // console.log(element)
+
+        if (element && className) {
             element.classList.add(className);
         } else {
-            console.warn(`Element with class "${elementClass}" not found.`);
+            console.log(`Element with class "${elementClass}" not found.`);
         }
     }
     
@@ -252,7 +348,6 @@ class OnePairGame {
         return requiredKeys.some(key => key in data);  // Returns true if any of the required keys exist in `data`
     }
 
-    //TODO: wykonac poprawke dla odpowiedzi 'NIE' - dla jednego i drugiego gracza zachowuje sie inaczej; animacja dla drzewa decyzyjnego 
     processStrategyData(data) {
         const keysToUpdate = {
             p1_2x_1: 'top-left-text',
@@ -264,19 +359,14 @@ class OnePairGame {
         // this.toggleClass('main', 'active');
         for (const [key, value] of Object.entries(data)) {
             if (key.includes('yes_no') || key.includes('cards_2_3')) {
-                // console.log(data)
                 if (value.startsWith('Yes')) {
                     this.arrayTemp.push(value)
-                    // console.log(value)
                 } else if (value.includes('No')) {
                     this.arrayTemp.push(value)
-                    // console.log(value)
                 } else if (value.startsWith('Two')) {
                     this.arrayTemp.push(value)
-                    // console.log(value)
                 } else if (value.startsWith('Three')) {
                     this.arrayTemp.push(value)
-                    // console.log(value)
                 }
 
                 if (this.iter1 === 0 && (this.arrayTemp.length === 2 || this.arrayTemp[0] === 'No')) {
@@ -358,10 +448,13 @@ class OnePairGame {
 
     handleSocketMessage(event) {
         const data = JSON.parse(event.data);
+        console.log(data)
 
         if ('cards' in data) {
             console.log(data.cards); // Debugging: check the card names
             // Assuming you have 5 cards to display
+            const cards = data.cards;
+
             if (this.iter === 0) {
                 if (this.isResult) {
                     this.cardsContainer = document.querySelectorAll('.cards-3 .card');
@@ -376,15 +469,15 @@ class OnePairGame {
                     this.cardsContainer = document.querySelectorAll('.cards-2 .card');
                 }
             }
+            
             this.iter += 1;
-
-            // Loop through the card names and set the corresponding image
+            
             data.cards.forEach((card, index) => {
                 if (this.cardsContainer[index]) {
                     // Set the background image for each card element
                     this.cardsContainer[index].style.backgroundImage = `url("/static/css/img/${card}.png")`;
                 }
-            });
+            });        
         }  
 
         if ('type_arrangement' in data) {
@@ -402,12 +495,11 @@ class OnePairGame {
         }
 
         if (this.iter == 2) {
-            
             if (!this.isResult) {
                 setTimeout(() => {
                     this.elements.nextButton1.disabled = false;
                     this.elements.nextButton2.disabled = true;            
-                }, 7000);  
+                }, this.executeFunction ? 6500 : 1500);  
             }
 
             
@@ -416,7 +508,6 @@ class OnePairGame {
         }
 
         this.updateProgressGameText(data);
-      
 
         // Update progress
         if ('progress' in data) {
@@ -494,7 +585,30 @@ class OnePairGame {
         return token ? token.split('=')[1] : '';
     }
 
-    startGame() {
+    async waitForWebSocketOpen(socket) {
+        return new Promise((resolve, reject) => {
+            if (socket.readyState === WebSocket.OPEN) {
+                resolve();
+            } else {
+                socket.onopen = () => resolve();
+                socket.onerror = (error) => reject(error);
+            }
+        });
+    }
+  
+    async startGame() {
+        this.elements.nextButton1.disabled = true;
+        this.elements.nextButton2.disabled = true;
+
+        await this.stopTask();
+    
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            console.log("Closing previous WebSocket...");
+            this.socket.close();
+        }
+        this.socket = null;
+
+        console.log('startGame function called');
         fetch('/start_game_view/', {
             method: 'POST',
             headers: {
@@ -505,12 +619,23 @@ class OnePairGame {
             credentials: 'same-origin'
         })
         .then(response => response.json())  // Read the JSON data once
-        .then(data => {
-            console.log(data)
+        .then(async () => {
+            // Reinitialize the current instance
+            this.reinitializeInstance();
 
-            if (data.status === 'Task stopped successfully') {
-                console.log('Task stopped successfully');
-            }
+            await this.waitForWebSocketOpen(this.socket);
+            
+            this.updatePlayerNames();
+
+            // console.log("Socket ready state before sending:", this.socket.readyState);
+
+            // Now the socket is open, send the start_task message
+            if (this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send(JSON.stringify({ action: 'close', reason: 'button_click' }));
+                console.log("After executing send");
+            } else {
+                console.error("WebSocket is not open. Current state:", this.socket.readyState);
+            }                 
         })
         .catch(error => {
             console.error('Error stopping task:', error);
@@ -546,11 +671,14 @@ class OnePairGame {
     
     handleBeforeUnload() {
         console.log("Stopping background task.....");
+        this.socket.send(JSON.stringify({ action: 'close', reason: 'on_refresh' }));
+
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             console.log("Closing WebSocket...");
             this.socket.close();
         }
         this.stopTask();
+
 
     }
     
@@ -580,5 +708,5 @@ class OnePairGame {
 
 // Wait until the DOM is fully loaded and then initialize the class
 document.addEventListener("DOMContentLoaded", () => {
-    const onePairGame = new OnePairGame();
+    const onePairGame = new OnePairGame(true);
 });

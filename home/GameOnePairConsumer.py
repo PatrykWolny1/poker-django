@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-class GameOnePairConsumer(AsyncWebsocketConsumer):  
+count = 0
+
+class GameOnePairConsumer(AsyncWebsocketConsumer):   
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Register signal handlers for SIGINT (CTRL+C) and SIGTSTP (CTRL+Z)
@@ -21,6 +23,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         signal.signal(signal.SIGABRT, self.handle_signal)
         
     async def connect(self):
+        global count 
         """Handle WebSocket connection."""
         print("Attempting to accept WebSocket connection...")
         await self.accept()
@@ -30,8 +33,12 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         # Initialize Redis values for shared progress and stop event
         self._initialize_redis()
         # Start sending updates until task_manager.stop_event is triggered
-        await self._send_updates()
-        
+
+        print("COUNT: ", count)
+        if count == 0:
+            await self._send_updates()
+            count += 1
+
         print("WebSocket connection accepted")  # Debugging output
         await self._send_updates_info_cards()
 
@@ -41,8 +48,18 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         await super().disconnect(close_code)
                 
     async def receive(self, text_data):
+        global count
         """Handle messages received from WebSocket (currently not used)."""
-        pass
+        print("Receive method triggered")
+        data = json.loads(text_data)
+        print(data, "IN RECEIVE")
+        
+        if data['action'] == 'close':
+            reason = data['reason']
+            if reason == 'on_refresh':
+                count = 0
+            elif reason == 'button_click':
+                count += 1
     
     def handle_signal(self, sig, frame):
         """Handle signals (SIGINT and SIGTSTP)."""
@@ -107,7 +124,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
             if self._should_stop():
                 break
             
-            # print("In _send_updates()")
+            print("In _send_updates()")
             
             await asyncio.sleep(0.5)  # Adjust interval as needed
     
@@ -121,7 +138,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
 
         while redis.get('stop_event_send_updates') and redis.get('stop_event_send_updates').decode('utf-8') == '0':
             # Update player number in Redis
-            
+            # print(player_number)
             if player_number < 2:
                 redis.set('player_number', str(player_number))
                 

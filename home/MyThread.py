@@ -24,9 +24,6 @@ class MyThread(threading.Thread):
                 else:
                     
                     self._target(self.data_queue)  # Call target without flags
-
-        except Exception as e:
-            print(f"Exception in thread {thread_id}: {e}")
         finally:
             # Cleanup or status update
             print(f"Thread {thread_id} has stopped.")

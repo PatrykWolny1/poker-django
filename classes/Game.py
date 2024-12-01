@@ -4,6 +4,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from classes.Player import Player
 from classes.Croupier import Croupier
+from classes.PassAllCombPermSingleton import pass_all_comb_perm
 from machine_learning.M_learning import M_learning 
 from home.redis_buffer_singleton import redis_buffer_instance
 import re
@@ -35,7 +36,11 @@ class Game(object):
         
         if queue is not None:
             self.all_comb_perm = queue.get()
-
+            pass_all_comb_perm.set_all_comb_perm(self.all_comb_perm)
+        else:
+            self.all_comb_perm = pass_all_comb_perm.get_all_comb_perm()
+        
+        
         self.Game()
         
     def Game(self): 
@@ -85,7 +90,7 @@ class Game(object):
         
         if choice == '2':
             game_si_human = redis_buffer_instance.redis_1.get('game_si_human').decode('utf-8')
-
+            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             if game_si_human == '1':
                 croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
             if game_si_human == '2':

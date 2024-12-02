@@ -48,7 +48,7 @@ urlpatterns = [
     path('submit_number/', views.submit_number, name='submit_number'),
     
     path('get_redis_value/', views.get_redis_value, name='get_redis_value'),
-    path('start_game/', views.start_game, name='start_game'),   
+    path('start_game_view/', views.start_game, name='start_game'),   
 ]
 
 if settings.DEBUG:

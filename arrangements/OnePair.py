@@ -67,23 +67,37 @@ class OnePair(HelperArrangement):
             print("Jedna Para: ", self.weight_arrangement, "Wysoka karta: ", self.high_card.print_str(),  "Numer: ", self.rand_int)
 
     def remove_multiples(self, cards_comb):
+        self.helper_arr.clear_indices_2d_1()
+        self.helper_arr.get_indices_1(cards_comb)
+        
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
-        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
-            if len(self.helper_arr.get_indices_2d_1()[i]) in range(2, 4):  # Jesli w wierszu tablicy znajduja sie 2 lub 3 takie same elementy
-                return True
-
+        for i in range(0, len(self.helper_arr.indices_2d)):
+            try:
+                if len(self.helper_arr.indices_2d[i]) == 2 or len(self.helper_arr.indices_2d[i]) == 3:  # Jesli w wierszu tablicy znajduja sie 2 lub 3 takie same elementy
+                    return True
+            except IndexError:
+                print(i)
+                print("INDEX ERROR REMOVE_MULTIPILES: ", len(self.helper_arr.indices_2d))
         return False
 
     def remove_multiples_more_4(self, cards_comb):
+        self.helper_arr.clear_indices_2d_1()
+        self.helper_arr.get_indices_1(cards_comb)
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
 
-        for i in range(0, len(self.helper_arr.get_indices_2d_1())):
-            if len(self.helper_arr.get_indices_2d_1()[i]) > 4:  # Jesli w wierszu tablicy znajduja sie wiecej niz 4 takie same elementy
-                return True
-
+        for i in range(0, len(self.helper_arr.indices_2d)):
+            try:
+                if len(self.helper_arr.indices_2d[i]) > 4:  # Jesli w wierszu tablicy znajduja sie wiecej niz 4 takie same elementy
+                    return True
+            except IndexError:
+                print(i)
+                print(self.helper_arr.indices_2d)
+                print("INDEX ERROR REMOVE_MULTIPILES MORE 4: ", len(self.helper_arr.indices_2d)) 
         return False
 
     def remove_multiples_more_2(self, cards_comb):
+        self.helper_arr.clear_indices_2d_1()
+        self.helper_arr.get_indices_1(cards_comb)
         # Sprawdzanie oraz zapisanie indeksow powtarzajacych sie kart
 
         for i in range(0, len(self.helper_arr.get_indices_2d_1())):
@@ -260,15 +274,12 @@ class OnePair(HelperArrangement):
             if idx_1 == len(cards_comb_rest):
                 break
             
+            
+            # Usuwanie powtorek powtarzajacych sie kart (2 lub 3)
+            if_remove_comb_1 = self.remove_multiples(cards_comb_rest[idx_1])
+            
             self.helper_arr.clear_indices_2d_1()
 
-            self.helper_arr.get_indices_1(cards_comb_rest[idx_1])
-            try:
-            # Usuwanie powtorek powtarzajacych sie kart (2 lub 3)
-                if_remove_comb_1 = self.remove_multiples(cards_comb_rest[idx_1])
-            except:
-                print(cards_comb_rest[idx_1])
-                print(self.helper_arr.indices_2d)
                 
             if if_remove_comb_1 == True:
                 cards_comb_rest[idx_1] = []
@@ -311,12 +322,13 @@ class OnePair(HelperArrangement):
             if idx_1 == len(cards_to_comb_1):
                 break
             
-            self.helper_arr.clear_indices_2d_1()
-            self.helper_arr.get_indices_1(cards_to_comb_1[idx_1])
-            
+       
             # Usuwanie powtorek powtarzajacych sie kart (2 lub 3)
+        
             if_remove_comb_1 = self.remove_multiples(cards_to_comb_1[idx_1])
             if_remove_comb_2 = self.remove_multiples_more_4(cards_to_comb_1[idx_1])
+            
+            self.helper_arr.clear_indices_2d_1()
 
             if if_remove_comb_1 == True:
                 cards_to_comb_1[idx_1] = []
@@ -340,11 +352,10 @@ class OnePair(HelperArrangement):
             
             for idx1 in range(0, len(self.cards_comb)):
                 
-                self.helper_arr.clear_indices_2d_1()
-                self.helper_arr.get_indices_1(self.cards_comb[idx1])
-                
                 if_remove_comb_3 = self.remove_multiples_more_2(self.cards_comb[idx1])
                 
+                self.helper_arr.clear_indices_2d_1()
+
                 if if_remove_comb_3 == True:
                     self.cards_comb[idx1] = []
                 

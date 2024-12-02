@@ -57,8 +57,11 @@ class Arrangements(object):
         for x in self.arrangements:
             self.part_weights.append(x.get_part_weight())
                     
-    def check_arrangement(self, game_visible=True):
+    def check_arrangement(self, game_visible=True, is_result=False):
         self.ids_arr = []
+        
+        arr_str = None
+        
         if game_visible == False:
             blockPrint()
         
@@ -66,9 +69,32 @@ class Arrangements(object):
             x.set_rand_int(self.rand_int)
             self.ids_arr.append(x.arrangement_recogn()) 
             
-            if isinstance(x, OnePair):
-                arr_str = "Jedna Para: " + str(x.weight_arrangement) + " Wysoka karta: " + x.high_card.print_str() + "\n"
-        
+            if not is_result:
+                if isinstance(x, OnePair):
+                    arr_str = "Jedna Para: " + str(x.weight_arrangement) + " Wysoka karta: " + x.high_card.print_str() + "\n"
+            else:
+                which_arr = x.arrangement_recogn()
+                if which_arr == 1:
+                    arr_str = "Wysoka Karta: " + str(x.weight_arrangement) + " Wysoka karta: " + x.high_card_1.print_str() + "\n"
+                elif which_arr == 2:
+                    arr_str = "Jedna Para: " + str(x.weight_arrangement) + " Wysoka karta: " + x.high_card.print_str() + "\n"
+                elif which_arr == 3:
+                    arr_str = "Dwie pary: " + str(x.two_pairs_sum) + " Wysoka Karta: " + x.high_card.print_str() + "\n"
+                elif which_arr == 4:
+                    arr_str = "Trojka: " + str(x.weight_arrangement) + " Wysoka Karta: " + x.high_card.print_str() + "\n"
+                elif which_arr == 5:
+                    arr_str = "Strit: " + str(x.weight_arrangement) + "\n"
+                elif which_arr == 6:
+                    arr_str = "Kolor: " + str(x.color_sum) + " Wysoka Karta: " + x.high_card.print_str() + "\n"
+                elif which_arr == 7:
+                    arr_str = "Full: " + str(x.weight_arrangement) + "\n"
+                elif which_arr == 8:
+                    arr_str = "Kareta: " + str(x.weight_arrangement) + "\n"
+                elif which_arr == 9:
+                    arr_str = "Poker: " + str(x.weight_arrangement) + "\n"
+                elif which_arr == 10:
+                    arr_str = "Poker Krolewski: " + str(x.weight_arrangement) + "\n"
+    
         if game_visible == False:
             enablePrint()
         #print(self.ids_arr)

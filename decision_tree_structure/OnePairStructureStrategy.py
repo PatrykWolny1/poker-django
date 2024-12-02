@@ -7,6 +7,7 @@ from decision_tree_strategies.OnePairProbability import OnePairProbability
 from decision_tree_strategies.ThreeCardsProbability import ThreeCardsProbability 
 from decision_tree_strategies.TwoThreeCardsProbability import TwoThreeCardsProbability 
 
+
 class OnePairStructureStrategy(object):
     def __init__(self, cards: list = None):
         self.cards_rest = cards
@@ -16,7 +17,7 @@ class OnePairStructureStrategy(object):
 
     def set_root(self, visited=False, amount=None, exchange=None):
         self.root = Node(name="ONE PAIR", visited=visited, amount=amount, exchange=exchange)               
-
+        
     def build_tree(self): 
         
         computeobject_1 = OnePairProbability("One Pair Probability", 
@@ -54,7 +55,7 @@ class OnePairStructureStrategy(object):
         internal_nodes = [InternalNode("Yes (How many cards?)", branches, leaf_nodes)]
         
         self.root.internal_nodes.append(internal_nodes)
-        
+                
     def get_cards_to_exchange(self):
         return self.computeobject.get_proc_data()
     

@@ -59,6 +59,9 @@ class Arrangements(object):
                     
     def check_arrangement(self, game_visible=True, is_result=False):
         self.ids_arr = []
+        
+        arr_str = None
+        
         if game_visible == False:
             blockPrint()
         

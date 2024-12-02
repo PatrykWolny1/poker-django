@@ -16,18 +16,19 @@ class OnePairGame {
         this.arrayTemp = new Array();
         this.arrayRouteBinTree1 = new Array();
         this.arrayRouteBinTree2 = new Array();
-        this.cardsContainer = undefined;
+        this.cardsContainer = null;
         this.progressGameBorders1 = document.querySelectorAll('.progress-game-border-1');
         this.progressGameBorders2 = document.querySelectorAll('.progress-game-border-2');
-        this.progressGameBorders = undefined;
+        this.progressGameBorders = null;
         this.isProgressGameBorders = false;
         this.isChances = true;
         this.isResult = false;
         this.isName = true;
         this.noAnimateBT = false;
         this.timeoutIds = [];
-        this.socket = undefined;
+        this.socket = null;
         this.executeFunction = executeFunction;
+        this.arrangement_result_off = null
         
         // Initialize player names
         this.player1Name = document.getElementById('player1').value;
@@ -53,7 +54,9 @@ class OnePairGame {
         this.elements.nextButton2.disabled = true;
         
         this.elements.playButton.addEventListener('click', () => {
+            this.elements.playButton.disabled = true;
             this.startGame();
+            this.elements.playButton.disabled = false;
         });
 
         this.elements.nextButton1.addEventListener('click', () => {
@@ -66,11 +69,17 @@ class OnePairGame {
             this.fetchRedisValue('wait_buffer')
             this.elements.nextButton1.disabled = true;
             this.elements.nextButton2.disabled = true;
-            setTimeout(() => {
-                this.elements.nextButton1.disabled = true;
-                this.elements.nextButton2.disabled = false;            
-            }, 1500); 
             
+            if (this.arrangement_result_off) {
+                this.elements.nextButton1.disabled = true;
+                this.elements.nextButton2.disabled = true;
+            } else {
+                setTimeout(() => {
+                    this.elements.nextButton1.disabled = true;
+                    this.elements.nextButton2.disabled = false;            
+                }, 1500);
+            } 
+     
         });
 
         window.addEventListener("beforeunload", this.handleBeforeUnload.bind(this));
@@ -125,6 +134,7 @@ class OnePairGame {
         this.player1Name = document.getElementById('player1').value;
         this.player2Name = document.getElementById('player2').value;
         this.socket = null;
+        this.executeFunction = false;
         
         const progressGames1 = this.progressGameBorders1[0].querySelectorAll('.progress-game');
         progressGames1[0].textContent = null;
@@ -143,6 +153,8 @@ class OnePairGame {
 
         const arrangement_result_2 = document.querySelector('.arrangement-result-2');
         arrangement_result_2.textContent = null;
+
+        this.arrangement_result_off = null
 
         // Select all the containers for the cards
         const cardContainers = [
@@ -214,16 +226,18 @@ class OnePairGame {
             } else if (this.iter4 === 1) {
                 const arrangement_result_2 = document.querySelector('.arrangement-result-2');
                 arrangement_result_2.textContent = typeArrangementResult;
+                
+                this.arrangement_result_off = true;
                 this.iter4 = 0;
             }
         }
 
         if ('first_second' in data) {
-            const firstSecond = data.first_second;
-            if (firstSecond === '0') {
+            this.firstSecond = data.first_second;
+            if (this.firstSecond === '0') {
                 this.toggleClass("result-info-1", "active", 'result');
 
-            } else if (firstSecond === '1') {
+            } else if (this.firstSecond === '1') {
                 this.toggleClass("result-info-2", "active", 'result');
             }
             this.elements.nextButton1.disabled = true;
@@ -472,7 +486,7 @@ class OnePairGame {
             
             this.iter += 1;
             
-            data.cards.forEach((card, index) => {
+            cards.forEach((card, index) => {
                 if (this.cardsContainer[index]) {
                     // Set the background image for each card element
                     this.cardsContainer[index].style.backgroundImage = `url("/static/css/img/${card}.png")`;
@@ -499,7 +513,7 @@ class OnePairGame {
                 setTimeout(() => {
                     this.elements.nextButton1.disabled = false;
                     this.elements.nextButton2.disabled = true;            
-                }, this.executeFunction ? 6500 : 1500);  
+                }, this.executeFunction ? 6500 : 2000);  
             }
 
             

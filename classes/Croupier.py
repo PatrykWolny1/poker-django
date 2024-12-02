@@ -418,8 +418,7 @@ class Croupier(object):
                 self.exchange = np.random.choice(['n', 't'], size=1, 
                                     p=[float(self.one_pair_strategy[self.num].root.internal_nodes[0][0].branches[0]),
                                        float(self.one_pair_strategy[self.num].root.internal_nodes[0][0].branches[1])]) 
-                
-                
+                                
                 redis_buffer_instance_one_pair_game.redis_1.set('player', self.player.nick)
             
                 self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))     

@@ -25,25 +25,34 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         global count 
         """Handle WebSocket connection."""
-        print("Attempting to accept WebSocket connection...")
+        print("Attempting to accept WebSocket connection...", flush=True)
         await self.accept()
-        print("WebSocket connection accepted")  # Debugging output
-        print(f"WebSocket connection accepted with channel: {self.channel_name}")
+        print("WebSocket connection accepted", flush=True) 
         
+        redis_buffer_instance_one_pair_game.redis_1.set('connection_accepted', 'yes')
+
         # Initialize Redis values for shared progress and stop event
         self._initialize_redis()
-        # Start sending updates until task_manager.stop_event is triggered
-
-        print("COUNT: ", count)
+    
+        print("Count: ", count, flush=True)
         if count == 0:
+         
+            while True:
+                break_flag = redis_buffer_instance_one_pair_game.redis_1.get('thread_status').decode('utf-8')
+                if break_flag == 'ready':            
+                    print("Received 'ready' message from Redis Pub/Sub.", flush=True)
+                    break
+                if redis_buffer_instance_one_pair_game.redis_1.get('stop_event_send_updates').decode('utf-8') == '1':
+                    break
+                await asyncio.sleep(0.1)
             await self._send_updates()
             count += 1
 
-        print("WebSocket connection accepted")  # Debugging output
         await self._send_updates_info_cards()
 
     async def disconnect(self, close_code):
         print("WebSocket connection closed", flush=True)
+        # redis_buffer_instance_one_pair_game.redis_1.publish('thread_status', 'disconnect')
 
         await super().disconnect(close_code)
                 
@@ -83,6 +92,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     
     async def async_cleanup(self):
         """Handle asynchronous cleanup."""
+        
         print("Starting asynchronous cleanup...")
         await self.disconnect(close_code=1000)
         print("Asynchronous cleanup complete.")
@@ -108,9 +118,10 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def _send_updates(self):
         
         """Continuously send updates on progress and data script until stop_event_var is set."""
-        
+
         while not task_manager.stop_event.is_set():
             with task_manager.cache_lock_event_var:
+                print(redis_buffer_instance.redis_1.get('min'), redis_buffer_instance.redis_1.get('max'), "MINMAX")
                 if (redis_buffer_instance.redis_1.get('min') is not None) and redis_buffer_instance.redis_1.get('max') is not None:
                     from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
                     from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
@@ -129,6 +140,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
             await asyncio.sleep(0.5)  # Adjust interval as needed
     
     async def _send_updates_info_cards(self):
+        global count 
         """Send updates for info cards and related data in real-time."""
         print("Begin: _send_updates_info_cards")
         task_manager.stop_event.clear()
@@ -139,6 +151,8 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         while redis.get('stop_event_send_updates') and redis.get('stop_event_send_updates').decode('utf-8') == '0':
             # Update player number in Redis
             # print(player_number)
+            print("In _send_updates_info_cards")
+
             if player_number < 2:
                 redis.set('player_number', str(player_number))
                 
@@ -314,8 +328,8 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""
         # Only lock the part where progress is fetched
-        with task_manager.cache_lock_progress:
-            progress = int(redis_buffer_instance_one_pair_game.redis_1.get('shared_progress').decode('utf-8'))
+        # with task_manager.cache_lock_progress:
+        progress = int(redis_buffer_instance_one_pair_game.redis_1.get('shared_progress').decode('utf-8'))
         mapped_progress = self._map_progress(progress, from_min, from_max)
 
         if mapped_progress is not None:

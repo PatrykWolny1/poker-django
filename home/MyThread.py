@@ -10,23 +10,20 @@ class MyThread(threading.Thread):
         self.data_queue = data_queue if isinstance(data_queue, queue.Queue) else queue.Queue()
         self.flag1 = flag1
         self.flag2 = flag2
-        self.daemon = False
+        self.daemon = True
 
     def run(self):
-        # Example: Set a Redis key indicating the thread is running
         thread_id = threading.get_ident()  # Get unique thread identifier
         print(f"Thread {thread_id} is starting with flags: {self.flag1}, {self.flag2}")
         try:
-            # Assuming redis_buffer_instance.redis_1 is properly configured elsewhere
             if self._target:
                 if self.flag1 is not None and self.flag2 is not None:
                     self._target(self.flag1, self.flag2, self.data_queue)
                 else:
                     
-                    self._target(self.data_queue)  # Call target without flags
-        finally:
-            # Cleanup or status update
-            print(f"Thread {thread_id} has stopped.")
+                    self._target(self.data_queue) 
+        except Exception as e:
+            print(e)
     
     def get_id(self):
         # returns id of the respective thread

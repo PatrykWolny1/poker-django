@@ -1,5 +1,5 @@
 class OnePairGame {
-    constructor(executeFunction) {
+    constructor(executeFunction, isMobile) {   
         this.cards = "";
         this.progress = 0;
         this.progressUpdateThreshold = 500; // milliseconds
@@ -17,8 +17,15 @@ class OnePairGame {
         this.arrayRouteBinTree1 = new Array();
         this.arrayRouteBinTree2 = new Array();
         this.cardsContainer = null;
-        this.progressGameBorders1 = document.querySelectorAll('.progress-game-border-1');
-        this.progressGameBorders2 = document.querySelectorAll('.progress-game-border-2');
+        this.isMobile = isMobile;
+        
+        this.progressGameBorders1 = this.isMobile 
+            ? document.querySelectorAll('.mobile-only .progress-game-border-1') 
+            : document.querySelectorAll('.progress-game-border-1');
+
+        this.progressGameBorders2 = this.isMobile 
+            ? document.querySelectorAll('.mobile-only .progress-game-border-2') 
+            : document.querySelectorAll('.progress-game-border-2');
         this.progressGameBorders = null;
         this.isProgressGameBorders = false;
         this.isChances = true;
@@ -37,13 +44,18 @@ class OnePairGame {
         this.elements = {
             progressBar: document.getElementById('progressBar'),
             playButton: document.getElementById('playButton'),
-            nextButton1: document.getElementById('nextButton1'),
-            nextButton2: document.getElementById('nextButton2'),
+            nextButton1: this.isMobile 
+                ? document.getElementById('nextButton1Mobile')
+                : document.getElementById('nextButton1'),
+            nextButton2: this.isMobile 
+                ? document.getElementById('nextButton2Mobile')
+                : document.getElementById('nextButton2'),
         }
-
+        
+   
         // Update player names immediately when the object is created
         this.updatePlayerNames();
-
+        
             // Now connect the WebSocket
         this.initializeWebSocket();
 
@@ -83,11 +95,28 @@ class OnePairGame {
         });
 
         window.addEventListener("beforeunload", this.handleBeforeUnload.bind(this));
+
+        window.addEventListener('resize', () => {
+            this.isMobile = window.innerWidth <= 768;
+            console.log('Viewport resized. Is mobile:', this.isMobile);
+        });
     }
     
     // Method to initialize WebSocket
-    initializeWebSocket() {
-        this.socket = new WebSocket('wss://127.0.0.1:8000/ws/op_game/');
+    async initializeWebSocket() {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            console.log("Closing previous WebSocket...");
+            this.socket.close();
+        }
+        this.socket = null;
+
+        console.log(window.env.IS_DEV);
+
+        if (window.env.IS_DEV.includes('yes')) {
+            this.socket = new WebSocket('wss://127.0.0.1:8000/ws/op_game/');    
+        } else if (window.env.IS_DEV.includes('no')) {
+            this.socket = new WebSocket('wss://pokersimulation.onrender.com/ws/op_game/');    //'wss://127.0.0.1:8000/ws/op_game/'
+        }
         console.log("WebSocket instance created:", this.socket);
 
         this.socket.onopen = () => {
@@ -123,10 +152,15 @@ class OnePairGame {
         this.arrayTemp = [];
         this.arrayRouteBinTree1 = [];
         this.arrayRouteBinTree2 = [];
-        this.cardsContainer = undefined;
-        this.progressGameBorders1 = document.querySelectorAll('.progress-game-border-1');
-        this.progressGameBorders2 = document.querySelectorAll('.progress-game-border-2');
-        this.progressGameBorders = undefined;
+        this.cardsContainer = null;
+        this.progressGameBorders1 = this.isMobile 
+            ? document.querySelectorAll('.mobile-only .progress-game-border-1') 
+            : document.querySelectorAll('.progress-game-border-1');
+
+        this.progressGameBorders2 = this.isMobile 
+            ? document.querySelectorAll('.mobile-only .progress-game-border-2') 
+            : document.querySelectorAll('.progress-game-border-2');
+        this.progressGameBorders = null;
         this.isProgressGameBorders = false;
         this.isChances = true;
         this.isResult = false;
@@ -136,22 +170,30 @@ class OnePairGame {
         this.socket = null;
         this.executeFunction = false;
         
-        const progressGames1 = this.progressGameBorders1[0].querySelectorAll('.progress-game');
+        const progressGames1 = this.isMobile
+            ? this.progressGameBorders1[0].querySelectorAll('.mobile-only .progress-game')
+            : this.progressGameBorders1[0].querySelectorAll('.progress-game');
         progressGames1[0].textContent = null;
         progressGames1[1].textContent = null;
         progressGames1[2].textContent = null;
         progressGames1[3].textContent = null;
 
-        const progressGames2 = this.progressGameBorders2[0].querySelectorAll('.progress-game');
+        const progressGames2 = this.isMobile
+            ? this.progressGameBorders2[0].querySelectorAll('.mobile-only .progress-game')
+            : this.progressGameBorders2[0].querySelectorAll('.progress-game');
         progressGames2[0].textContent = null;
         progressGames2[1].textContent = null;
         progressGames2[2].textContent = null;
         progressGames2[3].textContent = null;
 
-        const arrangement_result_1 = document.querySelector('.arrangement-result-1');
+        const arrangement_result_1 = this.isMobile
+            ? document.querySelector('.mobile-only .arrangement-result-1')
+            : document.querySelector('.arrangement-result-1')
         arrangement_result_1.textContent = null;
 
-        const arrangement_result_2 = document.querySelector('.arrangement-result-2');
+        const arrangement_result_2 = this.isMobile
+            ? document.querySelector('.mobile-only .arrangement-result-2')
+            : document.querySelector('.arrangement-result-2')
         arrangement_result_2.textContent = null;
 
         this.arrangement_result_off = null
@@ -175,7 +217,9 @@ class OnePairGame {
             });
         });
 
-        const container = document.querySelector(".result");
+        const container = this.isMobile
+            ? document.querySelector(".result", "mobile-only")
+            : document.querySelector(".result");
         const allClasses = [
             "result-info-1",
             "result-info-2",
@@ -220,11 +264,15 @@ class OnePairGame {
             const typeArrangementResult = data.type_arrangement_result;
         
             if (this.iter4 === 0) {
-                const arrangement_result_1 = document.querySelector('.arrangement-result-1');
+                const arrangement_result_1 = this.isMobile
+                ? document.querySelector('.mobile-only .arrangement-result-1')
+                : document.querySelector('.arrangement-result-1');
                 arrangement_result_1.textContent = typeArrangementResult;
                 this.iter4 = 1;
             } else if (this.iter4 === 1) {
-                const arrangement_result_2 = document.querySelector('.arrangement-result-2');
+                const arrangement_result_2 = this.isMobile
+                ? document.querySelector('.mobile-only .arrangement-result-2')
+                : document.querySelector('.arrangement-result-2');
                 arrangement_result_2.textContent = typeArrangementResult;
                 
                 this.arrangement_result_off = true;
@@ -304,8 +352,10 @@ class OnePairGame {
             });
             this.resetClasses();
         };
-        const playerName = document.querySelector('.player-name-text');
-        
+        const playerName = this.isMobile 
+            ? document.getElementById('player-name-text-mobile')
+            : document.querySelector('.player-name-text');
+
         if (this.iter2 === 0) {
             playerName.textContent = this.player1Name;
             this.iter2 = 1;
@@ -324,7 +374,10 @@ class OnePairGame {
     
     // Helper function to reset all classes
     resetClasses() {
-        const container = document.querySelector(".diagram-container");
+        const container = this.isMobile 
+            ? document.querySelector(".mobile-only .diagram-container")
+            : document.querySelector(".diagram-container");
+
         const allClasses = [
             "main",
             "top-left",
@@ -344,10 +397,18 @@ class OnePairGame {
     }
 
     toggleClass(elementClass, className, whichQuery) {
-        const element = document.querySelector(`.${whichQuery} .${elementClass}`);
-        
-        // console.log(element)
+        let element = null;
 
+        if (whichQuery === 'diagram-container') {
+            element = this.isMobile
+                ? document.querySelector(`.mobile-only .${whichQuery} .${elementClass}`)
+                : document.querySelector(`.${whichQuery} .${elementClass}`);
+        } else {
+            element = this.isMobile
+                ? document.querySelector(`.mobile-only .${elementClass}`)
+                : document.querySelector(`.${whichQuery} .${elementClass}`);
+            // console.log(element)
+        }
         if (element && className) {
             element.classList.add(className);
         } else {
@@ -363,12 +424,23 @@ class OnePairGame {
     }
 
     processStrategyData(data) {
-        const keysToUpdate = {
-            p1_2x_1: 'top-left-text',
-            p1_2x_0: 'top-right-text',
-            p2x: 'bottom-left-text',
-            p1x: 'bottom-right-text',
-        };
+        let keysToUpdate;
+
+        if (this.isMobile) {
+            keysToUpdate = {
+                p1_2x_1: 'top-left-text-mobile',
+                p1_2x_0: 'top-right-text-mobile',
+                p2x: 'bottom-left-text-mobile',
+                p1x: 'bottom-right-text-mobile'
+            };
+        } else {
+            keysToUpdate = {
+                p1_2x_1: 'top-left-text',
+                p1_2x_0: 'top-right-text',
+                p2x: 'bottom-left-text',
+                p1x: 'bottom-right-text'
+            };
+        }
 
         // this.toggleClass('main', 'active');
         for (const [key, value] of Object.entries(data)) {
@@ -415,9 +487,13 @@ class OnePairGame {
     }
     
     updatePercentage(id, newValue) {
-        const element = document.getElementById(id);
+        console.log(id);
+        const element = this.isMobile
+            ? document.getElementById(id) 
+            : document.getElementById(id);
+        console.log("Element found:", element)
         if (element) {
-            element.textContent = `${newValue}%`;
+            element.textContent = `${newValue}%`
         }
     }
 
@@ -469,21 +545,31 @@ class OnePairGame {
             // Assuming you have 5 cards to display
             const cards = data.cards;
 
+            this.isMobile = window.innerWidth <= 768;
+
             if (this.iter === 0) {
                 if (this.isResult) {
-                    this.cardsContainer = document.querySelectorAll('.cards-3 .card');
+                    this.cardsContainer = this.isMobile 
+                        ? document.querySelectorAll('.mobile-only .cards-3 .card')
+                        : document.querySelectorAll('.cards-3 .card');
                 } else {
-                    this.cardsContainer = document.querySelectorAll('.cards-1 .card');
+                    this.cardsContainer = this.isMobile 
+                        ? document.querySelectorAll('.mobile-only .cards-1 .card')
+                        : document.querySelectorAll('.cards-1 .card');
                 }
             }
             if (this.iter === 1) {
                 if (this.isResult) {
-                    this.cardsContainer = document.querySelectorAll('.cards-4 .card');
+                    this.cardsContainer = this.isMobile 
+                        ? document.querySelectorAll('.mobile-only .cards-4 .card')
+                        : document.querySelectorAll('.cards-4 .card');
                 } else {
-                    this.cardsContainer = document.querySelectorAll('.cards-2 .card');
+                    this.cardsContainer = this.isMobile 
+                        ? document.querySelectorAll('.mobile-only .cards-2 .card')
+                        : document.querySelectorAll('.cards-2 .card');
                 }
             }
-            
+        
             this.iter += 1;
             
             cards.forEach((card, index) => {
@@ -498,11 +584,15 @@ class OnePairGame {
             const typeArrangement = data.type_arrangement;
         
             if (this.iter3 === 0) {
-                const arrangement1 = document.querySelector('.arrangement-1');
+                const arrangement1 = this.isMobile
+                ? document.querySelectorAll('.mobile-only .arrangement-1')
+                : document.querySelector('.arrangement-1');
                 arrangement1.textContent = typeArrangement;
                 this.iter3 = 1;
             } else if (this.iter3 === 1) {
-                const arrangement2 = document.querySelector('.arrangement-2');
+                const arrangement2 = this.isMobile
+                ? document.querySelectorAll('.mobile-only .arrangement-2')
+                : document.querySelector('.arrangement-2');
                 arrangement2.textContent = typeArrangement;
                 this.iter3 = 0;
             }
@@ -580,15 +670,22 @@ class OnePairGame {
         this.player2Name = document.getElementById('player2').value;
 
         // Set the player names in the player area <p> elements
-        const player1Area = document.querySelector('.player1-area');
-        const player2Area = document.querySelector('.player2-area');
+        const player1Area = this.isMobile
+            ? document.querySelectorAll('.mobile-only .player1-area')
+            : document.querySelectorAll('.player1-area');
+        const player2Area = this.isMobile
+            ? document.querySelectorAll('.mobile-only .player2-area')
+            : document.querySelectorAll('.player2-area');
 
         // Update the text content for the player areas
         player1Area.textContent = this.player1Name;
         player2Area.textContent = this.player2Name;
 
         // Optionally, update the player titles as well
-        const playerTitles = document.querySelectorAll('.player-title');
+        const playerTitles = this.isMobile
+         ? document.querySelectorAll('.mobile-only .player-title')
+         : document.querySelectorAll('.player-title');
+
         playerTitles[0].textContent = this.player1Name;
         playerTitles[1].textContent = this.player2Name;
     }
@@ -683,16 +780,18 @@ class OnePairGame {
         });
     }
     
-    handleBeforeUnload() {
+    async handleBeforeUnload() {
+        localStorage.removeItem('pagePreviouslyLoaded');
+
         console.log("Stopping background task.....");
+        await this.stopTask();
+        
         this.socket.send(JSON.stringify({ action: 'close', reason: 'on_refresh' }));
 
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             console.log("Closing WebSocket...");
             this.socket.close();
         }
-        this.stopTask();
-
 
     }
     
@@ -722,5 +821,31 @@ class OnePairGame {
 
 // Wait until the DOM is fully loaded and then initialize the class
 document.addEventListener("DOMContentLoaded", () => {
-    const onePairGame = new OnePairGame(true);
+    if (localStorage.getItem('pagePreviouslyLoaded')) {
+        // This means the page was previously opened, so we can trigger some actions
+        console.log('Page is re-opened or reloaded.');
+        // Call any function you need here, similar to `beforeunload` actions
+    } else {
+        // Set the flag to indicate that the page was loaded
+        localStorage.setItem('pagePreviouslyLoaded', 'true');
+        console.log('First time loading the page.');
+    }
+    const isMobile = window.innerWidth <= 768;
+
+    const onePairGame = new OnePairGame(true, isMobile);
+    // Simulate some loading process
+    const checkLoadingStatus = setInterval(() => {    
+        // Check every 100 milliseconds
+        if (onePairGame.progress > 0) {
+            // Hide the loader once the condition is met
+            const loaderContainer = document.getElementById('loaderContainer');
+            loaderContainer.style.display = 'none';
+
+            // Make the content visible
+            const content = document.getElementById('content');
+            content.style.visibility = 'visible';
+            // Stop further checks
+            clearInterval(checkLoadingStatus);
+        }
+    }, 100);
 });

@@ -31,8 +31,9 @@ CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_NAME = 'csrftoken'  # This should match the cookie name
 CSRF_COOKIE_SAMESITE = 'Strict'  # You can use 'Strict' or 'Lax' depending on your needs
+CSRF_TRUSTED_ORIGINS = ['https://pokersimulation.onrender.com']
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'pokersimulation.onrender.com']
 
 CHANNEL_LAYERS = {
     'default': {
@@ -44,10 +45,13 @@ SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Application definition
 
+redis_url = os.getenv('REDIS_URL', 'redis://redis:6379/1')
+print(redis_url)
+
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://redis:6379/1', #'redis://redis:6379/1', #old worked without docker
+        'LOCATION': redis_url, #'redis://redis:6379/1', #DEVELOPMENT
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }

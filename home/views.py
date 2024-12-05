@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, FileResponse, Http404
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.core.cache import cache
 from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
 from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
@@ -15,7 +16,9 @@ import traceback
 
 # Global Variables
 task_threads = {}
+thread_ids = []
 task_thread = None
+THREAD_METADATA_FILE = "threads.json"
 # Views
 
 def index(request):
@@ -24,17 +27,20 @@ def index(request):
     return render(request, 'home/index.html', {'template_data': template_data})
 
 def cards_permutations(request):
+    is_dev = os.getenv('IS_DEV', 'yes')
     """Initialize values and render the permutacje_kart template."""
-    csrf_token = get_token(request)
+    # csrf_token = get_token(request)
     _initialize_redis_values_permutacje()
-    return render(request, 'home/cards_permutations.html', {'csrf_token': csrf_token})
+    return render(request, 'home/cards_permutations.html', {'is_dev': is_dev})
 
 def one_pair_game(request):
     """Start thread if not already running, for one-pair game."""
+    is_dev = os.getenv('IS_DEV', 'yes')
     if request.method == 'GET':
         _initialize_redis_values_gra_jedna_para()
-        return _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html')
-    return render(request, 'home/one_pair_game.html', {'message': 'No thread running'})
+        return _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html', context={'is_dev': is_dev})
+    print("ONE_PAIR_GAME")
+    return render(request, 'home/one_pair_game.html', {'is_dev': is_dev})
 
 def start_task(request):
     """Handle task initiation from POST request."""
@@ -92,24 +98,27 @@ def _initialize_redis_values_permutacje():
     redis_buffer_instance.redis_1.set('count_arrangements', '-1')
     redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
     redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
+    redis_buffer_instance.redis_1.set('shared_progress', '0')
     redis_buffer_instance.redis_1.set('min', '-1')
     redis_buffer_instance.redis_1.set('max', '-1')
+    redis_buffer_instance_one_pair_game.redis_1.set('connection_accepted', 'yes')    
     
 def _initialize_redis_values_gra_jedna_para():
     """Initialize Redis values specific to gra_jedna_para."""
-    redis_buffer_instance_one_pair_game.redis_1.flushall()
+    redis_buffer_instance.redis_1.set('prog_when_fast', '-1')
     redis_buffer_instance.redis_1.set('choice_1', '2')
     redis_buffer_instance.redis_1.set('choice', '2')
     redis_buffer_instance.redis_1.set('when_one_pair', '1')
     redis_buffer_instance.redis_1.set("entered_value", '10982') #one_pair 1098240
     redis_buffer_instance.redis_1.set('game_si_human', '2')
-    redis_buffer_instance.redis_1.set('min', '-1')
-    redis_buffer_instance.redis_1.set('max', '-1')
-    redis_buffer_instance.redis_1.set('shared_progress', '0')
+    # redis_buffer_instance.redis_1.set('min', '-1')
+    # redis_buffer_instance.redis_1.set('max', '-1')
+    # redis_buffer_instance.redis_1.set('shared_progress', '0')
     redis_buffer_instance.redis_1.set('player_number', '0')
     redis_buffer_instance.redis_1.set('wait_buffer', '0')
     redis_buffer_instance.redis_1.set('stop_event_send_updates', '0')
-    
+    redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'not_ready')
+    redis_buffer_instance_one_pair_game.redis_1.set('connection_accepted', 'no')    
 
 def _initialize_redis_values_start_task():
     """Initialize Redis values specific to start_task."""
@@ -121,10 +130,10 @@ def _initialize_redis_values_start_task():
     redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
     redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
     
-def _handle_thread(request, subsite_specific=False, template=None):
+def _handle_thread(request, subsite_specific=False, template=None, context=None):
     """Handle the starting and managing of threads for different requests."""
     thread_key = f'thread_data_{request.path.split("/")[1]}' if subsite_specific else 'thread_id'
-
+   
     _stop_thread(request)
     
     thread_result = start_thread(request)
@@ -132,52 +141,71 @@ def _handle_thread(request, subsite_specific=False, template=None):
     print("Before rendering the response...")
 
     if template:
-        return render(request, 'home/one_pair_game.html', {'message': 'Thread started'})
+        return render(request, template, context)
     else:
         return JsonResponse({'status': 'Cards permutations started'})
 
 def start_thread(request):
     """Start a new thread and store it in Redis and session."""
-    global task_threads
+    global task_threads, thread_ids
 
     task_manager.stop_event.clear()
     # Start threads or tasks
-    
+
+        
     my_thread = MyThread(target=main)
     my_thread.start()
-    
-    thread_id = my_thread.get_id()
-
-    print("In start_thread thread_id: ", thread_id)
-    task_threads[thread_id] = my_thread
+    for thread_id, thread in threading._active.items(): 
+        print("Active items (threads): ", thread_id) 
+        thread_ids.append(thread_id)
+        task_threads[thread_id] = thread
         
     return {'task_status': 'Thread started', 'thread_id': thread_id}
 
-def _stop_thread(request):
-    global task_threads
+# Function to save thread metadata
+def save_thread_metadata(thread_data):
+    with open(THREAD_METADATA_FILE, "w") as file:
+        json.dump(thread_data, file)
+
+# Function to load thread metadata
+def load_thread_metadata():
+    try:
+        with open(THREAD_METADATA_FILE, "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+    
+def _stop_thread(request, connection_count=None):
+    global task_threads, thread_ids
     """Stop the thread based on the thread ID stored in session."""
 
     redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
     task_manager.stop_event.set()
-    
-    keys = list(task_threads.keys())
 
+    keys = list(task_threads.keys())
+    
     c_threads = 0
+    
     while c_threads < len(keys):
-        for thread_id, thread in threading._active.items():  
-            if thread_id == keys[c_threads]:
-                print("In _stop_thread - stopped thread ID: ", thread_id)
-                try:
-                    task_threads[keys[c_threads]].raise_exception()
-                    del task_threads[keys[c_threads]]
-                except Exception as e:
-                    # Display full exception details
-                    print("Exception occurred:")
-                    print("Type:", type(e).__name__)  # Type of the exception
-                    print("Message:", e)  # Exception message
-                    print("Traceback:")
-                    traceback.print_exc()  # Full traceback
-                    return JsonResponse({'status': f'Raised exception {e}', 'message': 'Threads not stopped'}, status=500)
+        print(c_threads)
+        for thread_id in thread_ids:
+            try:
+                if thread_id == keys[c_threads]:
+                    print(isinstance(task_threads[keys[c_threads]], MyThread))
+                    if isinstance(task_threads[keys[c_threads]], MyThread):
+                        task_threads[keys[c_threads]].raise_exception()
+                        task_threads[keys[c_threads]].join()     
+                    print("Stopped thread ID: ", keys[c_threads])
+                
+            except Exception as e:
+                # Display full exception details
+                print("Exception occurred:")
+                print("Type:", type(e).__name__)  # Type of the exception
+                print("Message:", e)  # Exception message
+                print("Traceback:")
+                
+                traceback.print_exc()  # Full traceback
+                return JsonResponse({'status': f'Raised exception {e}', 'message': 'Threads not stopped'}, status=500)
         c_threads += 1
     return JsonResponse({'status': 'Success on stoping threads', 'message': 'No more threads to stop'}, status=200)
 

@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from numpy import floor
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop, redis_buffer_instance_one_pair_game
 from home.ThreadVarManagerSingleton import task_manager
 import time
 import shutil
@@ -20,6 +20,11 @@ class LoadingBar:
 
     def update_progress(self, step_count):
         """Updates the internal progress bar based on step count."""
+
+        is_accepted = redis_buffer_instance_one_pair_game.redis_1.get('connection_accepted').decode('utf-8')
+        while is_accepted != 'yes':
+            is_accepted = redis_buffer_instance_one_pair_game.redis_1.get('connection_accepted').decode('utf-8')
+
         self.current_progress = step_count
         
         # Update the bar display every `complete_interval` steps

@@ -2,7 +2,7 @@ from classes.Arrangements import Arrangements
 from classes.Deck import Deck
 from classes.Card import Card
 from random import choice
-from home.redis_buffer_singleton import redis_buffer_instance
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
 from home.ThreadVarManagerSingleton import task_manager
 import sys
 import os
@@ -172,6 +172,8 @@ class Player(object):
                     # print("Generowanie permutacji kart...")
             #blockPrint()
             
+            redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'ready')
+
             if arrangement == "1":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random, if_combs, straight_royal_flush)
             if arrangement == "2":

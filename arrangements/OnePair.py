@@ -231,7 +231,7 @@ class OnePair(HelperArrangement):
     def one_pair_generating(self, random, if_combs):
         self.random = random
         self.if_combs = if_combs
-        
+        print(self.max_combs, self.max_1)
         if self.if_combs:        
             redis_buffer_instance.redis_1.set('min', '0')
             redis_buffer_instance.redis_1.set('max', self.max_combs)

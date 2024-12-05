@@ -1,18 +1,21 @@
 services:
   redis:
     image: redis:latest
-    container_name: redis_container_Render
+    container_name: redis_container
     ports:
       - "6379:6379"  # Exposes Redis on the default port
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf  # Mount the custom config file
     command: redis-server /usr/local/etc/redis/redis.conf  # Use the custom config file
+    networks:
+      - my_network  # Add to the same network
   django:
-    image: poker_simulation:latest  # Custom name and tag for the Django service
     build:
       context: ./    # Path to the directory containing Dockerfile
       dockerfile: Dockerfile
-    container_name: pokerweb_container_Render
+    container_name: pokerweb_container
+    networks:
+      - my_network  # Add to the same network
     command: daphne -e ssl:8000:privateKey=key.pem:certKey=cert.pem pokerweb.asgi:application  # Run Daphne server
     volumes:
       - ./:/app     # Mounts the current directory to /app in the container
@@ -22,3 +25,7 @@ services:
       - redis
     environment:
       - REDIS_URL=redis://redis:6379/1  # Configure Redis URL
+
+networks:
+  my_network:
+    driver: bridge

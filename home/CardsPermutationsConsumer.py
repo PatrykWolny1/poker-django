@@ -52,7 +52,9 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             if self._should_stop():
                 await self._finalize_progress()
                 break
-
+            
+            print("In _send_updates...")
+            
             await asyncio.sleep(0.2)  # Adjust interval as needed
 
     async def _send_progress_update(self, from_min, from_max):

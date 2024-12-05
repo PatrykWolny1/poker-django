@@ -225,7 +225,7 @@ class Croupier(object):
             
             
             self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
-
+            print(self.player_number, self.player.index, "AAAAAAAAAAAAAA")
             while self.player_number == self.player.index:
                 if self.player_number == self.player.index:    
                     str_arr = self.player.arrangements.check_arrangement(game_visible=False, is_result=True)    

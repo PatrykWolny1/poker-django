@@ -376,8 +376,14 @@ class CardsPermutations {
     }
 
     connectWebSocket() {
-        this.socket = new WebSocket('wss://127.0.0.1:8000/ws/perms_combs/');
+        console.log(window.env.IS_DEV)
         
+        if (window.env.IS_DEV.includes('yes')) {
+            this.socket = new WebSocket('wss://127.0.0.1:8000/ws/perms_combs/');    
+        } else if (window.env.IS_DEV.includes('no')) {
+            this.socket = new WebSocket('wss://pokersimulation.onrender.com/ws/perms_combs/');    //'wss://127.0.0.1:8000/ws/perms_combs/'
+        }
+
         this.socket.onopen = () => console.log("WebSocket connection opened");
         this.socket.onmessage = (event) => this.handleSocketMessage(event);
         this.socket.onclose = () => {

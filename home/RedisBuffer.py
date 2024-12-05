@@ -4,10 +4,11 @@ import sys
 from urllib.parse import urlparse
 import os
 
-redis_url = os.getenv('REDIS_URL')
+redis_url = os.getenv('REDIS_URL', 'redis://redis:6379/1')
 
 class RedisBuffer:
     def __init__(self):
+        print(redis_url)
         self.redis_1 = redis.Redis.from_url(redis_url)
         
         #self.redis_1 = redis.Redis.from_url()

@@ -7,6 +7,11 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: light)" type="image/x-icon">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/FFFFFF/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: dark)" type="image/x-icon">
+    <script type="text/javascript">
+        window.env = {
+            IS_DEV: "{{ is_dev|escapejs }}"
+        };
+    </script>
     <script src="{% static 'js/cards_permutations.js' %}" defer></script>
     <!-- <meta name="csrf-token" content="{{ csrf_token }}"> -->
     <title>Permutacje - kombinacje</title>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style_cards_permutations.css' %}">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: light)" type="image/x-icon">
     <link id="favicon" rel="icon" href="https://img.icons8.com/ios/50/FFFFFF/ace-of-diamonds.png" alt="ace-of-diamonds" media="(prefers-color-scheme: dark)" type="image/x-icon">
     <script type="text/javascript">
@@ -18,15 +18,15 @@
 </head>
 <body data-page-type="initial">
     <div id="perms_combsPage">
-        <div class="container-perms-combs">
+        <div class="container-perms-combs desktop-only">
             <h1><a href="{% url 'home.index' %}">Poker Simulation</a></h1>
         </div>
-        <h2>Obliczanie kombinacji lub permutacji układów kart</h2>
-        <div class="container">
+        <h2 class="desktop-only">Obliczanie kombinacji lub permutacji układów kart</h2>
+        <div class="container desktop-only">
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
-            <div class="button-container-top">
+            <div class="button-container-top desktop-only">
                 <button class="high-card-button" type="button" id="highcardButton">Wysoka Karta</button>
                 <button class="one-pair-button" type="button" id="onepairButton">Jedna Para</button>
                 <button class="two-pairs-button" type="button" id="twopairsButton">Dwie Pary</button>
@@ -38,18 +38,51 @@
                 <button class="straight-flush-button" type="button" id="straightflushButton">Poker</button>
                 <button class="straight-royal-flush-button" type="button" id="straightroyalflushButton">Poker Królewski</button>
             </div>
-            <div class="button-container">
+            <div class="button-container desktop-only">
                 <button class="stop-button" type="button" id="stopTaskButton">Stop</button>
                 <button class="start-button" type="button" id="startTaskButton">Start</button>
                 <button class="perms-button" type="button" id="permsButton">Permutacje</button>
                 <button class="combs-button" type="button" id="combsButton" disabled>Kombinacje</button>
                 <button class="download-button" type="button" id="downloadButton">Pobierz układy kart do pliku</button>
             </div>
-            <div class="data-script-container">
+            <div class="data-script-container desktop-only">
                 <div class="data-script" id="dataScript"></div>
             </div>
         </div>
+    <!-- Mobile Only Section -->
+        <div class="mobile-only">
+            <div class="container-perms-combs">
+                <h1><a href="{% url 'home.index' %}">Poker Simulation</a></h1>
+            </div>
+            <div class="container-mobile">
+                <h2 class="mobile">Obliczanie kombinacji lub permutacji układów kart</h2>
+                <div class="progress-container">
+                    <div class="progress-bar" id="mobileProgressBar"></div>
+                </div>
+                <div class="button-container-top">
+                    <button class="high-card-button" type="button" id="mobileHighcardButton">Wysoka Karta</button>
+                    <button class="one-pair-button" type="button" id="mobileOnepairButton">Jedna Para</button>
+                    <button class="two-pairs-button" type="button" id="mobileTwopairsButton">Dwie Pary</button>
+                    <button class="three-of-a-kind-button" type="button" id="mobileThreeofakindButton">Trójka</button>
+                    <button class="straight-button" type="button" id="mobileStraightButton">Strit</button>
+                    <button class="color-button" type="button" id="mobileColorButton">Kolor</button>
+                    <button class="full-button" type="button" id="mobileFullButton">Full</button>
+                    <button class="carriage-button" type="button" id="mobileCarriageButton" disabled>Kareta</button>
+                    <button class="straight-flush-button" type="button" id="mobileStraightflushButton">Poker</button>
+                    <button class="straight-royal-flush-button" type="button" id="mobileStraightroyalflushButton">Poker Królewski</button>
+                </div>
+                <div class="button-container">
+                    <button class="start-button" type="button" id="mobileStartTaskButton">Start</button>
+                    <button class="stop-button" type="button" id="mobileStopTaskButton">Stop</button>
+                    <button class="perms-button" type="button" id="mobilePermsButton">Permutacje</button>
+                    <button class="combs-button" type="button" id="mobileCombsButton" disabled>Kombinacje</button>
+                    <button class="download-button" type="button" id="mobileDownloadButton">Pobierz układy kart do pliku</button>
+                </div>
+                <div class="data-script-container">
+                    <div class="data-script" id="mobileDataScript"></div>
+                </div>
+            </div>
+        </div>
     </div>
-     <!-- Link to the external JavaScript file -->
 </body>
 </html>

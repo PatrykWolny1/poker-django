@@ -12,6 +12,7 @@ class OnePairGame {
         this.timeoutIds = [];
         this.socket = null;
         this.isResult = false;
+        this.socketHandler = null;
 
         // Player names
         this.player1Name = document.getElementById("player1").value;
@@ -47,6 +48,7 @@ class OnePairGame {
 
     init() {
         window.addEventListener("beforeunload", this.handleBeforeUnload.bind(this));
+        
         window.addEventListener("resize", () => {
             this.isMobile = window.innerWidth <= 768;
             console.log("Viewport resized. Is mobile:", this.isMobile);
@@ -55,6 +57,7 @@ class OnePairGame {
             this.updateProgressGameBorders();
         });
 
+        window.addEventListener('click', (event) => this.handleExitStopTask(event, this));
 
         this.updatePlayerNames();
         this.attachEventListeners();
@@ -93,8 +96,8 @@ class OnePairGame {
     }
 
     async initializeWebSocket() {
-        const socketHandler = new WebSocketHandler(this);
-        await socketHandler.init();
+        this.socketHandler = new WebSocketHandler(this);
+        await this.socketHandler.init();
     }
 
     async startGame() {
@@ -117,6 +120,14 @@ class OnePairGame {
                 this.reinitializeInstance();
                 await this.initializeWebSocket();
                 this.updatePlayerNames();
+
+                // Now the socket is open, send the start_task message
+                if (this.socketHandler.socket.readyState === WebSocket.OPEN) {
+                    this.socketHandler.socket.send(JSON.stringify({ action: 'close', reason: 'button_click' }));
+                    console.log("After executing send");
+                } else {
+                    console.error("WebSocket is not open. Current state:", this.socketHandler.socket.readyState);
+                }        
             })
             .catch((error) => {
                 console.error("Error starting game:", error);
@@ -127,11 +138,6 @@ class OnePairGame {
     reinitializeInstance() {
         console.log("Reinitializing instance...");
         this.resetInstanceVariables();
-    }
-
-    resetInstanceVariables() {
-        this.progress = 0;
-        this.isStopping = false;
     }
 
     // Method to reset instance variables
@@ -154,6 +160,7 @@ class OnePairGame {
         this.socket = null;
         this.executeFunction = false;
         this.arrangement_result_off = null;
+        this.socketHandler = null;
 
         // Update player names based on input values
         this.player1Name = document.getElementById('player1').value;
@@ -269,13 +276,51 @@ class OnePairGame {
     }
 
     async handleBeforeUnload() {
-        if (window.performance.getEntriesByType("navigation")[0].type === "reload") {
-            console.log("Page is being reloaded");
-            console.log("Stopping background task...");
-            await this.stopTask();
-        }
+        localStorage.removeItem('pagePreviouslyLoaded');
 
-        
+        console.log("Page is being reloaded");
+        console.log("Stopping background task...");
+
+        this.socketHandler.socket.send(JSON.stringify({ action: 'close', reason: 'on_refresh' }));
+       
+        await this.stopTask();
+
+        if (this.socketHandler.socket && this.socketHandler.socket.readyState === WebSocket.OPEN) {
+            console.log("Closing WebSocket...");
+            this.socketHandler.socket.close();
+        }
+    }
+    
+    async handleExitStopTask(event) {
+        const link = event.target.closest('a');
+        if (link) {
+            const isInternalLink = link.hostname === window.location.hostname;
+
+            if (isInternalLink) {
+                // Check if the link is specifically pointing to the home page
+                const isHomePageLink = link.pathname === '/' || link.href === window.location.origin + '/';
+
+                if (isHomePageLink) {
+                    // User clicked an external link to the home page - stop the task
+                    console.log('Home page navigation detected, stopping task.');
+                    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                        console.log("Closing previous WebSocket...");
+                        this.socketHandler.socket.close();
+                    }
+                } else {
+                    // Internal navigation, do not stop the task
+                    console.log('Internal navigation detected, not stopping task.');
+                }
+            } else {
+                // External link, do not stop the task
+                console.log('External navigation detected, stopping task.');
+                if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                    console.log("Closing previous WebSocket...");
+                    this.socketHandler.socket.close();
+                }
+            }
+
+        }
     }
 
     async stopTask() {
@@ -416,13 +461,11 @@ class OnePairGame {
                     console.log(this.arrayTemp, "1");
                     this.arrayTemp = [];
                     this.iterations.iter1 += 1;
-                    console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA-1")
                 } else if (this.iterations.iter1 === 1 && (this.arrayTemp.length === 2 || this.arrayTemp[0] === 'No')) {
                     this.arrayTemp.unshift("main");
                     this.arrayRouteBinTree2 = this.arrayTemp.slice(); // Shallow copy to store the values
                     console.log(this.arrayTemp, "2");
                     this.arrayTemp = [];
-                    console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA-2")
                     this.iterations.iter1 += 1;
                 }
             }
@@ -521,15 +564,18 @@ class OnePairGame {
         this.chancesInterval = setInterval(() => {
             if ('chances' in data) {
                 const chances = data.chances;
+                console.log("Chances before: ", chances);
 
                 if (this.isChances) {
                     if (progressGames[1]) {
                         progressGames[1].textContent = `Szansa (2 karty): ${chances}%`;
+                        console.log(chances);
                     }
                     this.isChances = false;
                 } else {
                     if (progressGames[2]) {
                         progressGames[2].textContent = `Szansa (3 karty): ${chances}%`;
+                        console.log(chances);
                     }
                     this.isChances = true;
                 }
@@ -666,6 +712,7 @@ class WebSocketHandler {
             this.socket.close();
         }
         this.socket = this.createWebSocket();
+        console.log(this.socket)
         await this.waitForSocketOpen();
         this.setupSocketHandlers();
     }
@@ -678,7 +725,7 @@ class WebSocketHandler {
         }
     }
 
-    waitForSocketOpen() {
+    async waitForSocketOpen() {
         return new Promise((resolve, reject) => {
             if (this.socket.readyState === WebSocket.OPEN) {
                 resolve();

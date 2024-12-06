@@ -193,7 +193,10 @@ class Player(object):
             if arrangement == "9":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs)
             
-            if queue is not None:
+            when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+
+            if queue is not None and when_game_one_pair == '1':
+                print("One pair game or not: ", when_game_one_pair)
                 queue.put(self.all_comb_perm)
             
             #print(self.cards)

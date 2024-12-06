@@ -1,15 +1,17 @@
 class CardsPermutations {
     constructor() {
         this.lastProgress = 0;
-        this.progressTimeout = null;
         this.lastDataScript = "";
         this.lastClickedPermsCombs = true;
         this.lastClickedArr = null;
+        this.progressTimeout = 0;
         this.progress = 0;
         this.progressUpdateThreshold = 500; // milliseconds
-        this.lastProgressUpdateTime = Date.now() // To track the last progress update
+        this.lastProgressUpdateTime = Date.now(); // To track the last progress update
         this.maxAllowedValue = undefined;
-        
+        this.isMobile = window.innerWidth <= 768; // Determine if the view is mobile or desktop
+        this.handleResize = this.handleResize.bind(this);
+
         this.arrangementLimits = {
             highcardButton: { max_perms: 156304800, max_combs: 1302540 },
             onepairButton: { max_perms: 131788800, max_combs: 1098240 },
@@ -25,42 +27,43 @@ class CardsPermutations {
 
         // UI Elements
         this.elements = {
-            startTaskButton: document.getElementById("startTaskButton"),
-            stopTaskButton: document.getElementById("stopTaskButton"),
-            progressBar: document.getElementById('progressBar'),
-            dataScriptDiv: document.getElementById('dataScript'),
-            downloadButton: document.getElementById("downloadButton"),
-            permsButton: document.getElementById('permsButton'),
-            combsButton: document.getElementById('combsButton'),
+            startTaskButton: document.getElementById(this.isMobile ? "mobileStartTaskButton" : "startTaskButton"),
+            stopTaskButton: document.getElementById(this.isMobile ? "mobileStopTaskButton" : "stopTaskButton"),
+            progressBar: document.getElementById(this.isMobile ? "mobileProgressBar" : "progressBar"),
+            dataScriptDiv: document.getElementById(this.isMobile ? "mobileDataScript" : "dataScript"),
+            downloadButton: document.getElementById(this.isMobile ? "mobileDownloadButton" : "downloadButton"),
+            permsButton: document.getElementById(this.isMobile ? "mobilePermsButton" : "permsButton"),
+            combsButton: document.getElementById(this.isMobile ? "mobileCombsButton" : "combsButton"),
 
-            highcardButton: document.getElementById('highcardButton'),
-            onepairButton: document.getElementById('onepairButton'),
-            twopairsButton: document.getElementById('twopairsButton'),
-            threeofakindButton: document.getElementById('threeofakindButton'),
-            straightButton: document.getElementById('straightButton'),
-            colorButton: document.getElementById('colorButton'),
-            fullButton: document.getElementById('fullButton'),
-            carriageButton: document.getElementById('carriageButton'),
-            straightflushButton: document.getElementById('straightflushButton'),
-            straightroyalflushButton: document.getElementById('straightroyalflushButton'),
+            highcardButton: document.getElementById(this.isMobile ? "mobileHighcardButton" : "highcardButton"),
+            onepairButton: document.getElementById(this.isMobile ? "mobileOnepairButton" : "onepairButton"),
+            twopairsButton: document.getElementById(this.isMobile ? "mobileTwopairsButton" : "twopairsButton"),
+            threeofakindButton: document.getElementById(this.isMobile ? "mobileThreeofakindButton" : "threeofakindButton"),
+            straightButton: document.getElementById(this.isMobile ? "mobileStraightButton" : "straightButton"),
+            colorButton: document.getElementById(this.isMobile ? "mobileColorButton" : "colorButton"),
+            fullButton: document.getElementById(this.isMobile ? "mobileFullButton" : "fullButton"),
+            carriageButton: document.getElementById(this.isMobile ? "mobileCarriageButton" : "carriageButton"),
+            straightflushButton: document.getElementById(this.isMobile ? "mobileStraightflushButton" : "straightflushButton"),
+            straightroyalflushButton: document.getElementById(this.isMobile ? "mobileStraightroyalflushButton" : "straightroyalflushButton"),
         };
 
         // Task buttons and corresponding URLs
         this.taskButtons = {
-            highcardButton: '/high_card_view/',
-            onepairButton: '/one_pair_view/',
-            twopairsButton: '/two_pairs_view/',
-            threeofakindButton: '/three_of_a_kind_view/',
-            straightButton: '/straight_view/',
-            colorButton: '/color_view/',
-            fullButton: '/full_view/',
-            carriageButton: '/carriage_view/',
-            straightflushButton: '/straight_flush_view/',
-            straightroyalflushButton: '/straight_royal_flush_view/',
+            highcardButton: "/high_card_view/",
+            onepairButton: "/one_pair_view/",
+            twopairsButton: "/two_pairs_view/",
+            threeofakindButton: "/three_of_a_kind_view/",
+            straightButton: "/straight_view/",
+            colorButton: "/color_view/",
+            fullButton: "/full_view/",
+            carriageButton: "/carriage_view/",
+            straightflushButton: "/straight_flush_view/",
+            straightroyalflushButton: "/straight_royal_flush_view/",
 
-            permsButton: '/permutacje_view/',
-            combsButton: '/kombinacje_view/'
+            permsButton: "/permutacje_view/",
+            combsButton: "/kombinacje_view/",
         };
+        window.addEventListener("resize", this.handleResize);
 
         this.initializeUI();
         this.setupEventListeners();
@@ -85,34 +88,159 @@ class CardsPermutations {
         Object.entries(this.taskButtons).forEach(([buttonKey, url]) => {
             const buttonElement = this.elements[buttonKey];
             if (buttonElement) {
-                buttonElement.addEventListener('click', () => this.handleTaskSelection(buttonElement, url));
+                buttonElement.addEventListener("click", () => this.handleTaskSelection(buttonElement, url));
             }
         });
 
         this.elements.carriageButton.disabled = true;
         this.lastClickedArr = this.elements.carriageButton;
-        
+
         this.elements.combsButton.disabled = true;
         this.elements.permsButton.disabled = false;
         this.lastClickedPermsCombs = true;
-        
-        this.updateMaxAllowedValue()
 
-        this.elements.startTaskButton.addEventListener('click', () => this.showNumberPopup());
+        this.updateMaxAllowedValue();
+
+        this.elements.startTaskButton.addEventListener("click", () => this.showNumberPopup());
         // Start and stop task buttons
 
         this.elements.stopTaskButton.onclick = () => this.stopTask();
-        
+
         // Download button with confirmation
         this.elements.downloadButton.onclick = () => this.confirmDownload();
+
         window.addEventListener("visibilitychange", () => {
             if (window.hidden) {
                 this.handleBeforeUnload();
             }
         });
-        // Stop task on page unload
-        // window.addEventListener("beforeunload", () => this.handleBeforeUnload());
+
     }
+
+    handleResize() {
+        // Determine if the view is now mobile or desktop
+        const isNowMobile = window.innerWidth <= 768;
+
+        // Only execute if the view state (mobile/desktop) has changed
+        if (isNowMobile !== this.isMobile) {
+            this.isMobile = isNowMobile;
+            console.log("Window resized, mobile view:", this.isMobile);
+            this.updateElementsForResize();
+
+            // Update the UI elements for mobile or desktop accordingly
+        }
+    }
+
+    updateElementsForResize() {
+        this.lastDataScript = "";
+
+        // Reassign elements based on current view (mobile/desktop)
+        this.arrangementLimits = {
+            highcardButton: { max_perms: 156304800, max_combs: 1302540 },
+            onepairButton: { max_perms: 131788800, max_combs: 1098240 },
+            twopairsButton: { max_perms: 14826240, max_combs: 123552 },
+            threeofakindButton: { max_perms: 6589440, max_combs: 54912 },
+            straightButton: { max_perms: 1224000, max_combs: 10200 },
+            colorButton: { max_perms: 612960, max_combs: 5108 },
+            fullButton: { max_perms: 449280, max_combs: 3744 },
+            carriageButton: { max_perms: 74880, max_combs: 624 },
+            straightflushButton: { max_perms: 4320, max_combs: 36 },
+            straightroyalflushButton: { max_perms: 480, max_combs: 4 },
+        };
+
+        this.elements = {
+            startTaskButton: document.getElementById(this.isMobile ? "mobileStartTaskButton" : "startTaskButton"),
+            stopTaskButton: document.getElementById(this.isMobile ? "mobileStopTaskButton" : "stopTaskButton"),
+            progressBar: document.getElementById(this.isMobile ? "mobileProgressBar" : "progressBar"),
+            dataScriptDiv: document.getElementById(this.isMobile ? "mobileDataScript" : "dataScript"),
+            downloadButton: document.getElementById(this.isMobile ? "mobileDownloadButton" : "downloadButton"),
+            permsButton: document.getElementById(this.isMobile ? "mobilePermsButton" : "permsButton"),
+            combsButton: document.getElementById(this.isMobile ? "mobileCombsButton" : "combsButton"),
+            highcardButton: document.getElementById(this.isMobile ? "mobileHighcardButton" : "highcardButton"),
+            onepairButton: document.getElementById(this.isMobile ? "mobileOnepairButton" : "onepairButton"),
+            twopairsButton: document.getElementById(this.isMobile ? "mobileTwopairsButton" : "twopairsButton"),
+            threeofakindButton: document.getElementById(this.isMobile ? "mobileThreeofakindButton" : "threeofakindButton"),
+            straightButton: document.getElementById(this.isMobile ? "mobileStraightButton" : "straightButton"),
+            colorButton: document.getElementById(this.isMobile ? "mobileColorButton" : "colorButton"),
+            fullButton: document.getElementById(this.isMobile ? "mobileFullButton" : "fullButton"),
+            carriageButton: document.getElementById(this.isMobile ? "mobileCarriageButton" : "carriageButton"),
+            straightflushButton: document.getElementById(this.isMobile ? "mobileStraightflushButton" : "straightflushButton"),
+            straightroyalflushButton: document.getElementById(this.isMobile ? "mobileStraightroyalflushButton" : "straightroyalflushButton"),
+        };
+        
+        // Task buttons and corresponding URLs
+        this.taskButtons = {
+            highcardButton: "/high_card_view/",
+            onepairButton: "/one_pair_view/",
+            twopairsButton: "/two_pairs_view/",
+            threeofakindButton: "/three_of_a_kind_view/",
+            straightButton: "/straight_view/",
+            colorButton: "/color_view/",
+            fullButton: "/full_view/",
+            carriageButton: "/carriage_view/",
+            straightflushButton: "/straight_flush_view/",
+            straightroyalflushButton: "/straight_royal_flush_view/",
+
+            permsButton: "/permutacje_view/",
+            combsButton: "/kombinacje_view/",
+        };
+
+        // You can also perform additional updates if necessary, like:
+        this.initializeUI(); // Reset UI settings if needed.
+        this.setupEventListeners();
+        this.connectWebSocket();
+    }
+
+    connectWebSocket() {
+        console.log(window.env.IS_DEV)
+        
+        if (window.env.IS_DEV.includes('yes')) {
+            this.socket = new WebSocket('wss://127.0.0.1:8000/ws/perms_combs/');    
+        } else if (window.env.IS_DEV.includes('no')) {
+            this.socket = new WebSocket('wss://pokersimulation.onrender.com/ws/perms_combs/');    //'wss://127.0.0.1:8000/ws/perms_combs/'
+        }
+
+        this.socket.onopen = () => console.log("WebSocket connection opened");
+        this.socket.onmessage = (event) => this.handleSocketMessage(event);
+        this.socket.onclose = () => {
+            console.log("WebSocket connection closed");
+            this.socket.close();
+        };
+    }
+
+    handleSocketMessage(event) {
+        const data = JSON.parse(event.data);
+        
+        // Update progress
+        if ('progress' in data) {
+            this.updateProgress(data.progress);
+            this.lastProgressUpdateTime = Date.now(); // Update the last progress time
+
+            // Clear any existing timeout since we have new progress
+            clearTimeout(this.progressTimeout);
+            
+            // Set a new timeout to check for hanging progress
+            this.progressTimeout = setTimeout(() => {
+                this.requestLatestDataScript(); // Function to request latest data_script
+            }, this.progressUpdateThreshold);
+            if (data.action == "request_latest_data_script") {
+                this.updateDataScript(data.data_script);
+            }
+        }
+        
+        if ('data_script' in data) {
+            console.log(data.data_script)
+            this.updateDataScript(data.data_script);
+        }
+
+        if (data.progress == 100) {
+            this.finalizeProgress();
+            if ('data_script' in data) {
+                this.updateDataScript(data.data_script)
+            }
+        }
+    }
+
     updateMaxAllowedValue() {
         // Check which button is disabled to determine the source of maxAllowedValue
         const isPermsDisabled = this.elements.permsButton.disabled;
@@ -121,7 +249,7 @@ class CardsPermutations {
         // Loop through arrangement buttons to set maxAllowedValue
         for (const [buttonKey, limits] of Object.entries(this.arrangementLimits)) {
             const buttonElement = this.elements[buttonKey];
-            
+
             // Check if the button is the last clicked arrangement button
             if (buttonElement === this.lastClickedArr) {
                 // If permsButton is disabled, assign max_perms; if combsButton is disabled, assign max_combs
@@ -130,21 +258,127 @@ class CardsPermutations {
             }
         }
     }
-    // // Function to get CSRF token from cookies
-    // getCookie(name) {
-    //     let cookieValue = null;
-    //     if (document.cookie && document.cookie !== '') {
-    //         const cookies = document.cookie.split(';');
-    //         for (let i = 0; i < cookies.length; i++) {
-    //             const cookie = cookies[i].trim();
-    //             if (cookie.substring(0, name.length + 1) === (name + '=')) {
-    //                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //     return cookieValue;
-    // }
+
+    handleTaskSelection(selectedButton, url) {
+        // Enable all arrangement task buttons initially
+        for (const [buttonKey] of Object.entries(this.taskButtons)) {
+            const buttonElement = this.elements[buttonKey];
+            if (buttonElement !== this.elements.permsButton && buttonElement !== this.elements.combsButton) {
+                buttonElement.disabled = false;
+            }
+        }
+        
+        // Toggle between `permsButton` and `combsButton` clicks
+        if (selectedButton === this.elements.permsButton || selectedButton === this.elements.combsButton) {
+            // Disable the last clicked arrangement button if it exists
+            if (this.lastClickedArr) {
+                this.lastClickedArr.disabled = true;
+            }
+        } else {
+            // For an arrangement button click, disable the previously clicked arrangement button if it exists
+            if (this.lastClickedArr && this.lastClickedArr !== selectedButton) {
+                this.lastClickedArr.disabled = false;
+            }
+            // Set the newly clicked arrangement button as the last clicked arrangement
+            this.lastClickedArr = selectedButton;
+        }
+
+        // Toggle between enabling `permsButton` and `combsButton`
+        if (selectedButton === this.elements.permsButton) {
+            this.elements.permsButton.disabled = true;
+            this.elements.combsButton.disabled = false;
+            // Set maxAllowedValue based on lastClickedArr's max_perms
+            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_perms : Infinity;
+            this.lastClickedPermsCombs = false;
+        } else if (selectedButton === this.elements.combsButton) {
+            this.elements.combsButton.disabled = true;
+            this.elements.permsButton.disabled = false;
+            // Set maxAllowedValue based on lastClickedArr's max_combs
+            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_combs : Infinity;
+            this.lastClickedPermsCombs = true;
+        } else {
+            // If an arrangement button is clicked, set maxAllowedValue based on perms/combs status
+            this.maxAllowedValue = this.lastClickedPermsCombs
+                ? this.arrangementLimits[selectedButton.id]?.max_perms
+                : this.arrangementLimits[selectedButton.id]?.max_combs;
+        }
+        
+
+        selectedButton.disabled = true;
+
+        // Trigger task for selected button's view
+        this.initiateTask(url);
+    }
+
+    updateProgress(newProgress) {
+        this.progress = newProgress;
+        this.lastProgress = this.progress;
+
+        // Only disable the start button if the task has not been stopped
+        if (!this.isTaskStopped) {
+            this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
+        }
+
+        this.elements.progressBar.style.width = this.progress + '%';
+        this.elements.progressBar.innerHTML = this.progress + '%';
+    }
+
+    updateDataScript(dataScript) {
+        this.lastDataScript = dataScript;
+
+        if (this.elements.dataScriptDiv.style.display === "none") {
+            this.elements.dataScriptDiv.style.display = "block";
+        }
+
+        const lines = this.elements.dataScriptDiv.innerHTML.trim().split('<br>');
+        const lastEntry = lines[lines.length - 1];
+
+        if (lastEntry !== this.lastDataScript) {
+            this.elements.dataScriptDiv.innerHTML += this.lastDataScript + '<br>';
+        }
+    }
+
+    // Function to request the latest data_script
+    requestLatestDataScript() {
+        // Your logic to request the latest data_script from the server
+        // This could involve sending a message through the WebSocket or making an AJAX call
+        console.log("Requesting latest data_script due to hanging progress");
+        this.socket.send(JSON.stringify({ action: "request_latest_data_script" }));
+    }
+
+    finalizeProgress() {
+        this.isTaskStopped = false;
+        this.elements.downloadButton.disabled = false;
+
+        // Enable all task buttons except the last clicked button
+        for (const buttonKey of Object.keys(this.taskButtons)) {
+            const buttonElement = this.elements[buttonKey];
+            if (buttonElement !== this.lastClickedArr) {
+                buttonElement.disabled = false;
+            }
+        }
+        // Ensure the last clicked button remains disabled
+        if (this.lastClickedArr) {
+            this.lastClickedArr.disabled = true;
+        }
+
+        this.elements.startTaskButton.disabled = false;
+        this.elements.downloadButton.disabled = false;
+
+        // Restore state for perms/combs button based on last selection
+        if (!this.lastClickedPermsCombs) {
+            this.elements.permsButton.disabled = true;
+            this.elements.combsButton.disabled = false;
+        } else {
+            this.elements.combsButton.disabled = true;
+            this.elements.permsButton.disabled = false;
+        }
+    }
+
+    resetProgressBar() {
+        this.elements.progressBar.style.width = "0";
+        this.elements.progressBar.innerHTML = "";
+    }
 
     getCSRFToken() {
         let token = document.cookie.split(';').find(row => row.startsWith('csrftoken='));
@@ -226,55 +460,31 @@ class CardsPermutations {
         });
     }
 
-    handleTaskSelection(selectedButton, url) {
-        // Enable all arrangement task buttons initially
-        for (const [buttonKey] of Object.entries(this.taskButtons)) {
-            const buttonElement = this.elements[buttonKey];
-            if (buttonElement !== this.elements.permsButton && buttonElement !== this.elements.combsButton) {
-                buttonElement.disabled = false;
-            }
-        }
-        
-        // Toggle between `permsButton` and `combsButton` clicks
-        if (selectedButton === this.elements.permsButton || selectedButton === this.elements.combsButton) {
-            // Disable the last clicked arrangement button if it exists
-            if (this.lastClickedArr) {
-                this.lastClickedArr.disabled = true;
-            }
+
+    confirmDownload() {
+        const userConfirmed = confirm("Pobrać plik?");
+        if (userConfirmed) {
+            window.location.href = '/download_saved_file/';
+            this.resetProgressBar();
         } else {
-            // For an arrangement button click, disable the previously clicked arrangement button if it exists
-            if (this.lastClickedArr && this.lastClickedArr !== selectedButton) {
-                this.lastClickedArr.disabled = false;
-            }
-            // Set the newly clicked arrangement button as the last clicked arrangement
-            this.lastClickedArr = selectedButton;
+            console.log("Download canceled by user.");
         }
-
-        // Toggle between enabling `permsButton` and `combsButton`
-        if (selectedButton === this.elements.permsButton) {
-            this.elements.permsButton.disabled = true;
-            this.elements.combsButton.disabled = false;
-            // Set maxAllowedValue based on lastClickedArr's max_perms
-            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_perms : Infinity;
-            this.lastClickedPermsCombs = false;
-        } else if (selectedButton === this.elements.combsButton) {
-            this.elements.combsButton.disabled = true;
-            this.elements.permsButton.disabled = false;
-            // Set maxAllowedValue based on lastClickedArr's max_combs
-            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_combs : Infinity;
-            this.lastClickedPermsCombs = true;
-        } else {
-            // If an arrangement button is clicked, set maxAllowedValue based on perms/combs status
-            this.maxAllowedValue = this.lastClickedPermsCombs
-                ? this.arrangementLimits[selectedButton.id]?.max_perms
-                : this.arrangementLimits[selectedButton.id]?.max_combs;
-        }
-        
-
-        selectedButton.disabled = true;
-
-        // Trigger task for selected button's view
-        this.initiateTask(url);
+    }
+    handleBeforeUnload() {
+        const url = '/stop_task_view/';
+        // Use fetch instead of sendBeacon to allow custom headers
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',  // Ensure it's JSON
+                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token in the headers
+            },
+            body: JSON.stringify(),  // Send any data you need in the body
+        })
+        .then(() => console.log('Task stopped on refresh.'))
+        .catch(error => console.error('Error stopping task:', error));
+        this.finalizeProgress();
+        this.resetProgressBar();
     }
 
     initiateTask(url) {
@@ -326,8 +536,6 @@ class CardsPermutations {
                 this.elements[buttonKey].disabled = true;
             });
 
-            clearTimeout(this.progressTimeout);
-            this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 10000);
             this.connectWebSocket();
             this.resetProgressBar();
 
@@ -350,7 +558,7 @@ class CardsPermutations {
         .then(data => {
             console.log(data)
 
-            if (data.status === 'Task stopped successfully') {
+            if (data.message === 'Task stopped successfully') {
                 console.log('Task stopped successfully');
                 this.finalizeProgress();
                 this.resetProgressBar();
@@ -363,160 +571,6 @@ class CardsPermutations {
             alert('An error occurred while stopping the task. Please try again.');
         });
  
-    }
-
-    confirmDownload() {
-        const userConfirmed = confirm("Pobrać plik?");
-        if (userConfirmed) {
-            window.location.href = '/download_saved_file/';
-            this.resetProgressBar();
-        } else {
-            console.log("Download canceled by user.");
-        }
-    }
-
-    connectWebSocket() {
-        console.log(window.env.IS_DEV)
-        
-        if (window.env.IS_DEV.includes('yes')) {
-            this.socket = new WebSocket('wss://127.0.0.1:8000/ws/perms_combs/');    
-        } else if (window.env.IS_DEV.includes('no')) {
-            this.socket = new WebSocket('wss://pokersimulation.onrender.com/ws/perms_combs/');    //'wss://127.0.0.1:8000/ws/perms_combs/'
-        }
-
-        this.socket.onopen = () => console.log("WebSocket connection opened");
-        this.socket.onmessage = (event) => this.handleSocketMessage(event);
-        this.socket.onclose = () => {
-            console.log("WebSocket connection closed");
-            this.socket.close();
-        };
-    }
-
-    handleSocketMessage(event) {
-        const data = JSON.parse(event.data);
-        
-        // Update progress
-        if ('progress' in data) {
-            this.updateProgress(data.progress);
-            this.lastProgressUpdateTime = Date.now(); // Update the last progress time
-
-            // Clear any existing timeout since we have new progress
-            clearTimeout(this.progressTimeout);
-            
-            // Set a new timeout to check for hanging progress
-            this.progressTimeout = setTimeout(() => {
-                this.requestLatestDataScript(); // Function to request latest data_script
-            }, this.progressUpdateThreshold);
-            if (data.action == "request_latest_data_script") {
-                this.updateDataScript(data.data_script);
-            }
-        }
-        
-        if ('data_script' in data) {
-            this.updateDataScript(data.data_script);
-        }
-
-        if (data.progress == 100) {
-            this.finalizeProgress();
-            if ('data_script' in data) {
-                this.updateDataScript(data.data_script)
-            }
-        }
-    }
-
-    updateProgress(newProgress) {
-        this.progress = newProgress;
-        this.lastProgress = this.progress;
-        clearTimeout(this.progressTimeout);
-        this.progressTimeout = setTimeout(() => this.checkProgressHanging(), 5000);
-
-        // Only disable the start button if the task has not been stopped
-        if (!this.isTaskStopped) {
-            this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
-        }
-        
-        this.elements.progressBar.style.width = this.progress + '%';
-        this.elements.progressBar.innerHTML = this.progress + '%';
-    }
-
-    updateDataScript(dataScript) {
-        this.lastDataScript = dataScript;
-
-        if (this.elements.dataScriptDiv.style.display === "none") {
-            this.elements.dataScriptDiv.style.display = "block";
-        }
-        
-        const lines = this.elements.dataScriptDiv.innerHTML.trim().split('<br>');
-        const lastEntry = lines[lines.length - 1];
-
-        if (lastEntry !== this.lastDataScript) {
-            this.elements.dataScriptDiv.innerHTML += this.lastDataScript + '<br>';
-        }
-    }
-
-    // Function to request the latest data_script
-    requestLatestDataScript() {
-        // Your logic to request the latest data_script from the server
-        // This could involve sending a message through the WebSocket or making an AJAX call
-        console.log("Requesting latest data_script due to hanging progress");
-        this.socket.send(JSON.stringify({ action: "request_latest_data_script" }));
-    }
-
-    finalizeProgress() {
-        this.isTaskStopped = false;
-        this.elements.downloadButton.disabled = false;
-
-           // Enable all task buttons except the last clicked button
-        for (const buttonKey of Object.keys(this.taskButtons)) {
-            const buttonElement = this.elements[buttonKey];
-            if (buttonElement !== this.lastClickedArr) {
-                buttonElement.disabled = false;
-            }
-        }
-        // Ensure the last clicked button remains disabled
-        if (this.lastClickedArr) {
-            this.lastClickedArr.disabled = true;
-        }
-        
-        this.elements.startTaskButton.disabled = false
-        this.elements.downloadButton.disabled = false;
-        
-        // Restore state for perms/combs button based on last selection
-        if (!this.lastClickedPermsCombs) {
-            this.elements.permsButton.disabled = true;
-            this.elements.combsButton.disabled = false;
-        } else {
-            this.elements.combsButton.disabled = true;
-            this.elements.permsButton.disabled = false;
-        }
-    }
-
-    checkProgressHanging() {
-        if (this.progress > 0 && this.progress < 100) {
-            this.fetchLatestDataScript(); // Fetch the latest data script if progress is hanging
-        }
-    }
-
-    resetProgressBar() {
-        this.elements.progressBar.style.width = 0;
-        this.elements.progressBar.innerHTML = '';
-    }
-    
-    handleBeforeUnload() {
-        const url = '/stop_task_view/';
-        // Use fetch instead of sendBeacon to allow custom headers
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',  // Ensure it's JSON
-                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token in the headers
-            },
-            body: JSON.stringify(),  // Send any data you need in the body
-        })
-        .then(() => console.log('Task stopped on refresh.'))
-        .catch(error => console.error('Error stopping task:', error));
-        this.finalizeProgress();
-        this.resetProgressBar();
     }
 }
 

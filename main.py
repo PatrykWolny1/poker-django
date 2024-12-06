@@ -13,7 +13,7 @@ import pstats
 
 def main(data_queue_combinations = None):
     when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
-    print(when_game_one_pair)
+    print("One Pair or not: ", when_game_one_pair)
 
     
     
@@ -24,9 +24,6 @@ def main(data_queue_combinations = None):
         my_thread = MyThread(target=Player().cards_permutations, data_queue=data_queue_combinations, flag1=False, flag2=True)
         my_thread.start()
         # my_thread.join()
-        
-
-        
         Game(data_queue_combinations)
     else:
         # sys.stdout = StdoutRedirector(redis_buffer_instance)

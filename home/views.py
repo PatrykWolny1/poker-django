@@ -138,6 +138,7 @@ def _handle_thread(request, subsite_specific=False, template=None, context=None)
     
     thread_result = start_thread(request)
     request.session[thread_key] = thread_result['thread_id']
+    
     print("Before rendering the response...")
 
     if template:
@@ -150,11 +151,10 @@ def start_thread(request):
     global task_threads, thread_ids
 
     task_manager.stop_event.clear()
-    # Start threads or tasks
-
         
     my_thread = MyThread(target=main)
     my_thread.start()
+    
     for thread_id, thread in threading._active.items(): 
         print("Active items (threads): ", thread_id) 
         thread_ids.append(thread_id)
@@ -185,7 +185,7 @@ def _stop_thread(request, connection_count=None):
     keys = list(task_threads.keys())
     
     c_threads = 0
-    
+        
     while c_threads < len(keys):
         print(c_threads)
         for thread_id in thread_ids:
@@ -193,9 +193,11 @@ def _stop_thread(request, connection_count=None):
                 if thread_id == keys[c_threads]:
                     print(isinstance(task_threads[keys[c_threads]], MyThread))
                     if isinstance(task_threads[keys[c_threads]], MyThread):
-                        task_threads[keys[c_threads]].raise_exception()
+                        print("Stopping thread ID: ", keys[c_threads])
+                        when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+                        if when_game_one_pair == '1':
+                            task_threads[keys[c_threads]].raise_exception()
                         task_threads[keys[c_threads]].join()     
-                    print("Stopped thread ID: ", keys[c_threads])
                 
             except Exception as e:
                 # Display full exception details
@@ -207,7 +209,7 @@ def _stop_thread(request, connection_count=None):
                 traceback.print_exc()  # Full traceback
                 return JsonResponse({'status': f'Raised exception {e}', 'message': 'Threads not stopped'}, status=500)
         c_threads += 1
-    return JsonResponse({'status': 'Success on stoping threads', 'message': 'No more threads to stop'}, status=200)
+    return JsonResponse({'status': 'Success on stoping threads', 'message': 'Task stopped successfully'}, status=200)
 
 def permutacje(request):
     return _toggle_redis_value(request, 'perms_combs', '0', 'Permutacje is ON')
@@ -255,11 +257,6 @@ def _toggle_redis_value(request, key, value, status_message):
         redis_buffer_instance.redis_1.set(key, value)
         return JsonResponse({'status': status_message})
     return JsonResponse({'status': 'Invalid request'}, status=400)
-
-#ONE PAIR GAME
-
-def play_button(request):
-    pass
 
 def get_redis_value(request):
     if request.method != "POST":

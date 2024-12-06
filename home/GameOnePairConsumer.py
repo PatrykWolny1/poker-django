@@ -1,7 +1,8 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from home.redis_buffer_singleton import redis_buffer_instance_one_pair_game, redis_buffer_instance_stop, redis_buffer_instance
 from home.ThreadVarManagerSingleton import task_manager
-from home.views import task_threads
+from home.views import task_threads, thread_ids
+from home.MyThread import MyThread
 import json
 import asyncio
 import time
@@ -53,7 +54,33 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         print("WebSocket connection closed", flush=True)
         # redis_buffer_instance_one_pair_game.redis_1.publish('thread_status', 'disconnect')
+        global task_threads, thread_ids
+        
+        redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
+        task_manager.stop_event.set()
 
+        keys = list(task_threads.keys())
+        
+        c_threads = 0
+            
+        while c_threads < len(keys):
+            print(c_threads)
+            for thread_id in thread_ids:
+                try:
+                    if thread_id == keys[c_threads]:
+                        print(isinstance(task_threads[keys[c_threads]], MyThread))
+                        if isinstance(task_threads[keys[c_threads]], MyThread):
+                            print("Stopping thread ID from DISCONNECT: ", keys[c_threads])
+                            task_threads[keys[c_threads]].raise_exception()
+                            task_threads[keys[c_threads]].join()     
+                except Exception as e:
+                    # Display full exception details
+                    print("Exception occurred:")
+                    print("Type:", type(e).__name__)  # Type of the exception
+                    print("Message:", e)  # Exception message
+                    print("Traceback:")
+            c_threads += 1
+        
         await super().disconnect(close_code)
                 
     async def receive(self, text_data):

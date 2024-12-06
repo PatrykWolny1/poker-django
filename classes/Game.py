@@ -34,10 +34,12 @@ class Game(object):
         self.file_all_to_update = 'ml_data/poker_game_one_pair_combs_all_to_update.csv'
         self.file_one_pair_combs_all = 'ml_data/poker_game_one_pair_combs_all.csv'  
         
-        if queue is not None:
+        when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+
+        if when_game_one_pair == '1' and queue is not None:
             self.all_comb_perm = queue.get()
             pass_all_comb_perm.set_all_comb_perm(self.all_comb_perm)
-        else:
+        elif when_game_one_pair == '1':
             self.all_comb_perm = pass_all_comb_perm.get_all_comb_perm()
         
         

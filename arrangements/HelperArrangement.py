@@ -19,6 +19,7 @@ class HelperArrangement(object):
     
     def __init__(self, helper_file_class):
         self.helper_file_class = helper_file_class
+        self.cards_all_permutations.clear()
     
     def dim(self, a):
         #Jesli to nie jest lista to zwroc pusty zbior
@@ -165,9 +166,16 @@ class HelperArrangement(object):
 
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')     
 
-        # HelperArrangement.weight_gen.clear()
-        # HelperArrangement.cards_all_permutations.clear()
+      
         
+        when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+        
+        print("IN HELPER when_game_one_pair", when_game_one_pair)
+        
+        if when_game_one_pair == '0':
+            HelperArrangement.weight_gen.clear()
+            HelperArrangement.cards_all_permutations.clear()
+
         return cards, self.rand_int, self.cards_all_permutations
         
     def get_indices_2d_1(self):

@@ -15,15 +15,13 @@ class MyThread(threading.Thread):
     def run(self):
         thread_id = threading.get_ident()  # Get unique thread identifier
         print(f"Thread {thread_id} is starting with flags: {self.flag1}, {self.flag2}")
-        try:
-            if self._target:
-                if self.flag1 is not None and self.flag2 is not None:
-                    self._target(self.flag1, self.flag2, self.data_queue)
-                else:
-                    
-                    self._target(self.data_queue) 
-        except Exception as e:
-            print(e)
+
+        if self._target:
+            if self.flag1 is not None and self.flag2 is not None:
+                self._target(self.flag1, self.flag2, self.data_queue)
+            else:
+                
+                self._target(self.data_queue) 
     
     def get_id(self):
         # returns id of the respective thread

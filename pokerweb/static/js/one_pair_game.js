@@ -13,6 +13,7 @@ class OnePairGame {
         this.socket = null;
         this.isResult = false;
         this.socketHandler = null;
+        this.blockRefresh = false;
 
         // Player names
         this.player1Name = document.getElementById("player1").value;
@@ -42,6 +43,7 @@ class OnePairGame {
         this.updateProgress = this.updateProgress.bind(this);
         this.updateBorders = this.updateBorders.bind(this);
         this.processStrategyData = this.processStrategyData.bind(this);
+        this.handleBeforeUnload = this.handleBeforeUnload.bind(this)
         
         this.init();
     }
@@ -276,11 +278,9 @@ class OnePairGame {
     }
 
     async handleBeforeUnload() {
-        localStorage.removeItem('pagePreviouslyLoaded');
-
         console.log("Page is being reloaded");
         console.log("Stopping background task...");
-
+        
         this.socketHandler.socket.send(JSON.stringify({ action: 'close', reason: 'on_refresh' }));
        
         await this.stopTask();
@@ -923,7 +923,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const onePairGame = new OnePairGame(true, isMobile);
 
     // Simulate some loading process
-    const checkLoadingStatus = setInterval(() => {    
+    const checkLoadingStatus = setInterval(() => { 
+        onePairGame.blockRefresh = true;   
         // Check every 100 milliseconds
         if (onePairGame.progress > 0) {
             // Hide the loader once the condition is met

@@ -201,9 +201,11 @@ def _stop_thread(request, connection_count=None):
                         print("One pair game or not: ", when_game_one_pair)
                         when_on_refresh = redis_buffer_instance_one_pair_game.redis_1.get('on_refresh').decode('utf-8')
                         if when_on_refresh == '1':
-                            task_threads[keys[c_threads]].join()
+                            task_threads[keys[c_threads]].raise_exception()
+                            # task_threads[keys[c_threads]].join()
                         else:
                             task_threads[keys[c_threads]].raise_exception()   
+                            # task_threads[keys[c_threads]].join()
                 
             except Exception as e:
                 # Display full exception details

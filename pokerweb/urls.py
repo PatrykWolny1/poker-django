@@ -28,7 +28,8 @@ urlpatterns = [
     path('', views.index, name='home.index'),
     path('cards_permutations/', views.cards_permutations, name='home.cards_permutations'),
     path('one_pair_game/', views.one_pair_game, name='home.one_pair_game'),
-    
+    path('goodbye/', views.goodbye, name='home.goodbye'),
+
     path('start_task_view/', views.start_task, name='start_task_view'),
     path('stop_task_view/', views.stop_task, name='stop_task_view'), 
     # path('stop_thread_view/', views.stop_thread, name='stop_thread_view'), 

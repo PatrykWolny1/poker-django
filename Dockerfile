@@ -16,5 +16,6 @@ ENV PATH="/usr/local/bin/:$PATH"
 ENV REDIS_URL="redis://red-ct7i211u0jms73drikm0:6379"
 ENV DJANGO_SETTINGS_MODULE="pokerweb.settings"
 ENV DJANGO_ALLOWED_HOSTS="pokersimulation.onrender.com"
+ENV IS_DEV="no"
 
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "pokerweb.asgi:application"]

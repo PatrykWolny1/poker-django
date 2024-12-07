@@ -38,7 +38,9 @@ def one_pair_game(request):
     is_dev = os.getenv('IS_DEV', 'yes')
     if request.method == 'GET':
         _initialize_redis_values_gra_jedna_para()
-        return _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html', context={'is_dev': is_dev})
+        response = _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html', context={'is_dev': is_dev})
+        print(response['status'])
+        return response
     print("ONE_PAIR_GAME")
     return render(request, 'home/one_pair_game.html', {'is_dev': is_dev})
 
@@ -81,7 +83,6 @@ def start_game(request):
 
     if request.method == 'POST':
         _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html')
-        print("START GAME")
         
         return JsonResponse({'status': 'Game started'})
     else:
@@ -142,9 +143,11 @@ def _handle_thread(request, subsite_specific=False, template=None, context=None)
     print("Before rendering the response...")
 
     if template:
-        return render(request, template, context)
+        response = render(request, template, context)
+        response['status'] = 'Threads started...'
+        return response
     else:
-        return JsonResponse({'status': 'Cards permutations started'})
+        return JsonResponse({'status': 'Threads started...'})
 
 def start_thread(request):
     """Start a new thread and store it in Redis and session."""
@@ -195,9 +198,12 @@ def _stop_thread(request, connection_count=None):
                     if isinstance(task_threads[keys[c_threads]], MyThread):
                         print("Stopping thread ID: ", keys[c_threads])
                         when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
-                        if when_game_one_pair == '1':
-                            task_threads[keys[c_threads]].raise_exception()
-                        task_threads[keys[c_threads]].join()     
+                        print("One pair game or not: ", when_game_one_pair)
+                        when_on_refresh = redis_buffer_instance_one_pair_game.redis_1.get('on_refresh').decode('utf-8')
+                        if when_on_refresh == '1':
+                            task_threads[keys[c_threads]].join()
+                        else:
+                            task_threads[keys[c_threads]].raise_exception()   
                 
             except Exception as e:
                 # Display full exception details
@@ -278,3 +284,6 @@ def get_redis_value(request):
         return JsonResponse({"message": f"Key '{key}' received successfully"})
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
+    
+def goodbye(request):
+    return render(request, 'home/goodbye.html', {'message': 'We’re sorry, but cookies are required to use this site. Przepraszamy, ale pliki cookie są niezbędne do korzystania z tej strony.'})

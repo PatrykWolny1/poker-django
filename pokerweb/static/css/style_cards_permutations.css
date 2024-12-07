@@ -1,6 +1,7 @@
 .bg-index {
-    background: url("img/background.jpg") repeat fixed;
-    background-size: 75% auto;
+    background: url("img/background.jpg") no-repeat fixed;
+    background-position: center 50%;
+    background-size: cover;
     height: 400px;
   }
 
@@ -31,6 +32,7 @@ h1 {
   display: block !important;
   font-size: 64px !important;
   font-weight: bold !important;
+  margin-top: 50px;
   unicode-bidi: isolate;
   background: linear-gradient(to bottom, #a4e4ff, rgb(165, 224, 255));
   -webkit-background-clip: text; /* For Safari */
@@ -202,6 +204,29 @@ h1 {
   gap: 20px; /* Space between buttons */
   position: relative;
   z-index: 0;
+}
+
+button {
+  font-size: 14px;
+  padding: 8px;
+  background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
+  color: #e8f8ff;
+  border: 1px solid #001d29;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-family: 'Cambria Math', sans-serif;
+}
+
+button:hover {
+  background: linear-gradient(to top, #9be1ff, #d3f2ff) !important;
+  color: #00101e;
+}
+
+button:disabled {
+  background: linear-gradient(to top, #9be1ff, #d3f2ff) !important;
+  color: #00101e;
+  cursor: not-allowed;
 }
 
 .high-card-button, .one-pair-button, .two-pairs-button, .three-of-a-kind-button, .straight-button, .color-button, 

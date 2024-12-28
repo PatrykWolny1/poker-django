@@ -141,7 +141,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
             
             print("In _send_updates()")
             
-            await asyncio.sleep(0.5)  # Adjust interval as needed
+            await asyncio.sleep(0.2)  # Adjust interval as needed
     
     async def _send_updates_info_cards(self):
         global count 

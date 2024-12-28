@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-WORKDIR /poker-django
+WORKDIR .
 
 COPY requirements.txt .
 
@@ -10,12 +10,7 @@ RUN pip install --upgrade pip && \
 COPY . .
 
 EXPOSE 8000
-EXPOSE 443
 
-ENV PATH="/usr/local/bin/:$PATH"
-ENV REDIS_URL="redis://red-ct7i211u0jms73drikm0:6379"
-ENV DJANGO_SETTINGS_MODULE="pokerweb.settings"
-ENV DJANGO_ALLOWED_HOSTS="pokersimulation.onrender.com"
-ENV IS_DEV="no"
+ENV IS_DEV="yes"
 
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "pokerweb.asgi:application"]
+CMD ["daphne", "-e", "ssl:8000:privateKey=key.pem:certKey=cert.pem", "pokerweb.asgi:application"]

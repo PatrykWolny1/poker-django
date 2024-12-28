@@ -37,7 +37,10 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'pokersimulation.onrender.com']
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'BACKEND': "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
     },
 }
 
@@ -59,6 +62,8 @@ CACHES = {
 }
 
 INSTALLED_APPS = [
+    'channels',
+    'daphne', 
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -67,17 +72,15 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'django_extensions',
     'home',
-    'channels',
-    'daphne', 
 ]
 
 ASGI_APPLICATION = 'pokerweb.asgi.application'
 
 MIDDLEWARE = [
+    'django.middleware.csrf.CsrfViewMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    'django.middleware.csrf.CsrfViewMiddleware',
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -159,4 +162,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATICFILES_DIRS = [BASE_DIR / "pokerweb/static/"] 
 
 # Static files for production (optional)
-STATIC_ROOT = BASE_DIR / "pokerweb/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles_collected"

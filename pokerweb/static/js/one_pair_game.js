@@ -137,9 +137,9 @@ class OnePairGame {
             });
     }
 
-    reinitializeInstance() {
+    async reinitializeInstance() {
         console.log("Reinitializing instance...");
-        this.resetInstanceVariables();
+        await this.resetInstanceVariables();
     }
 
     // Method to reset instance variables

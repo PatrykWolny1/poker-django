@@ -158,12 +158,12 @@ def start_thread(request):
     my_thread = MyThread(target=main)
     my_thread.start()
     
-    for thread_id, thread in threading._active.items(): 
-        print("Active items (threads): ", thread_id) 
-        thread_ids.append(thread_id)
-        task_threads[thread_id] = thread
+    for thread in threading.enumerate(): 
+        print("Active items (threads): ", thread.native_id) 
+        thread_ids.append(thread.native_id)
+        task_threads[thread.native_id] = thread
         
-    return {'task_status': 'Thread started', 'thread_id': thread_id}
+    return {'task_status': 'Thread started', 'thread_id': thread.native_id}
 
 # Function to save thread metadata
 def save_thread_metadata(thread_data):
@@ -200,13 +200,14 @@ def _stop_thread(request, connection_count=None):
                         when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
                         print("One pair game or not: ", when_game_one_pair)
                         when_on_refresh = redis_buffer_instance_one_pair_game.redis_1.get('on_refresh').decode('utf-8')
+                        print("On refresh", when_on_refresh)
                         if when_on_refresh == '1':
                             task_threads[keys[c_threads]].raise_exception()
                             # task_threads[keys[c_threads]].join()
                         else:
                             task_threads[keys[c_threads]].raise_exception()   
-                            # task_threads[keys[c_threads]].join()
-                
+                            task_threads[keys[c_threads]].join()
+
             except Exception as e:
                 # Display full exception details
                 print("Exception occurred:")

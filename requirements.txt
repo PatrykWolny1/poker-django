@@ -4,6 +4,7 @@ django-extensions
 daphne
 redis
 channels
+channels_redis
 tensorflow
 numpy
 pandas

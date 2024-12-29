@@ -24,7 +24,8 @@ import re
 import logging
 import queue
 import time
-
+import redis
+redis_client = redis_buffer_instance_one_pair_game.redis_1
 class Croupier(object):
 
     def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, prediction_mode = True, n = 1):
@@ -102,33 +103,33 @@ class Croupier(object):
         self.set_players_nicknames()
 
         # task_manager.stop_event.clear()
-        cards_str = []
-        #WAIT BUFFER ustawic zmienna lokalna zamiast ustawiania z redis
+        cards_str = []  
+        """Main game loop."""
         for self.player in self.players:
-            # self.player.arrangements.print()
-            # print(self.player.arrangements.check_arrangement(game_visible=False))
-            redis_buffer_instance_one_pair_game.redis_1.set('player', self.player.nick)
-            cards_str.clear()
-            
-            for card in self.player.arrangements.cards:
-                cards_str.append(card.name + card.color)
-            
-            self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))     
+            time.sleep(3.4)
+            # Prepare data
+            cards_str = [card.name + card.color for card in self.player.arrangements.cards]
+            type_arr_str = self.player.arrangements.check_arrangement(game_visible=False)
 
-            while self.player_number == self.player.index:
-                if self.player_number == self.player.index:                                            
-                    str_arr = self.player.arrangements.check_arrangement(game_visible=False)
-                    redis_buffer_instance_one_pair_game.redis_1.set(f'cards_{self.player_number}', json.dumps(cards_str))
-                    redis_buffer_instance_one_pair_game.redis_1.set('type_arrangement', str_arr)
-                if self.player_number == len(self.players) - 1:
-                    while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
-                        time.sleep(0.2)   
-                    if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':
-                        redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
-                    break
-                self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))     
+            # Store data in Redis
+            redis_client.set(f'cards_{self.player.index}', json.dumps(cards_str))
+            redis_client.set(f'type_arrangement_{self.player.index}', type_arr_str)
 
+            # Add the event to a Redis list
+            event = {
+                "player_index": self.player.index,
+                "event": "data_ready"
+            }
+            redis_client.rpush("game_queue", json.dumps(event))  # Push to list
+            print(f"Queued data for player {self.player.index}")
 
+            if self.player.index == len(self.players) - 1:
+
+                while not task_manager.stop_event_main.is_set():
+                    time.sleep(0.5)
+            if task_manager.stop_event_main.is_set():
+                print("EXITING##################################")
+                exit()
             
             # self.player.arrangements.set_rand_int()
             

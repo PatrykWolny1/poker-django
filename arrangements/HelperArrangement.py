@@ -172,9 +172,8 @@ class HelperArrangement(object):
         
         print("IN HELPER when_game_one_pair", when_game_one_pair)
         
-        if when_game_one_pair == '0':
-            HelperArrangement.weight_gen.clear()
-            HelperArrangement.cards_all_permutations.clear()
+        HelperArrangement.weight_gen.clear()
+        HelperArrangement.cards_all_permutations.clear()
 
         return cards, self.rand_int, self.cards_all_permutations
         

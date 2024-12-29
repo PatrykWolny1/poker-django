@@ -37,13 +37,11 @@ class OnePairGame {
         this.updatePlayerNames = this.updatePlayerNames.bind(this);
         this.animateBinaryTree = this.animateBinaryTree.bind(this);
         this.resetClasses = this.resetClasses.bind(this);
-        this.handleBeforeUnload = this.handleBeforeUnload.bind(this);
         this.startGame = this.startGame.bind(this);
         this.hasRequiredKeys = this.hasRequiredKeys.bind(this);
         this.updateProgress = this.updateProgress.bind(this);
         this.updateBorders = this.updateBorders.bind(this);
         this.processStrategyData = this.processStrategyData.bind(this);
-        this.handleBeforeUnload = this.handleBeforeUnload.bind(this)
         
         this.init();
     }
@@ -278,17 +276,27 @@ class OnePairGame {
     }
 
     async handleBeforeUnload() {
-        console.log("Page is being reloaded");
-        console.log("Stopping background task...");
+        console.log("Page is being reloaded or unloaded.");
         
-        this.socketHandler.socket.send(JSON.stringify({ action: 'close', reason: 'on_refresh' }));
-       
         await this.stopTask();
 
         if (this.socketHandler.socket && this.socketHandler.socket.readyState === WebSocket.OPEN) {
+            console.log("Notifying server about disconnect...");
+            this.socketHandler.socket.send(JSON.stringify({ action: "close", reason: "on_refresh" }));
+            const start = performance.now();
+            while (performance.now() - start < 2000) {} // 100ms delay
+            // Close the WebSocket connection
             console.log("Closing WebSocket...");
-            this.socketHandler.socket.close();
+            this.socketHandler.socket.close(1000, "Page unloaded");
+
+            const start2 = performance.now();
+            while (performance.now() - start2 < 2000) {} // 100ms delay
         }
+    
+        // Perform additional cleanup (if needed)
+        setTimeout(() => {
+            console.log("Performing additional cleanup...");
+        }, 0); // Non-blocking
     }
     
     async handleExitStopTask(event) {
@@ -709,10 +717,11 @@ class WebSocketHandler {
     async init() {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             console.log("Closing previous WebSocket...");
-            this.socket.close();
+            this.socket.close(1000);
         }
         this.socket = this.createWebSocket();
         console.log(this.socket)
+        console.log("WebSocket opened");
         await this.waitForSocketOpen();
         this.setupSocketHandlers();
     }
@@ -726,6 +735,7 @@ class WebSocketHandler {
     }
 
     async waitForSocketOpen() {
+        console.log("WebSocket opened");
         return new Promise((resolve, reject) => {
             if (this.socket.readyState === WebSocket.OPEN) {
                 resolve();
@@ -746,8 +756,10 @@ class WebSocketHandler {
         const data = JSON.parse(event.data);
         console.log("Received data:", data);
 
-        if ('cards' in data) {
+        if ('cards' in data && 'type_arrangement' in data) {
+            console.log("Cards and type arrangement received:", data);
             this.handleCardsData(data.cards);
+            this.handleArrangementData(data.type_arrangement);
         }
 
         if ('exchange_cards' in data || 'amount' in data || 'type_arrangement_result' in data || 'chances' in data) {
@@ -768,9 +780,9 @@ class WebSocketHandler {
             this.gameInstance.updateProgress(data.progress);
         }
 
-        if ('type_arrangement' in data) {
-            this.handleArrangementData(data.type_arrangement);
-        }
+        // if ('type_arrangement' in data) {
+        //     this.handleArrangementData(data.type_arrangement);
+        // }
 
 
         if ('first_second' in data) {
@@ -921,7 +933,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const isMobile = window.innerWidth <= 768;
     const onePairGame = new OnePairGame(true, isMobile);
-
+    console.log("NEW ONE PAIR")
     // Simulate some loading process
     const checkLoadingStatus = setInterval(() => { 
         onePairGame.blockRefresh = true;   

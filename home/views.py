@@ -13,6 +13,7 @@ from home.ThreadVarManagerSingleton import task_manager
 from main import main
 import threading
 import traceback
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 # Global Variables
 task_threads = {}
@@ -56,7 +57,9 @@ def stop_task(request):
     if request.method == 'POST':
         redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
         redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '1')
-        return _stop_thread(request)
+        task_manager.stop_event_main.set()
+        task_manager.stop_event.set()
+        return JsonResponse({'status': 'Stop success'}, status=200)
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
 def download_saved_file(request):
@@ -120,6 +123,8 @@ def _initialize_redis_values_gra_jedna_para():
     redis_buffer_instance.redis_1.set('stop_event_send_updates', '0')
     redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'not_ready')
     redis_buffer_instance_one_pair_game.redis_1.set('connection_accepted', 'no')    
+    task_manager.stop_event_main.clear()
+    task_manager.stop_event.clear()
 
 def _initialize_redis_values_start_task():
     """Initialize Redis values specific to start_task."""
@@ -134,9 +139,12 @@ def _initialize_redis_values_start_task():
 def _handle_thread(request, subsite_specific=False, template=None, context=None):
     """Handle the starting and managing of threads for different requests."""
     thread_key = f'thread_data_{request.path.split("/")[1]}' if subsite_specific else 'thread_id'
-   
-    _stop_thread(request)
     
+    when_on_refresh = redis_buffer_instance_one_pair_game.redis_1.get('on_refresh').decode('utf-8')
+    print("On refresh", when_on_refresh)
+    if when_on_refresh == '1':
+        _stop_thread(request)
+    task_manager.stop_event_main.clear()
     thread_result = start_thread(request)
     request.session[thread_key] = thread_result['thread_id']
     
@@ -154,69 +162,47 @@ def start_thread(request):
     global task_threads, thread_ids
 
     task_manager.stop_event.clear()
-        
-    my_thread = MyThread(target=main)
+    task_manager.stop_event_main.clear()
+    my_thread = MyThread(target=main, thread_name="thread_main")
     my_thread.start()
-    
+    task_threads["thread_main"] = my_thread
+
     for thread in threading.enumerate(): 
         print("Active items (threads): ", thread.native_id) 
         thread_ids.append(thread.native_id)
         task_threads[thread.native_id] = thread
         
-    return {'task_status': 'Thread started', 'thread_id': thread.native_id}
-
-# Function to save thread metadata
-def save_thread_metadata(thread_data):
-    with open(THREAD_METADATA_FILE, "w") as file:
-        json.dump(thread_data, file)
-
-# Function to load thread metadata
-def load_thread_metadata():
-    try:
-        with open(THREAD_METADATA_FILE, "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return {}
+    return {'task_status': 'Thread started', 'thread_id': "thread_main"}
     
 def _stop_thread(request, connection_count=None):
     global task_threads, thread_ids
     """Stop the thread based on the thread ID stored in session."""
 
     redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
-    task_manager.stop_event.set()
+    # task_manager.stop_event_main.set()
 
     keys = list(task_threads.keys())
+    print("STOP THREAD$$$$$$$$$$$$$$$$$$$$$$$$$$")
     
-    c_threads = 0
-        
-    while c_threads < len(keys):
-        print(c_threads)
-        for thread_id in thread_ids:
-            try:
-                if thread_id == keys[c_threads]:
-                    print(isinstance(task_threads[keys[c_threads]], MyThread))
-                    if isinstance(task_threads[keys[c_threads]], MyThread):
-                        print("Stopping thread ID: ", keys[c_threads])
-                        when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
-                        print("One pair game or not: ", when_game_one_pair)
-                        when_on_refresh = redis_buffer_instance_one_pair_game.redis_1.get('on_refresh').decode('utf-8')
-                        print("On refresh", when_on_refresh)
-                        if when_on_refresh == '1':
-                            task_threads[keys[c_threads]].raise_exception()
-                            # task_threads[keys[c_threads]].join()
-                        else:
-                            task_threads[keys[c_threads]].raise_exception()   
-                            task_threads[keys[c_threads]].join()
 
-            except Exception as e:
-                # Display full exception details
-                print("Exception occurred:")
-                print("Type:", type(e).__name__)  # Type of the exception
-                print("Message:", e)  # Exception message
-                print("Traceback:")
-                
-                traceback.print_exc()  # Full traceback
-                return JsonResponse({'status': f'Raised exception {e}', 'message': 'Threads not stopped'}, status=500)
+    print("Keys in task_threads:", task_threads.keys())
+    for thread in threading.enumerate():
+        # Skip MainThread and other critical threads
+        if thread.name == "MainThread" or thread.name.startswith("django"):
+            print(f"Skipping critical thread: {thread.name}")
+            continue
+
+        # Stop custom worker threads
+        if thread.name in task_threads:
+            if thread.is_alive():
+                task_manager.stop_event_main.set()
+                task_manager.stop_event.set()
+                print(f"Stopping thread: {thread.name}")
+                thread.join()  # Ensure the thread finishes execution
+            del task_threads[thread.name]
+        else:
+            print(f"Thread not managed by task_threads: {thread.name}")
+            return JsonResponse({'status': f'Failure on stoping threads', 'message': 'Thread not managed by task_threads'}, status=500)
         c_threads += 1
     return JsonResponse({'status': 'Success on stoping threads', 'message': 'Task stopped successfully'}, status=200)
 

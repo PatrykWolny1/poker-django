@@ -199,7 +199,7 @@ class Player(object):
                 print("One pair game or not: ", when_game_one_pair)
                 queue.put(self.all_comb_perm)
             
-            #print(self.cards)
+            print(self.cards)
             
             self.cards = list(self.cards)
             

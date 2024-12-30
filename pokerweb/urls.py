@@ -47,7 +47,9 @@ urlpatterns = [
     path('straight_royal_flush_view/', views.straight_royal_flush, name='straight_royal_flush_view'),
     path('download_saved_file/', views.download_saved_file, name='download_saved_file'),
     path('submit_number/', views.submit_number, name='submit_number'),
-    
+
+    path('get_session_id/', views.get_session_id, name='get_session_id'),
+    # path('process_channel_name/', views.process_channel_name, name='process_channel_name'),
     path('get_redis_value/', views.get_redis_value, name='get_redis_value'),
     path('start_game_view/', views.start_game, name='start_game'),   
 ]

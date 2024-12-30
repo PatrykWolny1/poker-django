@@ -1,8 +1,9 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from home.redis_buffer_singleton import redis_buffer_instance_one_pair_game, redis_buffer_instance_stop, redis_buffer_instance
 from home.ThreadVarManagerSingleton import task_manager
-from home.views import task_threads, thread_ids
+from home.views import session_threads
 from home.MyThread import MyThread
+from threading import Event
 import json
 import asyncio
 import time
@@ -12,9 +13,12 @@ import signal
 import os
 import redis
 from asyncio import Queue
+from asgiref.sync import sync_to_async
+from urllib.parse import parse_qs
 logger = logging.getLogger(__name__)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+connected_sessions = {}
 
 count = 0
 redis_client = redis_buffer_instance_one_pair_game.redis_1
@@ -27,6 +31,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         signal.signal(signal.SIGABRT, self.handle_signal)
         self.outgoing_message_queue = asyncio.Queue()  # Initialize the message queue
         self.send_task = None  # Background task for send_from_queue
+        self.stop_progress = Event()
 
     async def queue_message(self, data):
         """Add a message to the outgoing queue."""
@@ -46,19 +51,49 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         finally:
             print("send_from_queue task exiting")
     async def connect(self):
-        global task_manager
+        global task_manager, session_threads
         """Handle WebSocket connection."""
         global count
+        # Parse query string
+        query_string = self.scope["query_string"].decode()
+        query_params = parse_qs(query_string)
+        self.session_id = query_params.get("session_id", [None])[0]
+
+        if not self.session_id:
+            print("No session ID provided. Closing WebSocket.")
+            await self.close()
+            return
+
+        print(f"WebSocket connected with session ID: {self.session_id}")
+
+        # # Ensure session exists
+        # if not self.scope["session"].session_key:
+        #     print("Session ID is None. Creating a new session...", flush=True)
+        #     await sync_to_async(self.scope["session"].create)()
+        # self.session_id = self.scope["session"].session_key
+        # self.channel_name = self.channel_name
+
         print("Attempting to accept WebSocket connection...", flush=True)
         await self.accept()
         print("WebSocket connection accepted", flush=True)
+
+        # Store the channel name and session ID in Redis
+        # if self.session_id and self.channel_name:
+        #     await sync_to_async(redis_client.set)(
+        #         f"ws_session_{self.channel_name}", self.session_id
+        #     )
+
         task_manager.stop_event.clear()
-        # task_manager.stop_event_main.clear()
-        # Start the send_from_queue task
+        task_manager.stop_event_main.clear()
+        session_threads[self.session_id]["stop_event"].clear()
+        print(session_threads[self.session_id]["stop_event"].is_set())
+        self._initialize_redis()
+
+        self.queue = asyncio.Queue()
+
         self.send_task = asyncio.create_task(self.send_from_queue())
 
         redis_buffer_instance_one_pair_game.redis_1.set('connection_accepted', 'yes')
-        self._initialize_redis()
 
         print("Count: ", count, flush=True)
         # while not task_manager.stop_    event_main.is_set():
@@ -75,12 +110,12 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         await self.listen_to_redis_queue()
 
     async def listen_to_redis_queue(self):
-        global task_manager
+        global task_manager, session_threads
         """Process messages from the Redis queue."""
-        while not task_manager.stop_event_main.is_set():
+        while not session_threads[self.session_id]["stop_event"].is_set():
             try:
                 # Block until a message is available in the list or timeout
-                result = redis_client.blpop("game_queue", timeout=1)  # Returns None if no message
+                result = redis_client.blpop(f"game_queue_{self.session_id}", timeout=1)  # Returns None if no message
                 if result is None:
                     # No message in the queue within the timeout
                     await asyncio.sleep(0.1)  # Yield control to the event loop
@@ -97,10 +132,13 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
 
                 if data["event"] == "data_ready":
                     player_index = str(data["player_index"])
+                    
+                    session_id = self.scope["session"].session_key
 
                     # Retrieve additional data from Redis
-                    cards_key = f'cards_{player_index}'
-                    type_arr_key = f'type_arrangement_{player_index}'
+                    cards_key = f'cards_{player_index}_{session_id}'
+                    type_arr_key = f'type_arrangement_{player_index}_{session_id}'
+                    print(cards_key, "CARDS KEY##################")
                     cards_data = redis_client.get(cards_key)
                     type_arr_data = redis_client.get(type_arr_key)
 
@@ -109,8 +147,8 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                         type_arr_str = type_arr_data.decode('utf-8')
                         # Send data to the WebSocket client
                         await self.queue_message({
-                            "type_arrangement": type_arr_str,
-                            "cards": cards_list
+                            f"type_arrangement_{session_id}": type_arr_str,
+                            f"cards_{session_id}": cards_list
                         })
             except json.JSONDecodeError as e:
                 print("JSON decode error:", e)
@@ -122,7 +160,33 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         print("WebSocket connection closed", flush=True)
         # redis_buffer_instance_one_pair_game.redis_1.publish('thread_status', 'disconnect')
         # redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
-   
+        # session_id = self.scope["session"].session_key
+        # if session_id in connected_sessions:
+        #     connected_sessions[session_id].remove(self)
+        #     if not connected_sessions[session_id]:
+        #         del connected_sessions[session_id]
+        # print(f"WebSocket disconnected for instance: {self.session_id}", flush=True)
+
+        # # Remove the user from the group
+        # await self.channel_layer.group_discard(
+        #     self.group_name,
+        #     self.channel_name
+        # )
+        print(f"WebSocket disconnected. Session ID: {self.session_id}, Close Code: {close_code}", flush=True)
+
+        # Cancel the send task
+        if hasattr(self, 'send_task') and not self.send_task.cancelled():
+            self.send_task.cancel()
+            try:
+                await self.send_task  # Ensure the task is cancelled cleanly
+            except asyncio.CancelledError:
+                print("Send task cancelled.")
+
+        # Additional cleanup if needed
+        # E.g., stop tasks, flags, or shared resources associated with this session
+
+        print("Cleanup completed for session:", self.session_id)
+        print(f"Disconnected session: {self.session_id}", flush=True)
         await super().disconnect(close_code)
                 
     async def receive(self, text_data):
@@ -130,14 +194,12 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         """Handle messages received from WebSocket (currently not used)."""
         print("Receive method triggered")
         data = json.loads(text_data)
-        print(data, "IN RECEIVE")
-        
         if data['action'] == 'close':
             reason = data['reason']
             if reason == 'on_refresh':
                 print("ON REFRESH$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", flush=True)
-                # task_manager.stop_event.set()
-                # task_manager.stop_event_main.set()
+                task_manager.stop_event.set()
+                task_manager.stop_event_main.set()
                 redis_buffer_instance_one_pair_game.redis_1.set('on_refresh', '1')
                 try:
                     if self.send_task:

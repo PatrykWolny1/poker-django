@@ -62,6 +62,7 @@ CACHES = {
 }
 
 INSTALLED_APPS = [
+    'corsheaders',
     'channels',
     'daphne', 
     "django.contrib.admin",
@@ -80,10 +81,29 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:8000",  # Replace with your front-end URL
+    "https://127.0.0.1:8000",
+]
+
+CORS_ALLOW_CREDENTIALS = True  # Allow cookies
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "OPTIONS",
+]
+
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+    "x-csrftoken",
 ]
 
 ROOT_URLCONF = "pokerweb.urls"

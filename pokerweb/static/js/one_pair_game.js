@@ -277,7 +277,6 @@ class OnePairGame {
 
     async handleBeforeUnload() {
         console.log("Page is being reloaded or unloaded.");
-        
         await this.stopTask();
 
         if (this.socketHandler.socket && this.socketHandler.socket.readyState === WebSocket.OPEN) {
@@ -292,11 +291,6 @@ class OnePairGame {
             const start2 = performance.now();
             while (performance.now() - start2 < 2000) {} // 100ms delay
         }
-    
-        // Perform additional cleanup (if needed)
-        setTimeout(() => {
-            console.log("Performing additional cleanup...");
-        }, 0); // Non-blocking
     }
     
     async handleExitStopTask(event) {
@@ -338,7 +332,7 @@ class OnePairGame {
                 "Content-Type": "application/json",
                 "X-CSRFToken": this.getCSRFToken(),
             },
-            body: JSON.stringify({}),
+            body: JSON.stringify({ session_id: this.socketHandler.sessionId }),
             credentials: "same-origin",
         })
             .then((response) => response.json())
@@ -711,7 +705,9 @@ class UIElements {
 class WebSocketHandler {
     constructor(gameInstance) {
         this.gameInstance = gameInstance;
+        this.instanceId = null;
         this.socket = null;
+        this.sessionId = null;
     }
 
     async init() {
@@ -719,19 +715,42 @@ class WebSocketHandler {
             console.log("Closing previous WebSocket...");
             this.socket.close(1000);
         }
-        this.socket = this.createWebSocket();
+        this.socket = await this.createWebSocket();
         console.log(this.socket)
         console.log("WebSocket opened");
         await this.waitForSocketOpen();
         this.setupSocketHandlers();
     }
 
-    createWebSocket() {
-        if (window.env.IS_DEV.includes("yes")) {
-            return new WebSocket("wss://127.0.0.1:8000/ws/op_game/");
-        } else {
-            return new WebSocket("wss://pokersimulation.onrender.com/ws/op_game/");
-        }
+    async createWebSocket() {
+        // if (window.env.IS_DEV.includes("yes")) {
+        //     this.instanceId = generateUUID();
+        //     console.log("New instance ID:", this.instanceId);
+        //     return new WebSocket("wss://127.0.0.1:8000/ws/op_game/");
+        // } else {
+        //     return new WebSocket("wss://pokersimulation.onrender.com/ws/op_game/");
+        // }
+        return fetch('/get_session_id/')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.session_id) {
+                    throw new Error("Failed to fetch session ID.");
+                }
+
+                this.sessionId = data.session_id;
+                console.log("Fetched Session ID:", this.sessionId);
+
+                const webSocketUrl = window.env.IS_DEV.includes("yes")
+                    ? `wss://127.0.0.1:8000/ws/op_game/?session_id=${this.sessionId}`
+                    : `wss://pokersimulation.onrender.com/ws/op_game/?session_id=${this.sessionId}`;
+
+                console.log("Connecting to WebSocket:", webSocketUrl);
+                return new WebSocket(webSocketUrl); // Return the WebSocket instance
+            })
+            .catch(error => {
+                console.error("Error creating WebSocket:", error);
+                throw error; // Propagate the error if needed
+            });
     }
 
     async waitForSocketOpen() {
@@ -749,17 +768,17 @@ class WebSocketHandler {
     setupSocketHandlers() {
         this.socket.onmessage = (event) => this.handleSocketMessage(event);
         this.socket.onerror = (error) => console.error('WebSocket error:', error);
-        this.socket.onclose = () => console.log('WebSocket connection closed');
+        this.socket.onclose = () => console.log('WebSocket connection closed for instance: ', this.instanceId);
     }
 
     handleSocketMessage(event) {
         const data = JSON.parse(event.data);
-        console.log("Received data:", data);
+        console.log("Received data: ", data)
 
-        if ('cards' in data && 'type_arrangement' in data) {
+        if (`cards_${this.sessionId}` in data && `type_arrangement_${this.sessionId}` in data) {
             console.log("Cards and type arrangement received:", data);
-            this.handleCardsData(data.cards);
-            this.handleArrangementData(data.type_arrangement);
+            this.handleCardsData(data[`cards_${this.sessionId}`]);
+            this.handleArrangementData(data[`type_arrangement_${this.sessionId}`]);
         }
 
         if ('exchange_cards' in data || 'amount' in data || 'type_arrangement_result' in data || 'chances' in data) {
@@ -779,11 +798,6 @@ class WebSocketHandler {
         if ('progress' in data) {
             this.gameInstance.updateProgress(data.progress);
         }
-
-        // if ('type_arrangement' in data) {
-        //     this.handleArrangementData(data.type_arrangement);
-        // }
-
 
         if ('first_second' in data) {
             this.gameInstance.firstSecond = data.first_second;
@@ -917,7 +931,6 @@ class WebSocketHandler {
         this.gameInstance.iterations.iter3 = (this.gameInstance.iterations.iter3 + 1) % 2;
     }
 }
-
 
 // Wait until the DOM is fully loaded and then initialize the class
 document.addEventListener("DOMContentLoaded", () => {

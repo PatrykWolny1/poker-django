@@ -27,7 +27,7 @@ atexit.register(cleanup)
 
 class Game(object):
         
-    def __init__(self, queue = None):
+    def __init__(self, queue = None, session_id = None, stop_event = None):
         self.all_combs_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_duplicates.csv'
         self.all_combs_update_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_to_update_duplicates.csv' 
         
@@ -41,8 +41,11 @@ class Game(object):
             pass_all_comb_perm.set_all_comb_perm(self.all_comb_perm)
         elif pass_all_comb_perm.get_all_comb_perm() is not None:
             self.all_comb_perm = pass_all_comb_perm.get_all_comb_perm()
-        
-        
+        self.session_id = session_id
+        self.stop_event = stop_event
+
+        print(f"Working on task for session {session_id}")
+
         self.Game()
         
     def Game(self): 
@@ -93,11 +96,14 @@ class Game(object):
         if choice == '2':
             game_si_human = redis_buffer_instance.redis_1.get('game_si_human').decode('utf-8')
             if game_si_human == '1':
-                croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
+                croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False, session_id=self.session_id,
+                                    stop_event=self.stop_event)
             if game_si_human == '2':
-                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=True)
+                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=True, session_id=self.session_id,
+                                    stop_event=self.stop_event)
             if game_si_human == '3':
-                croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False)
+                croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False, session_id=self.session_id,
+                                    stop_event=self.stop_event)
                 
             croupier.play()
             return 0

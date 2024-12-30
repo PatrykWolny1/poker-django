@@ -11,11 +11,11 @@ import time
 import cProfile
 import pstats
 
-def main(data_queue_combinations = None):
+def main(data_queue_combinations = None, session_id = None, stop_event = None):
     when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
     print("One Pair or not: ", when_game_one_pair)
 
-    
+    print(f"Thread started for session {session_id}")
     
     if when_game_one_pair == '1':
         # thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
@@ -23,7 +23,7 @@ def main(data_queue_combinations = None):
         data_queue_combinations = queue.Queue()
         my_thread = MyThread(target=Player().cards_permutations, data_queue=data_queue_combinations, flag1=False, flag2=True, thread_name="thread_cards_perms")
         my_thread.start()
-        Game(data_queue_combinations)
+        Game(data_queue_combinations, session_id, stop_event)
         my_thread.join()
     else:
         # sys.stdout = StdoutRedirector(redis_buffer_instance)

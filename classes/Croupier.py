@@ -28,7 +28,8 @@ import redis
 redis_client = redis_buffer_instance_one_pair_game.redis_1
 class Croupier(object):
 
-    def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, prediction_mode = True, n = 1):
+    def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, prediction_mode = True, n = 1, session_id = None,
+                stop_event = None):
         #self.deck:Deck = Deck()
         self.cards:list = []
         self.players:list = []
@@ -58,6 +59,9 @@ class Croupier(object):
         self.second:bool = True
         self.p:bool = True
 
+        self.session_id = session_id
+        self.stop_event = stop_event
+        print("CALL CONSTRUCTOR", self.session_id)
         
         pd.set_option('display.max_columns', 100)
         
@@ -94,7 +98,6 @@ class Croupier(object):
             self.play()
             self.clear_data()
 
-    
     def play(self):        
         # print()
     
@@ -106,28 +109,28 @@ class Croupier(object):
         cards_str = []  
         """Main game loop."""
         for self.player in self.players:
-            time.sleep(3.4)
+            time.sleep(1)
             # Prepare data
             cards_str = [card.name + card.color for card in self.player.arrangements.cards]
             type_arr_str = self.player.arrangements.check_arrangement(game_visible=False)
-
+            print("Session ID in Croupier: ", self.session_id)
             # Store data in Redis
-            redis_client.set(f'cards_{self.player.index}', json.dumps(cards_str))
-            redis_client.set(f'type_arrangement_{self.player.index}', type_arr_str)
+            redis_client.set(f'cards_{self.player.index}_{self.session_id}', json.dumps(cards_str))
+            redis_client.set(f'type_arrangement_{self.player.index}_{self.session_id}', type_arr_str)
 
             # Add the event to a Redis list
             event = {
                 "player_index": self.player.index,
                 "event": "data_ready"
             }
-            redis_client.rpush("game_queue", json.dumps(event))  # Push to list
+            redis_client.rpush(f"game_queue_{self.session_id}", json.dumps(event))  # Push to list
             print(f"Queued data for player {self.player.index}")
 
             if self.player.index == len(self.players) - 1:
 
-                while not task_manager.stop_event_main.is_set():
+                while not self.stop_event.is_set():
                     time.sleep(0.5)
-            if task_manager.stop_event_main.is_set():
+            if self.stop_event.is_set():
                 print("EXITING##################################")
                 exit()
             

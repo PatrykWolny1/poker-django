@@ -11,16 +11,18 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
+from threading import Thread, Event
 import threading
 import traceback
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 # Global Variables
 task_threads = {}
+session_threads = {}
 thread_ids = []
 task_thread = None
-THREAD_METADATA_FILE = "threads.json"
 # Views
+redis_client = redis_buffer_instance_one_pair_game.redis_1
 
 def index(request):
     """Main index view."""
@@ -35,16 +37,39 @@ def cards_permutations(request):
     return render(request, 'home/cards_permutations.html', {'is_dev': is_dev})
 
 def one_pair_game(request):
-    """Start thread if not already running, for one-pair game."""
     is_dev = os.getenv('IS_DEV', 'yes')
     if request.method == 'GET':
-        _initialize_redis_values_gra_jedna_para()
-        response = _handle_thread(request, subsite_specific=True, template='home/one_pair_game.html', context={'is_dev': is_dev})
-        print(response['status'])
-        return response
-    print("ONE_PAIR_GAME")
-    return render(request, 'home/one_pair_game.html', {'is_dev': is_dev})
+        # Ensure a session is created
+        print("ONE_PAIR_GAME")
+        return render(request, 'home/one_pair_game.html', {'is_dev': is_dev})
+        # _initialize_redis_values_gra_jedna_para()
 
+        # # Log all query parameters for debugging
+        # print("Query parameters:", request.GET)
+
+        # # Get channel_name from the query parameters
+        # channel_name = request.GET.get("channel_name")
+        # if not channel_name:
+        #     print("Error: Channel name not provided in the query string.")
+        #     return JsonResponse({"error": "Channel name not provided in the query string"}, status=400)
+
+        # # Get session_id from Redis using channel_name
+        # session_id = redis_client.get(f"ws_session_{channel_name}")
+        # if session_id:
+        #     session_id = session_id.decode('utf-8')
+        #     print("SESSION ID CHANNEL", session_id)
+
+        #     # Start the thread with the session ID
+        #     start_thread(request, session_id)
+
+def get_session_id(request):
+    """Return the current session ID."""
+    # Ensure the session exists
+    if not request.session.session_key:
+        request.session.create()
+    start_thread(request, request.session.session_key)
+    return JsonResponse({"session_id": request.session.session_key})
+    
 def start_task(request):
     """Handle task initiation from POST request."""
     if request.method == 'POST':
@@ -55,12 +80,20 @@ def start_task(request):
 def stop_task(request):
     """Handle task stopping from POST request."""
     if request.method == 'POST':
-        redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
-        redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '1')
+        data = json.loads(request.body)
+        session_id = data.get("session_id")
+
+
         task_manager.stop_event_main.set()
-        task_manager.stop_event.set()
-        return JsonResponse({'status': 'Stop success'}, status=200)
-    return JsonResponse({'status': 'Invalid request'}, status=400)
+        # task_manager.stop_event.set()
+        
+        # session_id = request.session.session_key
+        redis_buffer_instance_one_pair_game.redis_1.set(f'stop_event_send_updates', '1')
+        redis_buffer_instance_one_pair_game.redis_1.set(f'wait_buffer', '1')
+        if session_id:
+            _stop_thread(request, session_id)
+        return JsonResponse({"message": f"Task stopped for session {session_id}"})
+    return JsonResponse({"error": "No active session."}, status=400)
 
 def download_saved_file(request):
     """Serve a saved file as an attachment download."""
@@ -142,8 +175,8 @@ def _handle_thread(request, subsite_specific=False, template=None, context=None)
     
     when_on_refresh = redis_buffer_instance_one_pair_game.redis_1.get('on_refresh').decode('utf-8')
     print("On refresh", when_on_refresh)
-    if when_on_refresh == '1':
-        _stop_thread(request)
+    # if when_on_refresh == '1':
+    #     _stop_thread(request)
     task_manager.stop_event_main.clear()
     thread_result = start_thread(request)
     request.session[thread_key] = thread_result['thread_id']
@@ -157,53 +190,49 @@ def _handle_thread(request, subsite_specific=False, template=None, context=None)
     else:
         return JsonResponse({'status': 'Threads started...'})
 
-def start_thread(request):
+def start_thread(request, session_id):
     """Start a new thread and store it in Redis and session."""
     global task_threads, thread_ids
+    print("START THREAD", session_id)
+    # task_manager.stop_event.clear()
+    # task_manager.stop_event_main.clear()
+    if session_id not in session_threads:  # Avoid starting duplicate threads
+        stop_event = Event()  # Stop signal for the thread
+        my_thread = MyThread(target=main, session_id=session_id, stop_event=stop_event, thread_name="thread_main")
+        session_threads[session_id] = {"thread": my_thread, "stop_event": stop_event}
+        my_thread.start()
+    # task_threads["thread_main"] = my_thread
 
-    task_manager.stop_event.clear()
-    task_manager.stop_event_main.clear()
-    my_thread = MyThread(target=main, thread_name="thread_main")
-    my_thread.start()
-    task_threads["thread_main"] = my_thread
-
-    for thread in threading.enumerate(): 
-        print("Active items (threads): ", thread.native_id) 
-        thread_ids.append(thread.native_id)
-        task_threads[thread.native_id] = thread
+    
         
     return {'task_status': 'Thread started', 'thread_id': "thread_main"}
     
-def _stop_thread(request, connection_count=None):
+def _stop_thread(request, session_id):
     global task_threads, thread_ids
     """Stop the thread based on the thread ID stored in session."""
 
     redis_buffer_instance_one_pair_game.redis_1.set('stop_event_send_updates', '1')
     # task_manager.stop_event_main.set()
-
-    keys = list(task_threads.keys())
     print("STOP THREAD$$$$$$$$$$$$$$$$$$$$$$$$$$")
     
 
-    print("Keys in task_threads:", task_threads.keys())
+    print("Keys in session_threads:", session_threads.keys())
     for thread in threading.enumerate():
         # Skip MainThread and other critical threads
         if thread.name == "MainThread" or thread.name.startswith("django"):
             print(f"Skipping critical thread: {thread.name}")
             continue
 
-        # Stop custom worker threads
-        if thread.name in task_threads:
-            if thread.is_alive():
-                task_manager.stop_event_main.set()
-                task_manager.stop_event.set()
-                print(f"Stopping thread: {thread.name}")
-                thread.join()  # Ensure the thread finishes execution
-            del task_threads[thread.name]
+        if session_id in session_threads:
+            task_manager.stop_event_main.set()
+            task_manager.stop_event.set()
+            session_threads[session_id]["stop_event"].set()  # Signal the thread to stop
+            session_threads[session_id]["thread"].join()  # Wait for the thread to terminate
+            print(f"Thread {session_id} stopped")
+            del session_threads[session_id]  # Remove from the dictionary
         else:
             print(f"Thread not managed by task_threads: {thread.name}")
             return JsonResponse({'status': f'Failure on stoping threads', 'message': 'Thread not managed by task_threads'}, status=500)
-        c_threads += 1
     return JsonResponse({'status': 'Success on stoping threads', 'message': 'Task stopped successfully'}, status=200)
 
 def permutacje(request):

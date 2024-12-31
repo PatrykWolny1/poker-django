@@ -21,9 +21,8 @@ class MyThread(threading.Thread):
 
         if self._target:
             if self.flag1 is not None and self.flag2 is not None:
-                self._target(self.flag1, self.flag2, self.data_queue)
+                self._target(self.flag1, self.flag2, self.session_id, self.data_queue)
             else:
-                
                 self._target(self.data_queue, self.session_id, self.stop_event) 
     
     def get_id(self):

@@ -5,8 +5,9 @@ from home.ThreadVarManagerSingleton import task_manager
 import time
 import shutil
 
+
 class LoadingBar:
-    def __init__(self, name, total_steps, display_interval, complete_interval, helper_arr):
+    def __init__(self, name, total_steps, display_interval, complete_interval, helper_arr, session_id = None):
         self.name = name
         self.total_steps = total_steps                          # Total number of steps in the progress
         self.display_interval = display_interval                # Interval for displaying progress
@@ -17,13 +18,14 @@ class LoadingBar:
         self.stop_requested = False                             # Track if stop is requested
         self.begin = True                                       # Flag for initial setup
         self.ret_lb = True
+        self.session_id = session_id
 
     def update_progress(self, step_count):
         """Updates the internal progress bar based on step count."""
 
-        is_accepted = redis_buffer_instance_one_pair_game.redis_1.get('connection_accepted').decode('utf-8')
+        is_accepted = redis_buffer_instance_one_pair_game.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
         while is_accepted != 'yes':
-            is_accepted = redis_buffer_instance_one_pair_game.redis_1.get('connection_accepted').decode('utf-8')
+            is_accepted = redis_buffer_instance_one_pair_game.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
 
         self.current_progress = step_count
         
@@ -42,7 +44,7 @@ class LoadingBar:
     def _update_cache_with_progress(self):
         """Helper to update cache with current progress status and trigger event."""
         with task_manager.cache_lock_progress:
-            redis_buffer_instance.redis_1.set('shared_progress', str(self.progress_bar.count('.')))
+            redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', str(self.progress_bar.count('.')))
         task_manager.data_ready_event.set()
         task_manager.data_ready_event.clear()
 
@@ -85,3 +87,6 @@ class LoadingBar:
             lines = file.readlines()
             line_count = len(lines)
         redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', "Ilosc zapisanych ukladow: " + str(int(floor(line_count / 2))))
+
+    def set_session_id(self, session_id):
+        self.session_id = session_id

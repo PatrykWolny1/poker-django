@@ -109,7 +109,7 @@ class Croupier(object):
         cards_str = []  
         """Main game loop."""
         for self.player in self.players:
-            time.sleep(1)
+            time.sleep(2)
             # Prepare data
             cards_str = [card.name + card.color for card in self.player.arrangements.cards]
             type_arr_str = self.player.arrangements.check_arrangement(game_visible=False)

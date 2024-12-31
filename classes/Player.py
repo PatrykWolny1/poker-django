@@ -117,7 +117,7 @@ class Player(object):
         self.cards.append(deck.deal())
         self.arrangements.set_cards_after(self.cards)
 
-    def cards_permutations(self, rand_arr = False, combs_gen = False, queue = None):
+    def cards_permutations(self, rand_arr = False, combs_gen = False, session_id = None, queue = None):
             if combs_gen == False:
                 # print("Wybierz rodzaj permutacji (1 - ALL | 2 - RANDOM | 3 - WYJSCIE: ")
                 if_rand = '1'    #if_rand == '2' if generate random with permutations (too many...)
@@ -173,7 +173,7 @@ class Player(object):
             #blockPrint()
             
             redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'ready')
-
+            print("Session ID for cards_permutations: ", session_id)
             if arrangement == "1":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random, if_combs, straight_royal_flush)
             if arrangement == "2":
@@ -189,7 +189,7 @@ class Player(object):
             if arrangement == "7":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.two_pairs.two_pairs_generating(self.random, if_combs)
             if arrangement == "8":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.one_pair.one_pair_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.one_pair.one_pair_generating(self.random, if_combs, session_id)
             if arrangement == "9":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs)
             

@@ -21,7 +21,7 @@ def main(data_queue_combinations = None, session_id = None, stop_event = None):
         # thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
         # thread_cards_permutations.start()
         data_queue_combinations = queue.Queue()
-        my_thread = MyThread(target=Player().cards_permutations, data_queue=data_queue_combinations, flag1=False, flag2=True, thread_name="thread_cards_perms")
+        my_thread = MyThread(target=Player().cards_permutations, data_queue=data_queue_combinations, flag1=False, flag2=True, session_id=session_id, thread_name="thread_cards_perms")
         my_thread.start()
         Game(data_queue_combinations, session_id, stop_event)
         my_thread.join()

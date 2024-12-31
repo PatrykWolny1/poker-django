@@ -277,20 +277,32 @@ class OnePairGame {
 
     async handleBeforeUnload() {
         console.log("Page is being reloaded or unloaded.");
-        await this.stopTask();
 
-        if (this.socketHandler.socket && this.socketHandler.socket.readyState === WebSocket.OPEN) {
-            console.log("Notifying server about disconnect...");
+        try {
             this.socketHandler.socket.send(JSON.stringify({ action: "close", reason: "on_refresh" }));
             const start = performance.now();
-            while (performance.now() - start < 2000) {} // 100ms delay
-            // Close the WebSocket connection
-            console.log("Closing WebSocket...");
-            this.socketHandler.socket.close(1000, "Page unloaded");
-
+            while (performance.now() - start < 3000) {} // 100ms delay
+            await this.stopTask();
+            this.socketHandler.socket.close(1000, "Unload");
             const start2 = performance.now();
-            while (performance.now() - start2 < 2000) {} // 100ms delay
+            while (performance.now() - start2 < 4500) {} // 100ms delay
+        } catch (error) {
+            console.error('Error in beforeunload:', error);
         }
+       
+
+        // if (this.socketHandler.socket && this.socketHandler.socket.readyState === WebSocket.OPEN) {
+        //     console.log("Notifying server about disconnect...");
+        //     const start3 = performance.now();
+        //     while (performance.now() - start3 < 1000) {} // 100ms delay
+        //     // Close the WebSocket connection
+        //     console.log("Closing WebSocket...");
+
+        //     const start4 = performance.now();
+        //     while (performance.now() - start4 < 1000) {} // 100ms delay
+        // }
+        
+
     }
     
     async handleExitStopTask(event) {
@@ -324,30 +336,41 @@ class OnePairGame {
 
         }
     }
-
     async stopTask() {
-        fetch("/stop_task_view/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": this.getCSRFToken(),
-            },
-            body: JSON.stringify({ session_id: this.socketHandler.sessionId }),
-            credentials: "same-origin",
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                console.log(data);
-                if (data.status === "Task stopped successfully") {
-                    console.log("Task stopped successfully");
-                    this.elements.resetProgressBar();
-                }
-            })
-            .catch((error) => {
-                console.error("Error stopping task:", error);
-                alert("An error occurred while stopping the task. Please try again.");
-            });
+        const url = '/stop_task_view/';
+        const csrfToken = this.getCSRFToken();
+        const data = JSON.stringify({
+            session_id: this.socketHandler.sessionId,
+            csrfmiddlewaretoken: csrfToken,
+        });
+        // Use sendBeacon for reliable request on unload
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
     }
+    
+    // async stopTask() {
+    //     fetch("/stop_task_view/", {
+    //         method: "POST",
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //             "X-CSRFToken": this.getCSRFToken(),
+    //         },
+    //         body: JSON.stringify({ session_id: this.socketHandler.sessionId }),
+    //         credentials: "same-origin",
+    //     })
+    //         .then((response) => response.json())
+    //         .then((data) => {
+    //             console.log(data);
+    //             if (data.status === "Task stopped successfully") {
+    //                 console.log("Task stopped successfully");
+    //                 this.elements.resetProgressBar();
+    //             }
+    //         })
+    //         .catch((error) => {
+    //             console.error("Error stopping task:", error);
+    //             alert("An error occurred while stopping the task. Please try again.");
+    //         });
+    // }
 
     getCSRFToken() {
         let token = document.cookie.split(";").find((row) => row.startsWith("csrftoken="));
@@ -711,10 +734,10 @@ class WebSocketHandler {
     }
 
     async init() {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            console.log("Closing previous WebSocket...");
-            this.socket.close(1000);
-        }
+        // if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        //     console.log("Closing previous WebSocket...");
+        //     this.socket.close(1000);
+        // }
         this.socket = await this.createWebSocket();
         console.log(this.socket)
         console.log("WebSocket opened");
@@ -722,7 +745,17 @@ class WebSocketHandler {
         this.setupSocketHandlers();
     }
 
-    async createWebSocket() {
+    async fetchSessionId() {
+        try {
+            const response = await fetch('/api/fetch_session_id/');
+            const data = await response.json();
+            const sessionId = data.session_id;
+            console.log("Session ID:", sessionId);
+            return sessionId;
+        } catch (error) {
+            console.error("Error fetching session ID:", error);
+        }
+    }
         // if (window.env.IS_DEV.includes("yes")) {
         //     this.instanceId = generateUUID();
         //     console.log("New instance ID:", this.instanceId);
@@ -730,27 +763,30 @@ class WebSocketHandler {
         // } else {
         //     return new WebSocket("wss://pokersimulation.onrender.com/ws/op_game/");
         // }
-        return fetch('/get_session_id/')
-            .then(response => response.json())
-            .then(data => {
-                if (!data.session_id) {
-                    throw new Error("Failed to fetch session ID.");
-                }
-
-                this.sessionId = data.session_id;
-                console.log("Fetched Session ID:", this.sessionId);
-
-                const webSocketUrl = window.env.IS_DEV.includes("yes")
-                    ? `wss://127.0.0.1:8000/ws/op_game/?session_id=${this.sessionId}`
-                    : `wss://pokersimulation.onrender.com/ws/op_game/?session_id=${this.sessionId}`;
-
-                console.log("Connecting to WebSocket:", webSocketUrl);
-                return new WebSocket(webSocketUrl); // Return the WebSocket instance
-            })
-            .catch(error => {
-                console.error("Error creating WebSocket:", error);
-                throw error; // Propagate the error if needed
-            });
+    
+    async createWebSocket() {
+        try {
+            // Fetch the session ID
+            const response = await fetch('/get_session_id/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            this.sessionId = await this.fetchSessionId(); 
+            console.log("Fetched Session ID:", this.sessionId);
+            // Construct the WebSocket URL
+            const webSocketUrl = window.env.IS_DEV.includes("yes")
+                ? `wss://127.0.0.1:8000/ws/op_game/?session_id=${this.sessionId}`
+                : `wss://pokersimulation.onrender.com/ws/op_game/?session_id=${this.sessionId}`;
+    
+            console.log("Connecting to WebSocket:", webSocketUrl);
+    
+            // Create and return the WebSocket instance
+            return new WebSocket(webSocketUrl);
+        } catch (error) {
+            console.error("Error creating WebSocket:", error);
+            throw error; // Propagate the error for further handling
+        }
     }
 
     async waitForSocketOpen() {
@@ -768,7 +804,7 @@ class WebSocketHandler {
     setupSocketHandlers() {
         this.socket.onmessage = (event) => this.handleSocketMessage(event);
         this.socket.onerror = (error) => console.error('WebSocket error:', error);
-        this.socket.onclose = () => console.log('WebSocket connection closed for instance: ', this.instanceId);
+        this.socket.onclose = () => console.log('WebSocket connection closed for instance: ', this.sessionId);
     }
 
     handleSocketMessage(event) {

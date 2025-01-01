@@ -46,7 +46,6 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
         """Initialize Redis values for shared progress and stop event."""
         redis_buffer_instance_perms_combs.redis_1.set(f'connection_accepted_{self.session_id}', 'no')
         redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', '0')
-        redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
         
         redis_buffer_instance.redis_1.set('prog_when_fast', '-1')  # Reset the fast flag
         redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
@@ -74,7 +73,8 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             
             print("In _send_updates...")
             
-            await asyncio.sleep(0.1)  # Adjust interval as needed
+            await asyncio.sleep(0.3
+                                )  # Adjust interval as needed
 
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""
@@ -82,7 +82,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
         progress = int(redis_buffer_instance.redis_1.get(f'shared_progress_{self.session_id}').decode('utf-8'))
 
         mapped_progress = self._map_progress(progress, from_min, from_max)
-
+        print("Progress: ", mapped_progress)
         if mapped_progress is not None:
             if mapped_progress >= 100:
                 mapped_progress = 100
@@ -99,7 +99,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({'data_script': processed_data_script}))
 
     def _map_progress(self, progress, from_min, from_max):
-        """Map and return the progress value to a 0-100 range."""
+        """Map and return the progress value to a 0-100 range.""" 
         if progress != 0:
             progress_when_fast = int(redis_buffer_instance.redis_1.get('prog_when_fast').decode('utf-8'))
             if progress_when_fast == 100:

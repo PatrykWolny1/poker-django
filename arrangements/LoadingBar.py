@@ -27,7 +27,7 @@ class LoadingBar:
         while is_accepted != 'yes':
             is_accepted = redis_buffer_instance.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
 
-        self.current_progress = step_count
+        # self.current_progress = step_count
         # Update the bar display every `complete_interval` steps
         if step_count % self.complete_interval == 0:
             next_dot_index = self.progress_bar.index("#") if "#" in self.progress_bar else None
@@ -35,10 +35,10 @@ class LoadingBar:
                 self.progress_bar[next_dot_index] = "."
                 self._update_cache_with_progress()
                 return self.check_stop_event()
-
+        print(step_count, self.total_steps)
         if step_count == self.total_steps:
             return False 
-        return True # Delete with _finish_progress()
+        return True
     
     def _update_cache_with_progress(self):
         """Helper to update cache with current progress status and trigger event."""

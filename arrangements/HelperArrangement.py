@@ -108,12 +108,16 @@ class HelperArrangement(object):
         #Zerowanie pustych wierszy
         self.cards_all_permutations = [ele for ele in self.cards_all_permutations if ele != []]
         
-        self.rand_int = random.sample(range(0, len(self.weight_gen) - 1), 2)
         cards = None
         try:
-        #if if_combs == True:
-            cards = [self.cards_all_permutations[self.rand_int[0]],  
-                    self.cards_all_permutations[self.rand_int[1]]]
+            if len(self.cards_all_permutations) == 1:
+                self.rand_int = [0]
+                cards = [self.cards_all_permutations[self.rand_int[0]],  
+                        self.cards_all_permutations[self.rand_int[0]]]
+            else:
+                self.rand_int = random.sample(range(0, len(self.weight_gen)), 2)
+                cards = [self.cards_all_permutations[self.rand_int[0]],  
+                        self.cards_all_permutations[self.rand_int[1]]]
         except IndexError:
             print("INDEX ERROR: ", self.rand_int[0], self.rand_int[1], len(self.weight_gen), len(self.cards_all_permutations))
         
@@ -168,11 +172,7 @@ class HelperArrangement(object):
         except Exception as e:
             print(f"Error copying file: {e}")
         
-        # redis_buffer_instance.redis_1.set('prog_when_fast', '100')
-
-        redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')     
-
-  
+        redis_buffer_instance.redis_1.set('prog_when_fast', '100')
 
         when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
         

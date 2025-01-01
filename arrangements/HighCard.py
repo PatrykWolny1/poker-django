@@ -21,9 +21,12 @@ class HighCard(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
-
-        self.loading_bar:LoadingBar = LoadingBar('highcard', self.max_value_generate, 100, 100, self.helper_arr)   # 156 304 800 permutacji           
-        self.loading_bar_combs:LoadingBar = LoadingBar('highcard_combs', self.max_value_generate, 100, 100, self.helper_arr)   # 1 302 540 kombinacji           
+        if self.max_value_generate < 100:
+            n_loading_bar = 1
+        else:
+            n_loading_bar = 100
+        self.loading_bar:LoadingBar = LoadingBar('highcard', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)   # 156 304 800 permutacji           
+        self.loading_bar_combs:LoadingBar = LoadingBar('highcard_combs', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)   # 1 302 540 kombinacji           
         
         self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
         self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))

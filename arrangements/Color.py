@@ -20,9 +20,12 @@ class Color(HelperArrangement):
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
         self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
-
-        self.loading_bar_1:LoadingBar = LoadingBar('color', self.max_value_generate, 100, 100, self.helper_arr)
-        self.loading_bar_2:LoadingBar = LoadingBar('color_combs', self.max_value_generate, 100, 100, self.helper_arr)
+        if self.max_value_generate < 100:
+            n_loading_bar = 1
+        else:
+            n_loading_bar = 100
+        self.loading_bar_1:LoadingBar = LoadingBar('color', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
+        self.loading_bar_2:LoadingBar = LoadingBar('color_combs', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
         
         self.max_combs:str = str(int(self.loading_bar_1.total_steps/self.loading_bar_1.display_interval))
         self.max_1:str = str(int(self.loading_bar_2.total_steps/self.loading_bar_2.display_interval))

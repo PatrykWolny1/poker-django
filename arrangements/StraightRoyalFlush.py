@@ -19,9 +19,13 @@ class StraightRoyalFlush(HelperArrangement):
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
         self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
-        
-        self.loading_bar:LoadingBar = LoadingBar('straightroyalflush', self.max_value_generate, 1, 1, self.helper_arr)
-        self.loading_bar_combs:LoadingBar = LoadingBar('straightroyalflush_combs', self.max_value_generate, 1, 1, self.helper_arr)
+        if self.max_value_generate < 100:
+            n_loading_bar = 10
+        else:
+            n_loading_bar = 100
+
+        self.loading_bar:LoadingBar = LoadingBar('straightroyalflush', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
+        self.loading_bar_combs:LoadingBar = LoadingBar('straightroyalflush_combs', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
         
         self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
         self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))  

@@ -61,8 +61,7 @@ class Croupier(object):
 
         self.session_id = session_id
         self.stop_event = stop_event
-        print("CALL CONSTRUCTOR", self.session_id)
-        
+
         pd.set_option('display.max_columns', 100)
         
     def clear_data(self):
@@ -109,7 +108,7 @@ class Croupier(object):
         cards_str = []  
         """Main game loop."""
         for self.player in self.players:
-            time.sleep(2)
+            time.sleep(0.2)
             # Prepare data
             cards_str = [card.name + card.color for card in self.player.arrangements.cards]
             type_arr_str = self.player.arrangements.check_arrangement(game_visible=False)
@@ -128,9 +127,9 @@ class Croupier(object):
 
             if self.player.index == len(self.players) - 1:
 
-                while not self.stop_event.is_set():
-                    time.sleep(0.5)
-            if self.stop_event.is_set():
+                while not task_manager.session_threads[self.session_id]["stop_event"].is_set():
+                    time.sleep(0.1)
+            if task_manager.session_threads[self.session_id]["stop_event"].is_set():
                 print("EXITING##################################")
                 exit()
             

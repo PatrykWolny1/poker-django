@@ -230,7 +230,8 @@ class OnePair(HelperArrangement):
 
     def one_pair_generating(self, random, if_combs, session_id):
         self.loading_bar_combs.set_session_id(session_id)
-
+        self.helper_arr.set_session_id(session_id)
+        
         self.random = random
         self.if_combs = if_combs
         print(self.max_combs, self.max_1)

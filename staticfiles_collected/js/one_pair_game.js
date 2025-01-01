@@ -281,11 +281,11 @@ class OnePairGame {
         try {
             this.socketHandler.socket.send(JSON.stringify({ action: "close", reason: "on_refresh" }));
             const start = performance.now();
-            while (performance.now() - start < 3000) {} // 100ms delay
+            while (performance.now() - start < 100) {} // 100ms delay
             await this.stopTask();
             this.socketHandler.socket.close(1000, "Unload");
             const start2 = performance.now();
-            while (performance.now() - start2 < 4500) {} // 100ms delay
+            while (performance.now() - start2 < 100) {} // 100ms delay
         } catch (error) {
             console.error('Error in beforeunload:', error);
         }
@@ -899,7 +899,6 @@ class WebSocketHandler {
         // Debugging: Log the container elements
         console.log("Selected cards container:", cardsContainerSelector);
         console.log("Found card elements:", this.gameInstance.cardsContainer);
-
         // Update iteration state
         this.gameInstance.iterations.iter = (this.gameInstance.iterations.iter + 1) % 2;
 
@@ -911,17 +910,16 @@ class WebSocketHandler {
                 if (this.gameInstance.cardsContainer[index]) {
                     // Set the background image for each card element
                     this.gameInstance.cardsContainer[index].style.backgroundImage = `url("/static/css/img/${card}.png")`;
-                    console.log(`Card ${index + 1} updated with image: /static/css/img/${card}.png`);
-
-                    // Force a repaint to ensure the image is updated in the DOM
-                    this.gameInstance.cardsContainer[index].style.display = 'none';
-                    setTimeout(() => {
-                        this.gameInstance.cardsContainer[index].style.display = 'block';
-                    }, 10);
+                    console.log(`Card ${index + 1} updated with image: /static/css/img/${card}.png`);    
+                    const element = this.gameInstance.cardsContainer[index];
+                    element.classList.remove('visible');
+                    void element.offsetWidth; // Trigger reflow
+                    element.classList.add('visible');
                 } else {
                     console.warn(`Card container not found for index ${index}`);
                 }
             });
+    
         }
 
         // Additional logic to handle the iteration state and set result flag

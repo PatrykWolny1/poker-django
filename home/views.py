@@ -12,15 +12,12 @@ from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
 from threading import Thread, Event
-import threading
-import traceback
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from django.middleware.csrf import CsrfViewMiddleware
 import uuid
 
 # Global Variables
 task_threads = {}
-session_threads = {}
 thread_ids = []
 task_thread = None
 # Views
@@ -64,15 +61,18 @@ def one_pair_game(request):
         #     start_thread(request, session_id)
 
 def get_session_id(request):
-    """Return the current session ID."""
-    # Ensure the session exists
+    """Ensure a session exists and return its ID."""
+    # Accessing request.session ensures the session exists
+    if not request.session.session_key:
+        request.session.create()  # Explicitly create a session if it doesn't exist
 
-    unique_session_id = generate_unique_session_id(request.session.session_key)
+    session_key = request.session.session_key  # Retrieve the session key
+    unique_session_id = generate_unique_session_id(session_key)
     _initialize_redis_values_gra_jedna_para(unique_session_id)
-    print("START THREAD", unique_session_id)
-    redis_buffer_instance_one_pair_game.redis_1.set(f'{request.session.session_key}', str(unique_session_id))
-    start_thread(request, request.session.session_key)
-    return JsonResponse({"session_id": request.session.session_key})
+    print("Session ID in get_session_id: ", unique_session_id)
+    redis_buffer_instance_one_pair_game.redis_1.set(f'{session_key}', str(unique_session_id))
+    start_thread(request, session_key)
+    return JsonResponse({"session_id": session_key})
     
 def start_task(request):
     """Handle task initiation from POST request."""
@@ -209,46 +209,42 @@ def fetch_session_id(request):
     return JsonResponse({'session_id': unique_session_id})
 
 def start_thread(request, session_id):
+    global task_manager
     """Start a new thread and store it in Redis and session."""
-    global session_threads
-
     # Generate a unique identifier for this session/thread
 
-    stop_event = Event()  # Stop signal for the thread
-    stop_event.clear()
-    
     unique_session_id = redis_buffer_instance_one_pair_game.redis_1.get(f'{session_id}').decode('utf-8')
-    print("Session ID in start_thread: ", session_id)
+    if unique_session_id not in task_manager.session_threads:
+        task_manager.session_threads[unique_session_id] = {}
+
+    print("Session ID in start_thread: ", unique_session_id, "############################################################")
     my_thread = MyThread(
         target=main,
         session_id=unique_session_id,
-        stop_event=stop_event,
-        thread_name="thread_main"
+        stop_event=task_manager.stop_event_game,
     )
-
     # Store thread details using the unique session ID
-    session_threads[unique_session_id] = {
-        "thread": my_thread,
-        "stop_event": stop_event
-    }
+    task_manager.session_threads[unique_session_id]["thread"] = my_thread
+    task_manager.session_threads[unique_session_id]["stop_event"] = task_manager.stop_event_game
+
+    my_thread.daemon = True
 
     my_thread.start()
     return {'task_status': 'Thread started', 'thread_id': unique_session_id}
 
 def _stop_thread(request, session_id):
     """Stop the thread based on the unique session ID."""
-    global session_threads
 
     # Ensure the session ID is unique per thread
     print("Session ID in stop_thread: ", session_id)
-    print("Keys in session_threads:", session_threads.keys())
+    print("Keys in session_threads:", task_manager.session_threads.keys())
     session_id = redis_buffer_instance_one_pair_game.redis_1.get(f'{request.session.session_key}').decode('utf-8')
 
-    if session_id in session_threads:
-        session_threads[session_id]["stop_event"].set()  # Signal the thread to stop
-        session_threads[session_id]["thread"].join()  # Wait for the thread to terminate
+    if session_id in task_manager.session_threads:
+        task_manager.session_threads[session_id]["stop_event"].set()  # Signal the thread to stop
+        task_manager.session_threads[session_id]["thread"].join()  # Wait for the thread to terminate
         print(f"Thread {session_id} stopped")
-        del session_threads[session_id]  # Remove from the dictionary
+        del task_manager.session_threads[session_id]  # Remove from the dictionary
         return JsonResponse({'status': 'Success on stopping thread', 'message': 'Thread stopped successfully'}, status=200)
     else:
         print(f"Thread not managed by session_threads: {session_id}")

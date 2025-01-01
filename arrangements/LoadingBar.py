@@ -21,8 +21,8 @@ class LoadingBar:
         self.session_id = session_id
 
     def update_progress(self, step_count):
-        """Updates the internal progress bar based on step count."""
 
+        """Updates the internal progress bar based on step count."""
         is_accepted = redis_buffer_instance_one_pair_game.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
         while is_accepted != 'yes':
             is_accepted = redis_buffer_instance_one_pair_game.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
@@ -37,7 +37,7 @@ class LoadingBar:
                 self._update_cache_with_progress()
             # Complete the progress if at the final step
 
-        if step_count == self.total_steps:       
+        if step_count == self.total_steps:
             return False 
         return True # Delete with _finish_progress()
     

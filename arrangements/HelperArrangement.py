@@ -9,17 +9,18 @@ from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_inst
 from home.ThreadVarManagerSingleton import task_manager
 
 class HelperArrangement(object):
-    indices_2d:list = []                     #Indeksy ukladow kart figury
-    indices_2d_color:list = []               # kolory
-    cards_all_permutations:list = []         #Tablica na permutacje - losowy uklad
-    weight_gen:list = []                     #Tablica na wagi kart
-    perm:list = []
-
-    rand_int:int = 0
     
     def __init__(self, helper_file_class):
         self.helper_file_class = helper_file_class
-        self.cards_all_permutations.clear()
+
+        self.indices_2d:list = []                     #Indeksy ukladow kart figury
+        self.indices_2d_color:list = []               # kolory
+        self.cards_all_permutations:list = []         #Tablica na permutacje - losowy uklad
+        self.weight_gen:list = []                     #Tablica na wagi kart
+        self.perm:list = []
+        # self.cards_all_permutations.clear()
+        self.session_id = None
+        self.rand_int:int = 0
     
     def dim(self, a):
         #Jesli to nie jest lista to zwroc pusty zbior
@@ -166,17 +167,21 @@ class HelperArrangement(object):
 
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')     
 
-      
+        task_manager.session_threads[self.session_id]["stop_event_progress"].set()    
+
         
         when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
         
         print("IN HELPER when_game_one_pair", when_game_one_pair)
-        
-        HelperArrangement.weight_gen.clear()
-        HelperArrangement.cards_all_permutations.clear()
+        if when_game_one_pair == '0':
+            self.weight_gen.clear()
+            self.cards_all_permutations.clear()
 
         return cards, self.rand_int, self.cards_all_permutations
-        
+    
+    def set_session_id(self, session_id):
+        self.session_id = session_id
+
     def get_indices_2d_1(self):
         return self.indices_2d
 

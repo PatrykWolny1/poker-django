@@ -206,20 +206,23 @@ class StraightRoyalFlush(HelperArrangement):
             elif self.if_royal_flush == False and self.calc_weights == False:
                 return 9
 
-    def straight_royal_flush_generating(self, random, if_combs, straight_royal_flush):
+    def straight_royal_flush_generating(self, random, if_combs, straight_royal_flush, session_id):
         self.random = random
         
         self.straight_royal_flush = straight_royal_flush
         
         self.if_combs = if_combs
         
-        if self.if_combs:        
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        self.helper_arr.set_session_id(session_id)
+        self.loading_bar.set_session_id(session_id)
+        self.loading_bar_combs.set_session_id(session_id)
+
+        if self.if_combs:     
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_combs)
         else:
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_1)
-        time.sleep(1)
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_1)
         
         cards_2d = []
         m = 0

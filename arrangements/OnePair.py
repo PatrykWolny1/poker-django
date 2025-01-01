@@ -228,14 +228,15 @@ class OnePair(HelperArrangement):
          
 
 
-    def one_pair_generating(self, random, if_combs, session_id):
-        self.loading_bar_combs.set_session_id(session_id)
-        self.helper_arr.set_session_id(session_id)
-        
+    def one_pair_generating(self, random, if_combs, session_id):  
         self.random = random
         self.if_combs = if_combs
-        print(self.max_combs, self.max_1)
-        if self.if_combs:        
+        
+        self.helper_arr.set_session_id(session_id)
+        self.loading_bar.set_session_id(session_id)
+        self.loading_bar_combs.set_session_id(session_id)
+
+        if self.if_combs:     
             redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
             redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_combs)
         else:

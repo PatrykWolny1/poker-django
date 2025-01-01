@@ -175,23 +175,23 @@ class Player(object):
             redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'ready')
             print("Session ID for cards_permutations: ", session_id)
             if arrangement == "1":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random, if_combs, straight_royal_flush)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random, if_combs, straight_royal_flush, session_id)
             if arrangement == "2":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.carriage.carriage_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.carriage.carriage_generating(self.random, if_combs, session_id)
             if arrangement == "3":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.full.full_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.full.full_generating(self.random, if_combs, session_id)
             if arrangement == "4":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.color.color_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.color.color_generating(self.random, if_combs, session_id)
             if arrangement == "5":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight.straight_generating(self.random, if_combs, session_id)
             if arrangement == "6":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.three_of_a_kind.three_of_a_kind_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.three_of_a_kind.three_of_a_kind_generating(self.random, if_combs, session_id)
             if arrangement == "7":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.two_pairs.two_pairs_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.two_pairs.two_pairs_generating(self.random, if_combs, session_id)
             if arrangement == "8":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.one_pair.one_pair_generating(self.random, if_combs, session_id)
             if arrangement == "9":
-                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs)
+                self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs, session_id)
             
             when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
 

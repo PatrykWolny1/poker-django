@@ -235,17 +235,22 @@ class Carriage(HelperArrangement):
 
         return self.helper_arr.random_arrangement()
 
-    def carriage_generating(self, random, if_combs):
+    def carriage_generating(self, random, if_combs, session_id):
         #Zmienna uzywana do okreslenia czy uklad bedzie losowany
         self.random = random
         self.if_combs = if_combs
-        
+
+        self.helper_arr.set_session_id(session_id)
+        self.loading_bar.set_session_id(session_id)
+        self.loading_bar_combs.set_session_id(session_id)
+
         if self.if_combs:     
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_combs)
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_combs)
         else:
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_1)
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_1)
+        
         time.sleep(1)
         shift = 0
 

@@ -23,19 +23,18 @@ class LoadingBar:
     def update_progress(self, step_count):
 
         """Updates the internal progress bar based on step count."""
-        is_accepted = redis_buffer_instance_one_pair_game.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
+        is_accepted = redis_buffer_instance.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
         while is_accepted != 'yes':
-            is_accepted = redis_buffer_instance_one_pair_game.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
+            is_accepted = redis_buffer_instance.redis_1.get(f'connection_accepted_{self.session_id}').decode('utf-8')
 
         self.current_progress = step_count
-        
         # Update the bar display every `complete_interval` steps
         if step_count % self.complete_interval == 0:
             next_dot_index = self.progress_bar.index("#") if "#" in self.progress_bar else None
             if next_dot_index is not None:
                 self.progress_bar[next_dot_index] = "."
                 self._update_cache_with_progress()
-            # Complete the progress if at the final step
+                return self.check_stop_event()
 
         if step_count == self.total_steps:
             return False 
@@ -43,10 +42,9 @@ class LoadingBar:
     
     def _update_cache_with_progress(self):
         """Helper to update cache with current progress status and trigger event."""
-        with task_manager.cache_lock_progress:
-            redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', str(self.progress_bar.count('.')))
-        task_manager.data_ready_event.set()
-        task_manager.data_ready_event.clear()
+        redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', str(self.progress_bar.count('.')))
+        # task_manager.data_ready_event.set()
+        # task_manager.data_ready_event.clear()
 
     def _finish_progress(self):
         """Marks the progress as complete and updates the cache."""
@@ -56,7 +54,7 @@ class LoadingBar:
         
     def check_stop_event(self):
         """Checks for stop event and finalizes if set."""
-        if task_manager.stop_event.is_set():
+        if task_manager.session_threads[self.session_id]["stop_event_progress"].is_set():
             self.ret_lb = False
             with task_manager.cache_lock_event_var:
                 # Copy the helper file and clear helper arrays
@@ -71,8 +69,6 @@ class LoadingBar:
                 self.helper_arr.cards_all_permutations.clear()
                 
                 redis_buffer_instance.redis_1.set('prog_when_fast', '100')
-                # Signal stop event to Redis buffer
-                redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')
             return False  # Stop the loading bar
 
         # Initialize helper file on the first run

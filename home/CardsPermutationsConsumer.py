@@ -1,18 +1,35 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop, redis_buffer_instance_perms_combs
 from home.ThreadVarManagerSingleton import task_manager
 import json
 import asyncio
 import time
 
 class CardsPermutationsConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.session_id = None
+
     async def connect(self):
         """Handle WebSocket connection."""
-        await self.accept()
-        print("WebSocket connection accepted")  # Debugging output
-        
-        # Initialize Redis values for shared progress and stop event
+        # Extract session ID from the query string
         self._initialize_redis()
+
+        query_string = self.scope.get("query_string", b"").decode()
+        self.session_id = query_string.split("=")[-1] if "=" in query_string else None
+        task_manager.session_threads[self.session_id]["stop_event_progress"].clear()
+
+        if not self.session_id:
+            print("No session ID provided. Closing WebSocket.")
+            await self.close()
+            return
+
+
+        print("Attempting to accept WebSocket connection...", flush=True)
+        await self.accept()
+        print(f"WebSocket connected with session ID: {self.session_id}", flush=True)
+
+        redis_buffer_instance.redis_1.set(f'connection_accepted_{self.session_id}', 'yes')
         
         # Start sending updates until task_manager.stop_event is triggered
         await self._send_updates()
@@ -27,8 +44,10 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     def _initialize_redis(self):
         """Initialize Redis values for shared progress and stop event."""
-        redis_buffer_instance.redis_1.set('shared_progress', '0')
+        redis_buffer_instance_perms_combs.redis_1.set(f'connection_accepted_{self.session_id}', 'no')
+        redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', '0')
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '0')
+        
         redis_buffer_instance.redis_1.set('prog_when_fast', '-1')  # Reset the fast flag
         redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
         redis_buffer_instance_stop.redis_1.set('count_arrangements', '-1')
@@ -37,13 +56,13 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     async def _send_updates(self):        
         """Continuously send updates on progress and data script until stop_event_var is set."""
         with task_manager.cache_lock_event_var:
-            if (int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get('min').decode('utf-8')) != -1:
-                from_min = int(redis_buffer_instance.redis_1.get('min').decode('utf-8'))
-                from_max = int(redis_buffer_instance.redis_1.get('max').decode('utf-8'))
+            if (int(redis_buffer_instance.redis_1.get(f'min_{self.session_id}').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get(f'max_{self.session_id}').decode('utf-8')) != -1:
+                from_min = int(redis_buffer_instance.redis_1.get(f'min_{self.session_id}').decode('utf-8'))
+                from_max = int(redis_buffer_instance.redis_1.get(f'max_{self.session_id}').decode('utf-8'))
             else:
                 from_min = None
                 from_max = None
-                
+
         while True:
             await self._send_data_script('print_gen_combs_perms')
             if from_min is not None and from_max is not None:
@@ -55,13 +74,13 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             
             print("In _send_updates...")
             
-            await asyncio.sleep(0.2)  # Adjust interval as needed
+            await asyncio.sleep(0.1)  # Adjust interval as needed
 
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""
         # Only lock the part where progress is fetched
-        with task_manager.cache_lock_progress:
-            progress = int(redis_buffer_instance.redis_1.get('shared_progress').decode('utf-8'))
+        progress = int(redis_buffer_instance.redis_1.get(f'shared_progress_{self.session_id}').decode('utf-8'))
+
         mapped_progress = self._map_progress(progress, from_min, from_max)
 
         if mapped_progress is not None:
@@ -102,14 +121,11 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     def _should_stop(self):
         """Check if stop event or completion conditions are met."""
-        # Only lock around the Redis get operation
-        with task_manager.cache_lock_event_var:
-            stop_event_var = redis_buffer_instance_stop.redis_1.get('stop_event_var').decode('utf-8')
-        
-        if stop_event_var == '1':
-            task_manager.stop_event.set()
+        stop_event_var = False
+        if task_manager.session_threads[self.session_id]["stop_event_progress"].is_set():
+            stop_event_var = True
 
-        return stop_event_var == '1'
+        return stop_event_var
 
     async def _finalize_progress(self):
         """Finalize the progress to 100% and send final updates."""
@@ -124,8 +140,8 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
                 final_data_script = redis_buffer_instance.redis_1.get('count_arrangements')
                 redis_buffer_instance.redis_1.set('count_arrangements', '-1')
         
-        redis_buffer_instance.redis_1.set('shared_progress', '100')  # Ensure it's set to 100% once done
-
+        redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', '100')
+    
         processed_data_script = self._process_data_script(final_data_script)
         if processed_data_script is not None:
             await self.send(text_data=json.dumps({'data_script': processed_data_script}))

@@ -11,7 +11,9 @@ class CardsPermutations {
         this.maxAllowedValue = undefined;
         this.isMobile = window.innerWidth <= 768; // Determine if the view is mobile or desktop
         this.handleResize = this.handleResize.bind(this);
-
+        this.socket = null;
+        this.sessionId = null;
+        this.enableStartTask = false;
         this.arrangementLimits = {
             highcardButton: { max_perms: 156304800, max_combs: 1302540 },
             onepairButton: { max_perms: 131788800, max_combs: 1098240 },
@@ -191,16 +193,54 @@ class CardsPermutations {
         this.connectWebSocket();
     }
 
-    connectWebSocket() {
+    async fetchSessionId() {
+        try {
+            const response = await fetch('/api/fetch_session_id/');
+            const data = await response.json();
+            const sessionId = data.session_id;
+            console.log("Session ID:", sessionId);
+            return sessionId;
+        } catch (error) {
+            console.error("Error fetching session ID:", error);
+        }
+    }
+
+    async connectWebSocket() {
         console.log(window.env.IS_DEV)
         
-        if (window.env.IS_DEV.includes('yes')) {
-            this.socket = new WebSocket('wss://127.0.0.1:8000/ws/perms_combs/');    
-        } else if (window.env.IS_DEV.includes('no')) {
-            this.socket = new WebSocket('wss://pokersimulation.onrender.com/ws/perms_combs/');    //'wss://127.0.0.1:8000/ws/perms_combs/'
+        // if (window.env.IS_DEV.includes('yes')) {
+        //     this.socket = new WebSocket('wss://127.0.0.1:8000/ws/perms_combs/');    
+        // } else if (window.env.IS_DEV.includes('no')) {
+        //     this.socket = new WebSocket('wss://pokersimulation.onrender.com/ws/perms_combs/');    //'wss://127.0.0.1:8000/ws/perms_combs/'
+        // }
+        try {
+            if (this.enableStartTask) {
+                // Fetch the session ID
+                const response = await fetch('/get_session_id/');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                this.sessionId = await this.fetchSessionId(); 
+                console.log("Session ID in connectWebSocket:", this.sessionId);
+                // Construct the WebSocket URL
+                const webSocketUrl = window.env.IS_DEV.includes("yes")
+                    ? `wss://127.0.0.1:8000/ws/perms_combs/?session_id=${this.sessionId}`
+                    : `wss://pokersimulation.onrender.com/ws/perms_combs/?session_id=${this.sessionId}`;
+        
+                console.log("Connecting to WebSocket:", webSocketUrl);
+        
+                // Create and return the WebSocket instance
+                this.socket = new WebSocket(webSocketUrl);
+            } else {
+                console.log("Click Start button!");
+                return;
+            }
+        } catch (error) {
+            console.error("Error creating WebSocket:", error);
+            throw error; // Propagate the error for further handling
         }
 
-        this.socket.onopen = () => console.log("WebSocket connection opened");
+        this.socket.onopen = () => console.log("WebSocket connection opened", this.socket);
         this.socket.onmessage = (event) => this.handleSocketMessage(event);
         this.socket.onclose = () => {
             console.log("WebSocket connection closed");
@@ -216,7 +256,7 @@ class CardsPermutations {
             this.updateProgress(data.progress);
             this.lastProgressUpdateTime = Date.now(); // Update the last progress time
 
-            // Clear any existing timeout since we have new progress
+            //Clear any existing timeout since we have new progress
             clearTimeout(this.progressTimeout);
             
             // Set a new timeout to check for hanging progress
@@ -509,7 +549,7 @@ class CardsPermutations {
     }
 
     startTask() {
-        fetch('/start_task_view/', { 
+        fetch('/start_task_combs_perms/', { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json', // Ensure it's JSON
@@ -518,7 +558,7 @@ class CardsPermutations {
             body: JSON.stringify({ /* add any request data here */ })
         })
         .then(response => response.json())
-        .then(() => {
+        .then(async () => {
             this.elements.startTaskButton.disabled = true;
             this.elements.downloadButton.disabled = true;
             
@@ -535,7 +575,7 @@ class CardsPermutations {
             Object.keys(this.taskButtons).forEach(buttonKey => {
                 this.elements[buttonKey].disabled = true;
             });
-
+            this.enableStartTask = true;
             this.connectWebSocket();
             this.resetProgressBar();
 
@@ -545,20 +585,20 @@ class CardsPermutations {
     }
 
     stopTask() { 
-        fetch('/stop_task_view/', {
+        fetch('/stop_task_combs_perms/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': this.getCSRFToken(),
             },
-            body: JSON.stringify({}),
+            body: JSON.stringify({session_id : this.sessionId}),
             credentials: 'same-origin'
         })
         .then(response => response.json())  // Read the JSON data once
         .then(data => {
             console.log(data)
 
-            if (data.message === 'Task stopped successfully') {
+            if (data.message === `Task stopped for session ${this.sessionId}`) {
                 console.log('Task stopped successfully');
                 this.finalizeProgress();
                 this.resetProgressBar();

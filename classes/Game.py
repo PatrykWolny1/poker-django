@@ -90,7 +90,7 @@ class Game(object):
             if redis_buffer_instance.redis_1.get('perms_combs').decode('utf-8') == '0':
                 combs_gen_1 = False
  
-            Player().cards_permutations(rand_arr = False, combs_gen=combs_gen_1)
+            Player().cards_permutations(rand_arr = False, combs_gen=combs_gen_1, session_id=self.session_id)
             return 0
         
         if choice == '2':

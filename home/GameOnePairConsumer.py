@@ -30,6 +30,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         signal.signal(signal.SIGABRT, self.handle_signal)
         self.outgoing_message_queue = asyncio.Queue()  # Initialize the message queue
         self.send_task = None  # Background task for send_from_queue
+        self.session_id = None
 
     async def queue_message(self, data):
         """Add a message to the outgoing queue."""
@@ -51,7 +52,6 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         global task_manager, count
         """Handle WebSocket connection."""
-        # Parse query string
         # Extract session ID from the query string
         query_string = self.scope.get("query_string", b"").decode()
         self.session_id = query_string.split("=")[-1] if "=" in query_string else None
@@ -85,7 +85,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
 
         self.send_task = asyncio.create_task(self.send_from_queue())
 
-        redis_buffer_instance_one_pair_game.redis_1.set(f'connection_accepted_{self.session_id}', 'yes')
+        redis_buffer_instance.redis_1.set(f'connection_accepted_{self.session_id}', 'yes')
 
         print("Count: ", count, flush=True)
 

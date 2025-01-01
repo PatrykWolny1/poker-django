@@ -1,0 +1,72 @@
+AKi 2Ki 3Ki 4Ki 5Ki 
+Poker: 12448477 Numer: 0
+ATr 2Tr 3Tr 4Tr 5Tr 
+Poker: 12448477 Numer: 1
+APi 2Pi 3Pi 4Pi 5Pi 
+Poker: 12448477 Numer: 2
+AKa 2Ka 3Ka 4Ka 5Ka 
+Poker: 12448477 Numer: 3
+2Ki 3Ki 4Ki 5Ki 6Ki 
+Poker: 12448489 Numer: 4
+2Tr 3Tr 4Tr 5Tr 6Tr 
+Poker: 12448489 Numer: 5
+2Pi 3Pi 4Pi 5Pi 6Pi 
+Poker: 12448489 Numer: 6
+2Ka 3Ka 4Ka 5Ka 6Ka 
+Poker: 12448489 Numer: 7
+3Ki 4Ki 5Ki 6Ki 7Ki 
+Poker: 12448494 Numer: 8
+3Tr 4Tr 5Tr 6Tr 7Tr 
+Poker: 12448494 Numer: 9
+3Pi 4Pi 5Pi 6Pi 7Pi 
+Poker: 12448494 Numer: 10
+3Ka 4Ka 5Ka 6Ka 7Ka 
+Poker: 12448494 Numer: 11
+4Ki 5Ki 6Ki 7Ki 8Ki 
+Poker: 12448499 Numer: 12
+4Tr 5Tr 6Tr 7Tr 8Tr 
+Poker: 12448499 Numer: 13
+4Pi 5Pi 6Pi 7Pi 8Pi 
+Poker: 12448499 Numer: 14
+4Ka 5Ka 6Ka 7Ka 8Ka 
+Poker: 12448499 Numer: 15
+5Ki 6Ki 7Ki 8Ki 9Ki 
+Poker: 12448504 Numer: 16
+5Tr 6Tr 7Tr 8Tr 9Tr 
+Poker: 12448504 Numer: 17
+5Pi 6Pi 7Pi 8Pi 9Pi 
+Poker: 12448504 Numer: 18
+5Ka 6Ka 7Ka 8Ka 9Ka 
+Poker: 12448504 Numer: 19
+6Ki 7Ki 8Ki 9Ki 10Ki 
+Poker: 12448509 Numer: 20
+6Tr 7Tr 8Tr 9Tr 10Tr 
+Poker: 12448509 Numer: 21
+6Pi 7Pi 8Pi 9Pi 10Pi 
+Poker: 12448509 Numer: 22
+6Ka 7Ka 8Ka 9Ka 10Ka 
+Poker: 12448509 Numer: 23
+7Ki 8Ki 9Ki 10Ki JKi 
+Poker: 12448514 Numer: 24
+7Tr 8Tr 9Tr 10Tr JTr 
+Poker: 12448514 Numer: 25
+7Pi 8Pi 9Pi 10Pi JPi 
+Poker: 12448514 Numer: 26
+7Ka 8Ka 9Ka 10Ka JKa 
+Poker: 12448514 Numer: 27
+8Ki 9Ki 10Ki JKi QKi 
+Poker: 12448519 Numer: 28
+8Tr 9Tr 10Tr JTr QTr 
+Poker: 12448519 Numer: 29
+8Pi 9Pi 10Pi JPi QPi 
+Poker: 12448519 Numer: 30
+8Ka 9Ka 10Ka JKa QKa 
+Poker: 12448519 Numer: 31
+9Ki 10Ki JKi QKi KKi 
+Poker: 12448524 Numer: 32
+9Tr 10Tr JTr QTr KTr 
+Poker: 12448524 Numer: 33
+9Pi 10Pi JPi QPi KPi 
+Poker: 12448524 Numer: 34
+9Ka 10Ka JKa QKa KKa 
+Poker: 12448524 Numer: 35

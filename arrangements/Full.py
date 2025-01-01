@@ -134,17 +134,21 @@ class Full(HelperArrangement):
                 
             return 7
 
-    def full_generating(self, random, if_combs):
+    def full_generating(self, random, if_combs, session_id):
         self.cards_2d = []
         self.random = random
         self.if_combs = if_combs
         
-        if self.if_combs:        
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        self.helper_arr.set_session_id(session_id)
+        self.loading_bar.set_session_id(session_id)
+        self.loading_bar_combs.set_session_id(session_id)
+
+        if self.if_combs:     
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_combs)
         else:
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_1)
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_1)
             
         for i in self.cardmarkings.arrangements:        #Iteracja po oznaczeniach
             self.cards_1d = []

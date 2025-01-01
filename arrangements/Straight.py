@@ -68,9 +68,9 @@ class Straight(HelperArrangement):
         # Pobranie indeksow kolorow czyli okreslenie indeksow w jakich wystepuja
         self.helper_arr.get_indices_color(cards_comb_list)
 
-        for idx1 in range(0, len(self.get_indices_2d_color())):
+        for idx1 in range(0, len(self.helper_arr.get_indices_2d_color())):
             #Jesli wystepuje 5 kolorow w ukladzie
-            if len(self.get_indices_2d_color()[idx1]) == 5:
+            if len(self.helper_arr.get_indices_2d_color()[idx1]) == 5:
                 return True
 
         return False
@@ -186,16 +186,20 @@ class Straight(HelperArrangement):
             idx1 += 1
             idx2 += 1
 
-    def straight_generating(self, random, if_combs):
+    def straight_generating(self, random, if_combs, session_id):
         self.random = random
         self.if_combs = if_combs
         
-        if self.if_combs:        
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_combs)
+        self.helper_arr.set_session_id(session_id)
+        self.loading_bar.set_session_id(session_id)
+        self.loading_bar_combs.set_session_id(session_id)
+
+        if self.if_combs:     
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_combs)
         else:
-            redis_buffer_instance.redis_1.set('min', '0')
-            redis_buffer_instance.redis_1.set('max', self.max_1)
+            redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
+            redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_1)
         
         cards_2d = []
         m = 0

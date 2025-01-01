@@ -5,6 +5,7 @@ class ThreadVarManagerSingleton:
     stop_event_main = threading.Event()
     stop_event_game = threading.Event()
     stop_event_progress = threading.Event()
+    stop_event_combs_perms = threading.Event()
     data_ready_event = threading.Event()
     cache_lock_progress = threading.Lock()
     cache_lock_event_var = threading.Lock()

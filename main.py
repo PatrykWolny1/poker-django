@@ -41,7 +41,7 @@ def main(data_queue_combinations = None, session_id = None, stop_event = None):
         my_thread.join()
     else:
         # sys.stdout = StdoutRedirector(redis_buffer_instance)
-        Game()
+        Game(data_queue_combinations, session_id, task_manager.stop_event_combs_perms)
 
 
     # end_time = time.time() - start_time

@@ -155,21 +155,25 @@ class HelperArrangement(object):
         #         iter_idx += 1   
                             
         # print("Wylosowany uklad: ", self.rand_int)
-        with task_manager.cache_lock_event_var:
-            redis_buffer_instance.redis_1.set('count_arrangements', "Ilosc ukladow (CALOSC): " + str(len(self.cards_all_permutations)))
+            
+        redis_buffer_instance.redis_1.set('count_arrangements', "Ilosc ukladow (CALOSC): " + str(len(self.cards_all_permutations)))
+        print(self.session_id)
+        if task_manager.session_threads[self.session_id]["stop_event"] is not None:
+            task_manager.session_threads[self.session_id]["stop_event"].set()  # Signal the thread to stop
+        if task_manager.session_threads[self.session_id]["stop_event_progress"] is not None:
+            task_manager.session_threads[self.session_id]["stop_event_progress"].set()
 
         try:
             shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
         except Exception as e:
             print(f"Error copying file: {e}")
         
-        redis_buffer_instance.redis_1.set('prog_when_fast', '100')
+        # redis_buffer_instance.redis_1.set('prog_when_fast', '100')
 
         redis_buffer_instance_stop.redis_1.set('stop_event_var', '1')     
 
-        task_manager.session_threads[self.session_id]["stop_event_progress"].set()    
+  
 
-        
         when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
         
         print("IN HELPER when_game_one_pair", when_game_one_pair)

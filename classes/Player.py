@@ -134,7 +134,7 @@ class Player(object):
                 rand_arr = True
             elif if_rand == "3":
                 return 0
-
+            print("COMBS GEN IN CARDS PERMS: ", if_combs)
             # print(f"Wybierz uklad do wygenerowania:\n"
             #     "(1 - POKER/POKER KROLEWSKI)\n"
             #     "(2 - KARETA)\n"
@@ -148,11 +148,11 @@ class Player(object):
 
             # arrangement = input()
             arrangement = None
-            choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
+            choice = redis_buffer_instance.redis_1.get(f'choice_{session_id}').decode('utf-8')
             if choice == '1':
-                arrangement = redis_buffer_instance.redis_1.get('arrangement').decode('utf-8')  # Binary code for Carriage
-                if redis_buffer_instance.redis_1.get('straight_royal_flush') is not None:
-                    straight_royal_flush = redis_buffer_instance.redis_1.get('straight_royal_flush').decode('utf-8')
+                arrangement = redis_buffer_instance.redis_1.get(f'arrangement_{session_id}').decode('utf-8')  # Binary code for Carriage
+                if redis_buffer_instance.redis_1.get(f'straight_royal_flush_{session_id}') is not None:
+                    straight_royal_flush = redis_buffer_instance.redis_1.get(f'straight_royal_flush_{session_id}').decode('utf-8')
                 else:
                     straight_royal_flush = '-1'
                 if straight_royal_flush == '0':
@@ -163,13 +163,12 @@ class Player(object):
                 arrangement = '8'
                     
             # Gra jednym ukladem kart
-            with task_manager.cache_lock_event_var:
-                if combs_gen == True:
-                    redis_buffer_instance.redis_1.set('print_gen_combs_perms', "Generowanie kombinacji kart...")
-                    # print("Generowanie kombinacji kart...")
-                else:
-                    redis_buffer_instance.redis_1.set('print_gen_combs_perms', "Generowanie permutacji kart...")
-                    # print("Generowanie permutacji kart...")
+            if combs_gen == True:
+                redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{session_id}', "Generowanie kombinacji kart...")
+                print("Generowanie kombinacji kart...")
+            else:
+                redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{session_id}', "Generowanie permutacji kart...")
+                print("Generowanie permutacji kart...")
             #blockPrint()
             
             redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'ready')
@@ -193,7 +192,7 @@ class Player(object):
             if arrangement == "9":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs, session_id)
             
-            when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+            when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{session_id}').decode('utf-8')
 
             if queue is not None and when_game_one_pair == '1':
                 print("One pair game or not: ", when_game_one_pair)

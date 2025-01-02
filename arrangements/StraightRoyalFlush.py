@@ -20,7 +20,7 @@ class StraightRoyalFlush(HelperArrangement):
         
         self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
         if self.max_value_generate < 100:
-            n_loading_bar = 10
+            n_loading_bar = 1
         else:
             n_loading_bar = 100
 
@@ -220,6 +220,7 @@ class StraightRoyalFlush(HelperArrangement):
         self.helper_arr.set_session_id(session_id)
         self.loading_bar.set_session_id(session_id)
         self.loading_bar_combs.set_session_id(session_id)
+        self.helper_file_class.set_session_id(session_id)
 
         if self.if_combs:     
             redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')

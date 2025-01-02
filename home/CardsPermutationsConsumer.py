@@ -13,11 +13,10 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         """Handle WebSocket connection."""
         # Extract session ID from the query string
-        self._initialize_redis()
-
         query_string = self.scope.get("query_string", b"").decode()
         self.session_id = query_string.split("=")[-1] if "=" in query_string else None
-        task_manager.session_threads[self.session_id]["stop_event_progress"].clear()
+        task_manager.session_threads[self.session_id]["thread_perms_combs"].stop_event_progress.clear()
+        # self._initialize_redis_values_perms_combs()
 
         if not self.session_id:
             print("No session ID provided. Closing WebSocket.")
@@ -41,29 +40,18 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         """Handle messages received from WebSocket (currently not used)."""
         pass
-
-    def _initialize_redis(self):
-        """Initialize Redis values for shared progress and stop event."""
-        redis_buffer_instance_perms_combs.redis_1.set(f'connection_accepted_{self.session_id}', 'no')
-        redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', '0')
-        
-        redis_buffer_instance.redis_1.set('prog_when_fast', '-1')  # Reset the fast flag
-        redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
-        redis_buffer_instance_stop.redis_1.set('count_arrangements', '-1')
-        task_manager.stop_event.clear()
         
     async def _send_updates(self):        
         """Continuously send updates on progress and data script until stop_event_var is set."""
-        with task_manager.cache_lock_event_var:
-            if (int(redis_buffer_instance.redis_1.get(f'min_{self.session_id}').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get(f'max_{self.session_id}').decode('utf-8')) != -1:
-                from_min = int(redis_buffer_instance.redis_1.get(f'min_{self.session_id}').decode('utf-8'))
-                from_max = int(redis_buffer_instance.redis_1.get(f'max_{self.session_id}').decode('utf-8'))
-            else:
-                from_min = None
-                from_max = None
+        if (int(redis_buffer_instance.redis_1.get(f'min_{self.session_id}').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get(f'max_{self.session_id}').decode('utf-8')) != -1:
+            from_min = int(redis_buffer_instance.redis_1.get(f'min_{self.session_id}').decode('utf-8'))
+            from_max = int(redis_buffer_instance.redis_1.get(f'max_{self.session_id}').decode('utf-8'))
+        else:
+            from_min = None
+            from_max = None
 
         while True:
-            await self._send_data_script('print_gen_combs_perms')
+            await self._send_data_script(f'print_gen_combs_perms_{self.session_id}')
             if from_min is not None and from_max is not None:
                 await self._send_progress_update(from_min, from_max)
 
@@ -73,8 +61,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             
             print("In _send_updates...")
             
-            await asyncio.sleep(0.3
-                                )  # Adjust interval as needed
+            await asyncio.sleep(0.3)  # Adjust interval as needed
 
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""
@@ -101,7 +88,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     def _map_progress(self, progress, from_min, from_max):
         """Map and return the progress value to a 0-100 range.""" 
         if progress != 0:
-            progress_when_fast = int(redis_buffer_instance.redis_1.get('prog_when_fast').decode('utf-8'))
+            progress_when_fast = int(redis_buffer_instance.redis_1.get(f'prog_when_fast_{self.session_id}').decode('utf-8'))
             if progress_when_fast == 100:
                 progress = from_max  # Once the condition is met, set to maximum
                 redis_buffer_instance.redis_1.set('prog_when_fast', '-1')  # Reset the fast flag
@@ -114,7 +101,6 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     def _process_data_script(self, data_script):
         """Process and return the data script if valid."""
-        task_manager.data_ready_event.clear()
         if data_script:
             return data_script.decode('utf-8').strip("\n")
         return None
@@ -122,7 +108,9 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     def _should_stop(self):
         """Check if stop event or completion conditions are met."""
         stop_event_var = False
-        if task_manager.session_threads[self.session_id]["stop_event_progress"].is_set():
+        # if task_manager.session_threads[self.session_id]["stop_event_progress"].is_set():
+        if task_manager.session_threads[self.session_id]["thread_perms_combs"].stop_event_progress.is_set():
+
             stop_event_var = True
 
         return stop_event_var
@@ -132,16 +120,27 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
         # Only lock around the Redis set and get operations
         final_data_script = None
         
-        with task_manager.cache_lock_event_var:
-            if redis_buffer_instance_stop.redis_1.get('count_arrangements_stop').decode('utf-8') != '-1':
-                final_data_script = redis_buffer_instance_stop.redis_1.get('count_arrangements_stop')
-                redis_buffer_instance_stop.redis_1.set('count_arrangements_stop', '-1')
-            if redis_buffer_instance_stop.redis_1.get('count_arrangements').decode('utf-8') != '-1':
-                final_data_script = redis_buffer_instance.redis_1.get('count_arrangements')
-                redis_buffer_instance.redis_1.set('count_arrangements', '-1')
+        if redis_buffer_instance_stop.redis_1.get(f'count_arrangements_stop_{self.session_id}').decode('utf-8') != '-1':
+            final_data_script = redis_buffer_instance_stop.redis_1.get(f'count_arrangements_stop_{self.session_id}')
+            redis_buffer_instance_stop.redis_1.set(f'count_arrangements_stop_{self.session_id}', '-1')
+        if redis_buffer_instance_stop.redis_1.get(f'count_arrangements_{self.session_id}').decode('utf-8') != '-1':
+            final_data_script = redis_buffer_instance.redis_1.get(f'count_arrangements_{self.session_id}')
+            redis_buffer_instance.redis_1.set(f'count_arrangements_{self.session_id}', '-1')
         
         redis_buffer_instance.redis_1.set(f'shared_progress_{self.session_id}', '100')
     
         processed_data_script = self._process_data_script(final_data_script)
         if processed_data_script is not None:
             await self.send(text_data=json.dumps({'data_script': processed_data_script}))
+
+    def _initialize_redis_values_perms_combs(self):
+        """Initialize Redis values specific to start_task."""
+        redis_buffer_instance.redis_1.set(f'choice_1_{self.session_id}', '2')
+        redis_buffer_instance.redis_1.set(f'choice_{self.session_id}', '1')
+        redis_buffer_instance.redis_1.set(f'when_one_pair_{self.session_id}', '0')
+        redis_buffer_instance.redis_1.set(f'prog_when_fast_{self.session_id}', '-1')
+        redis_buffer_instance.redis_1.set(f'min_{self.session_id}', '-1')
+        redis_buffer_instance.redis_1.set(f'max_{self.session_id}', '-1')
+        redis_buffer_instance.redis_1.set(f'count_arrangements_{self.session_id}', '-1')
+        redis_buffer_instance.redis_1.set(f'count_arrangements_stop_{self.session_id}', '-1')
+        redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{self.session_id}', '-1')

@@ -34,7 +34,7 @@ class Game(object):
         self.file_all_to_update = 'ml_data/poker_game_one_pair_combs_all_to_update.csv'
         self.file_one_pair_combs_all = 'ml_data/poker_game_one_pair_combs_all.csv'  
         
-        when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+        when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{session_id}').decode('utf-8')
         
         if when_game_one_pair == '1' and queue is not None:
             self.all_comb_perm = queue.get()
@@ -42,7 +42,6 @@ class Game(object):
         elif pass_all_comb_perm.get_all_comb_perm() is not None:
             self.all_comb_perm = pass_all_comb_perm.get_all_comb_perm()
         self.session_id = session_id
-        self.stop_event = stop_event
 
         print(f"Working on task for session {session_id}")
 
@@ -59,7 +58,7 @@ class Game(object):
         #         "- Aktualizacja modelu ML" +
         #         "- Uczenie maszynowe")
         # choice_1 = '2'
-        choice_1 = redis_buffer_instance.redis_1.get('choice_1').decode('utf-8')
+        choice_1 = redis_buffer_instance.redis_1.get(f'choice_1_{self.session_id}').decode('utf-8')
         
         # if choice_1 == '1':
         #     # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far
@@ -69,7 +68,7 @@ class Game(object):
         #     all_comb_perm = []
 
         # choice = '1'
-        choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
+        choice = redis_buffer_instance.redis_1.get(f'choice_{self.session_id}').decode('utf-8')
         
         # print("Wybierz opcje: \n" + 
         #                     "(1) - Permutacje Kart\n" +
@@ -85,11 +84,12 @@ class Game(object):
         #                     "(11) - Wyjscie\n")
             
         if choice == '1':
-            if redis_buffer_instance.redis_1.get('perms_combs').decode('utf-8') == '1':
+            print(self.session_id, "SESSION ID ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            if redis_buffer_instance.redis_1.get(f'perms_combs_{self.session_id}').decode('utf-8') == '1':
                 combs_gen_1 = True
-            if redis_buffer_instance.redis_1.get('perms_combs').decode('utf-8') == '0':
+            if redis_buffer_instance.redis_1.get(f'perms_combs_{self.session_id}').decode('utf-8') == '0':
                 combs_gen_1 = False
- 
+            print("Perms/Combs", combs_gen_1)
             Player().cards_permutations(rand_arr = False, combs_gen=combs_gen_1, session_id=self.session_id)
             return 0
         

@@ -10,7 +10,7 @@ from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
 import uuid
-
+from classes.Player import Player
 # Global Variables
 task_threads = {}
 thread_ids = []
@@ -25,8 +25,9 @@ def index(request):
 
 def cards_permutations(request):
     is_dev = os.getenv('IS_DEV', 'yes')
-    _initialize_redis_values_start_task(0)
-     # csrf_token = get_token(request)
+    # Force session creation
+    if not request.session.session_key:
+        request.session.save()  # This ensures a session key is generated
     return render(request, 'home/cards_permutations.html', {'is_dev': is_dev})
 
 def one_pair_game(request):
@@ -45,21 +46,45 @@ def get_session_id(request):
         request.session.create()  # Explicitly create a session if it doesn't exist
     session_key = request.session.session_key  # Retrieve the session key
     
+    redis_buffer_instance.redis_1.set('session_key', session_key)
+
     unique_session_id = generate_unique_session_id(session_key)
+
+    redis_buffer_instance.redis_1.set(f'choice_1_{unique_session_id}', '2')
+    redis_buffer_instance.redis_1.set(f'choice_{unique_session_id}', '1')
+    redis_buffer_instance.redis_1.set(f'when_one_pair_{unique_session_id}', '0')
+    redis_buffer_instance.redis_1.set(f'prog_when_fast_{unique_session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'min_{unique_session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'max_{unique_session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'count_arrangements_{unique_session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'count_arrangements_stop_{unique_session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{unique_session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'shared_progress_{unique_session_id}', '0')
+    redis_buffer_instance.redis_1.set(f'connection_accepted_{unique_session_id}', 'no')
 
     print("Session ID in get_session_id: ", unique_session_id)
     redis_buffer_instance.redis_1.set(f'{session_key}', str(unique_session_id))
-    choice = redis_buffer_instance.redis_1.get('choice').decode('utf-8')
+    choice = redis_buffer_instance.redis_1.get(f'choice_{unique_session_id}').decode('utf-8')
 
+    _add_id_to_redis(request, f'perms_combs', unique_session_id)
+    _add_id_to_redis(request, f'arrangement', unique_session_id)
+
+    if redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8') == '1':
+        _add_id_to_redis(request, f'straight_royal_flush', unique_session_id)   
+
+    if unique_session_id not in task_manager.session_threads:
+        task_manager.session_threads[unique_session_id] = {}
+    
+    print("Choice: ", choice)
     if choice == '1':
-        redis_buffer_instance.redis_1.set(f'shared_progress_{unique_session_id}', '0')
-        redis_buffer_instance.redis_1.set(f'connection_accepted_{unique_session_id}', 'no')
-        task_manager.stop_event_combs_perms.clear()
-        start_thread_combs_perms(request, unique_session_id)
+        name = "thread_perms_combs"
+        task_manager.add_session(unique_session_id, name)
+        task_manager.session_threads[unique_session_id][name].stop_event_progress.clear()
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+        start_thread_combs_perms(request, unique_session_id, name)
     elif choice == '2':
         _initialize_redis_values_gra_jedna_para(unique_session_id)
         start_thread_one_pair_game(request, unique_session_id)
-    
 
     return JsonResponse({"status" : f"Started thread combs_perms. ID: {unique_session_id}"})
     
@@ -72,10 +97,10 @@ def stop_task_combs_perms(request):
         data = json.loads(request.body)
         session_id = data.get('session_id', None)
         print("Session ID in stop_task_combs_perms: ", session_id)
-        task_manager.stop_event_combs_perms.set()
+        task_manager.session_threads[session_id]["thread_perms_combs"].stop_event_progress.set()
 
         if session_id:
-            _stop_thread(request, session_id)
+            _stop_thread(request, session_id, "thread_perms_combs")
         return JsonResponse({"message": f"Task stopped for session {session_id}"})
     return JsonResponse({"error": "No active session."}, status=400)
 
@@ -87,7 +112,6 @@ def stop_task(request):
 
         csrf_token = data.get('csrfmiddlewaretoken')
 
-        # task_manager.stop_event.set()
         if csrf_token != request.META.get('CSRF_COOKIE'):
             return JsonResponse({'error': 'Invalid CSRF token'}, status=403)
         
@@ -105,7 +129,8 @@ def stop_task(request):
 
 def download_saved_file(request):
     """Serve a saved file as an attachment download."""
-    file_path = 'permutations_data/data_permutations_combinations.txt'
+    unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
+    file_path = f'permutations_data/data_perms_combs_ID_{unique_session_id}.txt'
     if not os.path.exists(file_path):
         raise Http404("File not found")
     response = FileResponse(open(file_path, 'rb'), as_attachment=True)
@@ -149,15 +174,15 @@ def _initialize_redis_values_gra_jedna_para(session_id):
 
 def _initialize_redis_values_start_task(session_id):
     """Initialize Redis values specific to start_task."""
-    redis_buffer_instance.redis_1.set('choice_1', '2')
-    redis_buffer_instance.redis_1.set('choice', '1')
-    redis_buffer_instance.redis_1.set('when_one_pair', '0')
-    redis_buffer_instance.redis_1.set('prog_when_fast', '-1')
-    redis_buffer_instance.redis_1.set('min', '-1')
-    redis_buffer_instance.redis_1.set('max', '-1')
-    redis_buffer_instance.redis_1.set('count_arrangements', '-1')
-    redis_buffer_instance.redis_1.set('count_arrangements_stop', '-1')
-    redis_buffer_instance.redis_1.set('print_gen_combs_perms', '-1')
+    redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
+    redis_buffer_instance.redis_1.set(f'choice_{session_id}', '1')
+    redis_buffer_instance.redis_1.set(f'when_one_pair_{session_id}', '0')
+    redis_buffer_instance.redis_1.set(f'prog_when_fast_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'min_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'max_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'count_arrangements_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'count_arrangements_stop_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{session_id}', '-1')
 
 
 def generate_unique_session_id(session_id):
@@ -174,8 +199,6 @@ def start_thread_one_pair_game(request, unique_session_id):
     # Generate a unique identifier for this session/thread
     _initialize_redis_values_gra_jedna_para(unique_session_id)
 
-    if unique_session_id not in task_manager.session_threads:
-        task_manager.session_threads[unique_session_id] = {}
 
     print("Session ID in start_thread: ", unique_session_id, "############################################################")
     my_thread = MyThread(
@@ -192,7 +215,7 @@ def start_thread_one_pair_game(request, unique_session_id):
     my_thread.start()
     return {'task_status': 'Thread started', 'thread_id': unique_session_id}
 
-def start_thread_combs_perms(request, session_id):
+def start_thread_combs_perms(request, session_id, name):
     global task_manager
     """Start a new thread and store it in Redis and session."""
     # Generate a unique identifier for this session/thread
@@ -201,78 +224,116 @@ def start_thread_combs_perms(request, session_id):
         task_manager.session_threads[unique_session_id] = {}
 
     print("Session ID in start_thread: ", session_id, "############################################################")
-    my_thread = MyThread(
-        target=main,
-        session_id=unique_session_id,
-        stop_event=task_manager.stop_event_combs_perms,
-    )
+    perms_combs = redis_buffer_instance.redis_1.get(f'{'perms_combs'}_{session_id}').decode('utf-8')
+    
+    if perms_combs == '1':
+        perms_combs = True
+    elif perms_combs == '0':
+        perms_combs = False
+        
+    # my_thread = MyThread(
+    #     target=main,
+    #     session_id=unique_session_id,
+    #     stop_event=task_manager.stop_event_combs_perms,
+    # )
+
+
+    my_thread = MyThread(target=Player().cards_permutations, 
+                        flag1=False, 
+                        flag2=perms_combs, 
+                        session_id=unique_session_id)
+    
+    task_manager.session_threads[unique_session_id][name].set_thread(my_thread)
+
     # Store thread details using the unique session ID
-    task_manager.session_threads[unique_session_id]["thread"] = my_thread
-    task_manager.session_threads[unique_session_id]["stop_event"] = None
-    task_manager.session_threads[unique_session_id]["stop_event_progress"] = task_manager.stop_event_combs_perms
+    # task_manager.session_threads[unique_session_id]["thread"] = my_thread
+    # task_manager.session_threads[unique_session_id]["stop_event"] = None
+
 
     my_thread.daemon = True
 
     my_thread.start()
     return {'task_status': 'Thread started', 'thread_id': session_id}
 
-def _stop_thread(request, session_id):
+def _stop_thread(request, session_id, name):
     """Stop the thread based on the unique session ID."""
 
     # Ensure the session ID is unique per thread
     print("Session ID in stop_thread: ", session_id)
     print("Keys in session_threads:", task_manager.session_threads.keys())
     if session_id in task_manager.session_threads:
-        if task_manager.session_threads[session_id]["stop_event"] is not None:
-            task_manager.session_threads[session_id]["stop_event"].set()  # Signal the thread to stop
-        if task_manager.session_threads[session_id]["stop_event_progress"] is not None:
-            task_manager.session_threads[session_id]["stop_event_progress"].set()
-        task_manager.session_threads[session_id]["thread"].join()  # Wait for the thread to terminate
+        task_manager.session_threads[session_id][name].stop_event.set()
+        task_manager.session_threads[session_id][name].stop_event_progress.set()
+        task_manager.session_threads[session_id][name].thread.join()  # Wait for the thread to terminate
         print(f"Thread {session_id} stopped")
-        del task_manager.session_threads[session_id]  # Remove from the dictionary
+        del task_manager.session_threads[session_id][name]  # Remove from the dictionary
         return JsonResponse({'status': 'Success on stopping thread', 'message': 'Thread stopped successfully'}, status=200)
     else:
         print(f"Thread not managed by session_threads: {session_id}")
         return JsonResponse({'status': 'Failure on stopping thread', 'message': 'Thread not managed by session_threads'}, status=500)
 
 def permutacje(request):
-    return _toggle_redis_value(request, 'perms_combs', '0', 'Permutacje is ON')
+    session_id = request.session.session_key
+    print("Session ID in permutacje: ", session_id)
+    return _toggle_redis_value(request, f'perms_combs_{session_id}', '0', 'Permutacje is ON')
 
 def kombinacje(request):
-    return _toggle_redis_value(request, 'perms_combs', '1', 'Kombinacje is ON')
+    session_id = request.session.session_key
+    print("Session ID in kombinacje: ", session_id)
+    return _toggle_redis_value(request, f'perms_combs_{session_id}', '1', 'Kombinacje is ON')
 
 def high_card(request):
-    return _toggle_redis_value(request, 'arrangement', '9', 'High Card is ON')
+    session_id = request.session.session_key
+    print("Session ID in high_card: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '9', 'High Card is ON')
 
 def one_pair(request):
-    return _toggle_redis_value(request, 'arrangement', '8', 'One Pair is ON')
+    session_id = request.session.session_key
+    print("Session ID in one_pair: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '8', 'One Pair is ON')
 
 def two_pairs(request):
-    return _toggle_redis_value(request, 'arrangement', '7', 'Two Pairs are ON')
+    session_id = request.session.session_key
+    print("Session ID in two_pairs: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '7', 'Two Pairs are ON')
 
 def three_of_a_kind(request):
-    return _toggle_redis_value(request, 'arrangement', '6', 'Three of a Kind is ON')
+    session_id = request.session.session_key
+    print("Session ID in three_of_a_kind: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '6', 'Three of a Kind is ON')
 
 def straight(request):
-    return _toggle_redis_value(request, 'arrangement', '5', 'Straight is ON')
+    session_id = request.session.session_key
+    print("Session ID in straight: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '5', 'Straight is ON')
 
 def color(request):
-    return _toggle_redis_value(request, 'arrangement', '4', 'Color is ON')
+    session_id = request.session.session_key
+    print("Session ID in color: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '4', 'Color is ON')
 
 def full(request):
-    return _toggle_redis_value(request, 'arrangement', '3', 'Full is ON')
+    session_id = request.session.session_key
+    print("Session ID in full: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '3', 'Full is ON')
 
 def carriage(request):
-    return _toggle_redis_value(request, 'arrangement', '2', 'Carriage is ON')
+    session_id = request.session.session_key
+    print("Session ID in carriage: ", session_id)
+    return _toggle_redis_value(request, f'arrangement_{session_id}', '2', 'Carriage is ON')
 
 def straight_flush(request):
-    redis_buffer_instance.redis_1.set('arrangement', '1')
-    redis_buffer_instance.redis_1.set('straight_royal_flush', '0')
+    session_id = request.session.session_key
+    print("Session ID in straight_flush: ", session_id)
+    redis_buffer_instance.redis_1.set(f'arrangement_{session_id}', '1')
+    redis_buffer_instance.redis_1.set(f'straight_royal_flush_{session_id}', '0')
     return JsonResponse({'status': 'Straight Flush is ON'})
 
 def straight_royal_flush(request):
-    redis_buffer_instance.redis_1.set('arrangement', '1')
-    redis_buffer_instance.redis_1.set('straight_royal_flush', '1')
+    session_id = request.session.session_key
+    print("Session ID in straight_royal_flush: ", session_id)
+    redis_buffer_instance.redis_1.set(f'arrangement_{session_id}', '1')
+    redis_buffer_instance.redis_1.set(f'straight_royal_flush_{session_id}', '1')
     return JsonResponse({'status': 'Straight Royal Flush is ON'})
 
 # Utility function to toggle Redis values
@@ -282,6 +343,12 @@ def _toggle_redis_value(request, key, value, status_message):
         return JsonResponse({'status': status_message})
     return JsonResponse({'status': 'Invalid request'}, status=400)
 
+def _add_id_to_redis(request, key, session_id):
+    print(key, session_id)
+    value = redis_buffer_instance.redis_1.get(f'{key}_{request.session.session_key}').decode('utf-8')
+    print("################################", value)
+    redis_buffer_instance.redis_1.set(f'{key}_{session_id}', value)
+    print("################################",f'{key}_{session_id}')
 def get_redis_value(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)

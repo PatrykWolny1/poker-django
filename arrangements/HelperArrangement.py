@@ -20,6 +20,7 @@ class HelperArrangement(object):
         self.perm:list = []
         # self.cards_all_permutations.clear()
         self.session_id = None
+        self.thread_name = None
         self.rand_int:int = 0
     
     def dim(self, a):
@@ -160,23 +161,22 @@ class HelperArrangement(object):
                             
         # print("Wylosowany uklad: ", self.rand_int)
             
-        redis_buffer_instance.redis_1.set('count_arrangements', "Ilosc ukladow (CALOSC): " + str(len(self.cards_all_permutations)))
-        print(self.session_id)
-        if task_manager.session_threads[self.session_id]["stop_event"] is not None:
-            task_manager.session_threads[self.session_id]["stop_event"].set()  # Signal the thread to stop
-        if task_manager.session_threads[self.session_id]["stop_event_progress"] is not None:
-            task_manager.session_threads[self.session_id]["stop_event_progress"].set()
+        redis_buffer_instance.redis_1.set(f'count_arrangements_{self.session_id}', "Ilosc ukladow (CALOSC): " + str(len(self.cards_all_permutations)))
+        
+        print("In HelperArrangement session ID: ", self.session_id)
+        
+        # Signal the thread to stop
+        task_manager.session_threads[self.session_id][self.thread_name].stop_event.set()  
+        task_manager.session_threads[self.session_id][self.thread_name].stop_event_progress.set()
 
         try:
             shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
         except Exception as e:
             print(f"Error copying file: {e}")
-        
-        redis_buffer_instance.redis_1.set('prog_when_fast', '100')
+    
+        when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{self.session_id}').decode('utf-8')
+        print("In HelperArrangement when_game_one_pair", when_game_one_pair)
 
-        when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
-        
-        print("IN HELPER when_game_one_pair", when_game_one_pair)
         if when_game_one_pair == '0':
             self.weight_gen.clear()
             self.cards_all_permutations.clear()
@@ -185,6 +185,7 @@ class HelperArrangement(object):
     
     def set_session_id(self, session_id):
         self.session_id = session_id
+        self.thread_name = redis_buffer_instance.redis_1.get(f'{self.session_id}_thread_name').decode('utf-8')
 
     def get_indices_2d_1(self):
         return self.indices_2d

@@ -34,7 +34,7 @@ class LoadingBar:
             if next_dot_index is not None:
                 self.progress_bar[next_dot_index] = "."
                 self._update_cache_with_progress()
-                # return self.check_stop_event()
+                return self.check_stop_event()
         if step_count == self.total_steps:
             return False 
         return True
@@ -50,13 +50,12 @@ class LoadingBar:
         
     def check_stop_event(self):
         """Checks for stop event and finalizes if set."""
-        if task_manager.session_threads[self.session_id][self.thread_name].stop_event_progress.is_set():
+        if task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_immediately"].is_set():
             self.ret_lb = False
-            with task_manager.cache_lock_event_var:
-                # Copy the helper file and clear helper arrays
-                shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
-                                self.helper_arr.helper_file_class.file_path_dst.resolve())
-                self._log_saved_permutations()
+            # Copy the helper file and clear helper arrays
+            shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
+                            self.helper_arr.helper_file_class.file_path_dst.resolve())
+            self._log_saved_permutations()
             time.sleep(0.2)
             
             

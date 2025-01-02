@@ -9,13 +9,17 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session_id = None
+        self.stop_event_var = False
 
     async def connect(self):
         """Handle WebSocket connection."""
         # Extract session ID from the query string
         query_string = self.scope.get("query_string", b"").decode()
         self.session_id = query_string.split("=")[-1] if "=" in query_string else None
-        task_manager.session_threads[self.session_id]["thread_perms_combs"].stop_event_progress.clear()
+
+        task_manager.session_threads[self.session_id]["thread_perms_combs"].event["stop_event_progress"].clear() 
+        task_manager.session_threads[self.session_id]["thread_perms_combs"].event["stop_event_immediately"].clear() 
+
         # self._initialize_redis_values_perms_combs()
 
         if not self.session_id:
@@ -35,7 +39,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
-        print("WebSocket connection closed")
+        print(f"WebSocket connection closed for session {self.session_id}")
 
     async def receive(self, text_data):
         """Handle messages received from WebSocket (currently not used)."""
@@ -107,13 +111,10 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     def _should_stop(self):
         """Check if stop event or completion conditions are met."""
-        stop_event_var = False
-        # if task_manager.session_threads[self.session_id]["stop_event_progress"].is_set():
-        if task_manager.session_threads[self.session_id]["thread_perms_combs"].stop_event_progress.is_set():
+        if task_manager.session_threads[self.session_id]["thread_perms_combs"].event["stop_event_progress"].is_set():
+            self.stop_event_var = True
 
-            stop_event_var = True
-
-        return stop_event_var
+        return self.stop_event_var
 
     async def _finalize_progress(self):
         """Finalize the progress to 100% and send final updates."""

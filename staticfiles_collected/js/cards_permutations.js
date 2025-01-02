@@ -510,6 +510,7 @@ class CardsPermutations {
             console.log("Download canceled by user.");
         }
     }
+    
     handleBeforeUnload() {
         const url = '/stop_task_view/';
         // Use fetch instead of sendBeacon to allow custom headers

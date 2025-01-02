@@ -10,6 +10,7 @@ from home.MyThread import MyThread
 from home.ThreadVarManagerSingleton import task_manager
 from main import main
 import uuid
+import os
 from classes.Player import Player
 # Global Variables
 task_threads = {}
@@ -71,15 +72,16 @@ def get_session_id(request):
 
     if redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8') == '1':
         _add_id_to_redis(request, f'straight_royal_flush', unique_session_id)   
-
-    if unique_session_id not in task_manager.session_threads:
-        task_manager.session_threads[unique_session_id] = {}
     
     print("Choice: ", choice)
     if choice == '1':
         name = "thread_perms_combs"
         task_manager.add_session(unique_session_id, name)
-        task_manager.session_threads[unique_session_id][name].stop_event_progress.clear()
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
+        print(task_manager.session_threads[unique_session_id][name].event)
         redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
         start_thread_combs_perms(request, unique_session_id, name)
     elif choice == '2':
@@ -97,7 +99,8 @@ def stop_task_combs_perms(request):
         data = json.loads(request.body)
         session_id = data.get('session_id', None)
         print("Session ID in stop_task_combs_perms: ", session_id)
-        task_manager.session_threads[session_id]["thread_perms_combs"].stop_event_progress.set()
+        task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_progress"].set()
+        task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_immediately"].set()
 
         if session_id:
             _stop_thread(request, session_id, "thread_perms_combs")
@@ -130,11 +133,12 @@ def stop_task(request):
 def download_saved_file(request):
     """Serve a saved file as an attachment download."""
     unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
+    print(unique_session_id)
     file_path = f'permutations_data/data_perms_combs_ID_{unique_session_id}.txt'
     if not os.path.exists(file_path):
         raise Http404("File not found")
     response = FileResponse(open(file_path, 'rb'), as_attachment=True)
-    response['Content-Disposition'] = 'attachment; filename="collected_data_perms_combs.txt"'
+    response['Content-Disposition'] = f'attachment; filename="collected_data_perms_combs_{unique_session_id}.txt"'
     return response
 
 def submit_number(request):
@@ -230,13 +234,6 @@ def start_thread_combs_perms(request, session_id, name):
         perms_combs = True
     elif perms_combs == '0':
         perms_combs = False
-        
-    # my_thread = MyThread(
-    #     target=main,
-    #     session_id=unique_session_id,
-    #     stop_event=task_manager.stop_event_combs_perms,
-    # )
-
 
     my_thread = MyThread(target=Player().cards_permutations, 
                         flag1=False, 
@@ -244,11 +241,6 @@ def start_thread_combs_perms(request, session_id, name):
                         session_id=unique_session_id)
     
     task_manager.session_threads[unique_session_id][name].set_thread(my_thread)
-
-    # Store thread details using the unique session ID
-    # task_manager.session_threads[unique_session_id]["thread"] = my_thread
-    # task_manager.session_threads[unique_session_id]["stop_event"] = None
-
 
     my_thread.daemon = True
 
@@ -262,8 +254,7 @@ def _stop_thread(request, session_id, name):
     print("Session ID in stop_thread: ", session_id)
     print("Keys in session_threads:", task_manager.session_threads.keys())
     if session_id in task_manager.session_threads:
-        task_manager.session_threads[session_id][name].stop_event.set()
-        task_manager.session_threads[session_id][name].stop_event_progress.set()
+        task_manager.session_threads[session_id][name].event["stop_event_progress"].set()
         task_manager.session_threads[session_id][name].thread.join()  # Wait for the thread to terminate
         print(f"Thread {session_id} stopped")
         del task_manager.session_threads[session_id][name]  # Remove from the dictionary

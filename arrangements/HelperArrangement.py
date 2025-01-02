@@ -166,8 +166,7 @@ class HelperArrangement(object):
         print("In HelperArrangement session ID: ", self.session_id)
         
         # Signal the thread to stop
-        task_manager.session_threads[self.session_id][self.thread_name].stop_event.set()  
-        task_manager.session_threads[self.session_id][self.thread_name].stop_event_progress.set()
+        task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_progress"].set()  
 
         try:
             shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())

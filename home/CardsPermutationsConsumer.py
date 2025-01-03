@@ -4,30 +4,50 @@ from home.ThreadVarManagerSingleton import task_manager
 import json
 import asyncio
 import time
+from urllib.parse import parse_qs
+from asgiref.sync import sync_to_async, async_to_sync
 
 class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session_id = None
+        self.name = "thread_perms_combs"
+        self.thread_name = "Thread_combs_perms"
+
         self.stop_event_var = False
 
     async def connect(self):
         """Handle WebSocket connection."""
-        # Extract session ID from the query string
-        query_string = self.scope.get("query_string", b"").decode()
-        self.session_id = query_string.split("=")[-1] if "=" in query_string else None
-
-        task_manager.session_threads[self.session_id]["thread_perms_combs"].event["stop_event_progress"].clear() 
-        task_manager.session_threads[self.session_id]["thread_perms_combs"].event["stop_event_immediately"].clear() 
-
-        # self._initialize_redis_values_perms_combs()
+        # Generate a session if it doesn't exist
+        session = self.scope["session"]
 
         if not self.session_id:
-            print("No session ID provided. Closing WebSocket.")
-            await self.close()
-            return
+            await sync_to_async(session.save)()  # Ensure this operation is run in a thread-safe manner
+            self.session_id = self.scope["session"].session_key
+        
+        self.session_id = redis_buffer_instance.redis_1.get(self.session_id).decode('utf-8')
+        
+        self.group_name = f"group_{self.session_id}"
 
+        await self.channel_layer.group_add (
+            self.group_name,
+            self.channel_name
+        )
 
+        with task_manager.session_threads[self.session_id][self.name].lock["lock_events"]:
+            task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].clear() 
+            task_manager.session_threads[self.session_id][self.name].event["stop_event_immediately"].clear() 
+
+        # if not self.session_id:
+        #     print("No session ID provided. Closing WebSocket.")
+        #     await self.close()
+        #     return
+
+        # if self.session_id not in task_manager.session_threads:
+        #     print(f"Session thread for {self.session_id} not initialized. Closing connection.")
+        #     await self.close(code=4001)
+        #     return
+        
         print("Attempting to accept WebSocket connection...", flush=True)
         await self.accept()
         print(f"WebSocket connected with session ID: {self.session_id}", flush=True)
@@ -39,7 +59,15 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
-        print(f"WebSocket connection closed for session {self.session_id}")
+        task_manager.session_threads[self.session_id][self.name].thread[self.session_id].join()
+        
+        del task_manager.session_threads[self.session_id]
+
+        await self.channel_layer.group_discard (
+            self.group_name,
+            self.channel_name
+        )
+        print(f"WebSocket connection closed for session {self.session_id}", flush=True)
 
     async def receive(self, text_data):
         """Handle messages received from WebSocket (currently not used)."""
@@ -61,11 +89,12 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
             if self._should_stop():
                 await self._finalize_progress()
-                break
+                await self.close(code=4001)
+                return
             
             print("In _send_updates...")
             
-            await asyncio.sleep(0.3)  # Adjust interval as needed
+            await asyncio.sleep(0.6)  # Adjust interval as needed
 
     async def _send_progress_update(self, from_min, from_max):
         """Retrieve and send mapped progress value."""
@@ -78,7 +107,10 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             if mapped_progress >= 100:
                 mapped_progress = 100
             if mapped_progress != 0:
-                await self.send(text_data=json.dumps({'progress': str(mapped_progress)}))
+                progress_data = {f'progress_{self.session_id}': str(mapped_progress)}
+                print(f"Progress data to send: {progress_data}")
+                progress_to_send = f'progress_{self.session_id}'
+                await self.send(text_data=json.dumps({str(progress_to_send) : str(mapped_progress)}))
 
     async def _send_data_script(self, key):
         """Retrieve and send the data script if updated."""
@@ -87,7 +119,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
                         
         processed_data_script = self._process_data_script(data_script)
         if processed_data_script != '-1':
-            await self.send(text_data=json.dumps({'data_script': processed_data_script}))
+            await self.send(text_data=json.dumps({f'data_script_{self.session_id}': processed_data_script}))
 
     def _map_progress(self, progress, from_min, from_max):
         """Map and return the progress value to a 0-100 range.""" 
@@ -111,10 +143,12 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     def _should_stop(self):
         """Check if stop event or completion conditions are met."""
-        if task_manager.session_threads[self.session_id]["thread_perms_combs"].event["stop_event_progress"].is_set():
-            self.stop_event_var = True
+        with task_manager.session_threads[self.session_id][self.name].lock["lock_events"]:
+            if task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].is_set():
+                print(task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"])
+                self.stop_event_var = True
 
-        return self.stop_event_var
+            return self.stop_event_var
 
     async def _finalize_progress(self):
         """Finalize the progress to 100% and send final updates."""
@@ -132,16 +166,4 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
     
         processed_data_script = self._process_data_script(final_data_script)
         if processed_data_script is not None:
-            await self.send(text_data=json.dumps({'data_script': processed_data_script}))
-
-    def _initialize_redis_values_perms_combs(self):
-        """Initialize Redis values specific to start_task."""
-        redis_buffer_instance.redis_1.set(f'choice_1_{self.session_id}', '2')
-        redis_buffer_instance.redis_1.set(f'choice_{self.session_id}', '1')
-        redis_buffer_instance.redis_1.set(f'when_one_pair_{self.session_id}', '0')
-        redis_buffer_instance.redis_1.set(f'prog_when_fast_{self.session_id}', '-1')
-        redis_buffer_instance.redis_1.set(f'min_{self.session_id}', '-1')
-        redis_buffer_instance.redis_1.set(f'max_{self.session_id}', '-1')
-        redis_buffer_instance.redis_1.set(f'count_arrangements_{self.session_id}', '-1')
-        redis_buffer_instance.redis_1.set(f'count_arrangements_stop_{self.session_id}', '-1')
-        redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{self.session_id}', '-1')
+            await self.send(text_data=json.dumps({f'data_script_{self.session_id}': processed_data_script}))

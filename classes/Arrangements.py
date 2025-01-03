@@ -8,6 +8,7 @@ from arrangements.TwoPairs import TwoPairs
 from arrangements.OnePair import OnePair
 from arrangements.HighCard import HighCard
 from classes.DataFrameML import DataFrameML
+from home.redis_buffer_singleton import redis_buffer_instance
 import sys
 import os
 
@@ -19,24 +20,38 @@ def enablePrint():
     
 class Arrangements(object):
     
-    def __init__(self, cards = []):
+    def __init__(self, cards = [], all_arrangements = True, unique_session_id = None):
         self.id_arr:int = 0
         self.ids_arr:list = []
         self.data_frame_ml:DataFrameML = DataFrameML()
         self.cards:list = cards
         self.cards_after:list = []
-        self.high_card:HighCard = HighCard()
-        self.one_pair:OnePair = OnePair()
-        self.two_pairs:TwoPairs = TwoPairs()
-        self.three_of_a_kind:ThreeOfAKind = ThreeOfAKind()
-        self.straight:Straight = Straight()
-        self.color:Color = Color()
-        self.full:Full = Full()
-        self.carriage:Carriage = Carriage()
-        self.straight_royal_flush:StraightRoyalFlush = StraightRoyalFlush() 
+
+        if not all_arrangements:
+            which_arrangement = redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8') 
+
+        if which_arrangement == '9' or all_arrangements:
+            self.high_card:HighCard = HighCard()
+        if which_arrangement == '8' or all_arrangements:
+            self.one_pair:OnePair = OnePair()
+        if which_arrangement == '7' or all_arrangements:
+            self.two_pairs:TwoPairs = TwoPairs()
+        if which_arrangement == '6' or all_arrangements:
+            self.three_of_a_kind:ThreeOfAKind = ThreeOfAKind()
+        if which_arrangement == '5' or all_arrangements:
+            self.straight:Straight = Straight()
+        if which_arrangement == '4' or all_arrangements:
+            self.color:Color = Color()
+        if which_arrangement == '3' or all_arrangements:
+            self.full:Full = Full()
+        if which_arrangement == '2' or all_arrangements:
+            self.carriage:Carriage = Carriage()
+        if which_arrangement == '1' or all_arrangements:
+            self.straight_royal_flush:StraightRoyalFlush = StraightRoyalFlush() 
         
-        self.arrangements:list = [self.high_card, self.one_pair, self.two_pairs, self.three_of_a_kind,
-                          self.straight, self.color, self.full, self.carriage, self.straight_royal_flush] 
+        if all_arrangements:
+            self.arrangements:list = [self.high_card, self.one_pair, self.two_pairs, self.three_of_a_kind,
+                            self.straight, self.color, self.full, self.carriage, self.straight_royal_flush] 
         
         self.rand_int:int = 0
 

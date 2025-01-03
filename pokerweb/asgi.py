@@ -20,11 +20,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pokerweb.settings")
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": SessionMiddlewareStack(
-        AuthMiddlewareStack(
-            URLRouter(
-                websocket_urlpatterns
-            )
-        )
+    "websocket": AuthMiddlewareStack(
+        URLRouter(websocket_urlpatterns)
     ),
 })

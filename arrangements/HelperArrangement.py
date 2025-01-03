@@ -165,21 +165,20 @@ class HelperArrangement(object):
         
         print("In HelperArrangement session ID: ", self.session_id)
         
-        # Signal the thread to stop
-        task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_progress"].set()  
-
         try:
             shutil.copyfile(self.helper_file_class.file_path.resolve(), self.helper_file_class.file_path_dst.resolve())
         except Exception as e:
             print(f"Error copying file: {e}")
-    
+        
         when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{self.session_id}').decode('utf-8')
         print("In HelperArrangement when_game_one_pair", when_game_one_pair)
 
         if when_game_one_pair == '0':
             self.weight_gen.clear()
             self.cards_all_permutations.clear()
-
+        
+        # Signal the consumer to stop
+        task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_progress"].set()  
         return cards, self.rand_int, self.cards_all_permutations
     
     def set_session_id(self, session_id):

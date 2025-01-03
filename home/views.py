@@ -26,17 +26,27 @@ def index(request):
 
 def cards_permutations(request):
     is_dev = os.getenv('IS_DEV', 'yes')
+
     # Force session creation
     if not request.session.session_key:
         request.session.save()  # This ensures a session key is generated
-    return render(request, 'home/cards_permutations.html', {'is_dev': is_dev})
+    print(request.session.session_key)
+    print("Session ID in cards_permutations: ", request.session.session_key)
+    redis_buffer_instance.redis_1.set(f'{request.session.session_key}_which_app', "cards_permutations")
+
+    if request.method == "GET":
+        return render(request, 'home/cards_permutations.html', {'is_dev': is_dev})
 
 def one_pair_game(request):
     is_dev = os.getenv('IS_DEV', 'yes')
-    redis_buffer_instance.redis_1.set('choice_1', '2')
-    redis_buffer_instance.redis_1.set('choice', '2')
+
+    # Force session creation
+    if not request.session.session_key:
+        request.session.save()  # This ensures a session key is generated
+    
+    redis_buffer_instance.redis_1.set(f'{request.session.session_key}_which_app', "one_pair_game")
+
     if request.method == 'GET':
-        print("ONE_PAIR_GAME")
         return render(request, 'home/one_pair_game.html', {'is_dev': is_dev})
 
 def get_session_id(request):
@@ -50,42 +60,52 @@ def get_session_id(request):
     redis_buffer_instance.redis_1.set('session_key', session_key)
 
     unique_session_id = generate_unique_session_id(session_key)
-
-    redis_buffer_instance.redis_1.set(f'choice_1_{unique_session_id}', '2')
-    redis_buffer_instance.redis_1.set(f'choice_{unique_session_id}', '1')
-    redis_buffer_instance.redis_1.set(f'when_one_pair_{unique_session_id}', '0')
-    redis_buffer_instance.redis_1.set(f'prog_when_fast_{unique_session_id}', '-1')
-    redis_buffer_instance.redis_1.set(f'min_{unique_session_id}', '-1')
-    redis_buffer_instance.redis_1.set(f'max_{unique_session_id}', '-1')
-    redis_buffer_instance.redis_1.set(f'count_arrangements_{unique_session_id}', '-1')
-    redis_buffer_instance.redis_1.set(f'count_arrangements_stop_{unique_session_id}', '-1')
-    redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{unique_session_id}', '-1')
-    redis_buffer_instance.redis_1.set(f'shared_progress_{unique_session_id}', '0')
-    redis_buffer_instance.redis_1.set(f'connection_accepted_{unique_session_id}', 'no')
-
+    
     print("Session ID in get_session_id: ", unique_session_id)
     redis_buffer_instance.redis_1.set(f'{session_key}', str(unique_session_id))
+
+    which_app = redis_buffer_instance.redis_1.get(f'{session_key}_which_app').decode('utf-8')
+    print(which_app, session_key)
+    if which_app == "cards_permutations":
+        _initialize_redis_values_perms_combs(unique_session_id)
+
+        _add_id_to_redis(request, f'perms_combs', unique_session_id)
+        _add_id_to_redis(request, f'arrangement', unique_session_id)
+
+        if redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8') == '1':
+            _add_id_to_redis(request, f'straight_royal_flush', unique_session_id) 
+
+    elif which_app == "one_pair_game":
+        _initialize_redis_values_gra_jedna_para(unique_session_id)
+
+
     choice = redis_buffer_instance.redis_1.get(f'choice_{unique_session_id}').decode('utf-8')
 
-    _add_id_to_redis(request, f'perms_combs', unique_session_id)
-    _add_id_to_redis(request, f'arrangement', unique_session_id)
-
-    if redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8') == '1':
-        _add_id_to_redis(request, f'straight_royal_flush', unique_session_id)   
     
     print("Choice: ", choice)
     if choice == '1':
         name = "thread_perms_combs"
+
         task_manager.add_session(unique_session_id, name)
+        task_manager.session_threads[unique_session_id][name].add_lock("lock_events")
+        with task_manager.session_threads[unique_session_id][name].lock["lock_events"]:
+            task_manager.session_threads[unique_session_id][name].add_lock("lock_file")
+            task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
+            task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
+            task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+            task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
+            redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+            print(task_manager.session_threads)
+            print(task_manager.session_threads[unique_session_id][name].event)
+            start_thread_combs_perms(request, unique_session_id, name)
+    
+    elif choice == '2':
+        name = "thread_perms_combs"
+
+        task_manager.add_session(unique_session_id, name)
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
-        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
-        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
-        print(task_manager.session_threads[unique_session_id][name].event)
-        redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
-        start_thread_combs_perms(request, unique_session_id, name)
-    elif choice == '2':
-        _initialize_redis_values_gra_jedna_para(unique_session_id)
         start_thread_one_pair_game(request, unique_session_id)
 
     return JsonResponse({"status" : f"Started thread combs_perms. ID: {unique_session_id}"})
@@ -99,8 +119,9 @@ def stop_task_combs_perms(request):
         data = json.loads(request.body)
         session_id = data.get('session_id', None)
         print("Session ID in stop_task_combs_perms: ", session_id)
-        task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_progress"].set()
-        task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_immediately"].set()
+        with task_manager.session_threads[session_id]["thread_perms_combs"].lock["lock_events"]:
+            task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_progress"].set()
+            task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_immediately"].set()
 
         if session_id:
             _stop_thread(request, session_id, "thread_perms_combs")
@@ -173,11 +194,8 @@ def _initialize_redis_values_gra_jedna_para(session_id):
     redis_buffer_instance.redis_1.set('stop_event_send_updates', '0')
     redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'not_ready')
     redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')    
-    task_manager.stop_event_main.clear()
-    task_manager.stop_event.clear()
 
-def _initialize_redis_values_start_task(session_id):
-    """Initialize Redis values specific to start_task."""
+def _initialize_redis_values_perms_combs(session_id):
     redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
     redis_buffer_instance.redis_1.set(f'choice_{session_id}', '1')
     redis_buffer_instance.redis_1.set(f'when_one_pair_{session_id}', '0')
@@ -187,7 +205,8 @@ def _initialize_redis_values_start_task(session_id):
     redis_buffer_instance.redis_1.set(f'count_arrangements_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'count_arrangements_stop_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'print_gen_combs_perms_{session_id}', '-1')
-
+    redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
+    redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
 
 def generate_unique_session_id(session_id):
     """Generate a unique identifier by combining session ID and UUID."""
@@ -198,7 +217,6 @@ def fetch_session_id(request):
     return JsonResponse({'session_id': unique_session_id})
 
 def start_thread_one_pair_game(request, unique_session_id):
-    global task_manager
     """Start a new thread and store it in Redis and session."""
     # Generate a unique identifier for this session/thread
     _initialize_redis_values_gra_jedna_para(unique_session_id)
@@ -217,35 +235,36 @@ def start_thread_one_pair_game(request, unique_session_id):
     my_thread.daemon = True
 
     my_thread.start()
-    return {'task_status': 'Thread started', 'thread_id': unique_session_id}
 
-def start_thread_combs_perms(request, session_id, name):
-    global task_manager
+    return JsonResponse({'task_status': 'Thread started', 'thread_id': unique_session_id})
+
+def start_thread_combs_perms(request, unique_session_id, name):
     """Start a new thread and store it in Redis and session."""
     # Generate a unique identifier for this session/thread
-    unique_session_id = session_id
-    if session_id not in task_manager.session_threads:
-        task_manager.session_threads[unique_session_id] = {}
+    # if unique_session_id not in task_manager.session_threads:
+    #     task_manager.session_threads[unique_session_id] = {}
 
-    print("Session ID in start_thread: ", session_id, "############################################################")
-    perms_combs = redis_buffer_instance.redis_1.get(f'{'perms_combs'}_{session_id}').decode('utf-8')
+    print("Session ID in start_thread: ", unique_session_id, "############################################################")
+    perms_combs = redis_buffer_instance.redis_1.get(f'{'perms_combs'}_{unique_session_id}').decode('utf-8')
     
     if perms_combs == '1':
         perms_combs = True
     elif perms_combs == '0':
         perms_combs = False
 
-    my_thread = MyThread(target=Player().cards_permutations, 
+    my_thread = MyThread(target=Player(thread=True, unique_session_id=unique_session_id).cards_permutations, 
                         flag1=False, 
                         flag2=perms_combs, 
                         session_id=unique_session_id)
-    
-    task_manager.session_threads[unique_session_id][name].set_thread(my_thread)
+    # my_thread = MyThread(target=main, 
+    #                     session_id=unique_session_id,
+    #                     stop_event=None)
 
-    my_thread.daemon = True
-
-    my_thread.start()
-    return {'task_status': 'Thread started', 'thread_id': session_id}
+    task_manager.session_threads[unique_session_id][name].set_thread(unique_session_id, my_thread)
+    task_manager.session_threads[unique_session_id][name].thread[unique_session_id].daemon = True
+    task_manager.session_threads[unique_session_id][name].thread[unique_session_id].start()
+    print(task_manager.session_threads)
+    return JsonResponse({'task_status': 'Thread started', 'thread_id': unique_session_id}, status=200)
 
 def _stop_thread(request, session_id, name):
     """Stop the thread based on the unique session ID."""

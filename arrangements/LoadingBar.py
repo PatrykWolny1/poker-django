@@ -17,6 +17,7 @@ class LoadingBar:
         self.helper_arr = helper_arr                            # Helper array with file paths and other helper info
         self.stop_requested = False                             # Track if stop is requested
         self.begin = True                                       # Flag for initial setup
+        self.stop_loading = True
         self.ret_lb = True
         self.session_id = session_id
         self.thread_name = None
@@ -34,10 +35,11 @@ class LoadingBar:
             if next_dot_index is not None:
                 self.progress_bar[next_dot_index] = "."
                 self._update_cache_with_progress()
-                return self.check_stop_event()
+                self.stop_loading = self.check_stop_event()
         if step_count == self.total_steps:
-            return False 
-        return True
+            self.stop_loading = False
+            return self.stop_loading
+        return self.stop_loading
     
     def _update_cache_with_progress(self):
         """Helper to update cache with current progress status and trigger event."""
@@ -50,25 +52,26 @@ class LoadingBar:
         
     def check_stop_event(self):
         """Checks for stop event and finalizes if set."""
-        if task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_immediately"].is_set():
-            self.ret_lb = False
-            # Copy the helper file and clear helper arrays
-            shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
-                            self.helper_arr.helper_file_class.file_path_dst.resolve())
-            self._log_saved_permutations()
-            time.sleep(0.2)
-            
-            
-            # Clear data structures in helper_arr
-            self.helper_arr.weight_gen.clear()
-            self.helper_arr.cards_all_permutations.clear()
-            
-            redis_buffer_instance.redis_1.set('prog_when_fast', '100')
-            return False  # Stop the loading bar
+        with task_manager.session_threads[self.session_id]["thread_perms_combs"].lock["lock_events"]:
+            if task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_immediately"].is_set():
+                self.ret_lb = False
+                # Copy the helper file and clear helper arrays
+                shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
+                                self.helper_arr.helper_file_class.file_path_dst.resolve())
+                self._log_saved_permutations()
+                time.sleep(0.2)
+                
+                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                # Clear data structures in helper_arr
+                self.helper_arr.weight_gen.clear()
+                self.helper_arr.cards_all_permutations.clear()
+                
+                redis_buffer_instance.redis_1.set('prog_when_fast', '100')
+                return False  # Stop the loading bar
 
         # Initialize helper file on the first run
         if self.begin:
-            self.helper_arr.helper_file_class.file_path_dst.write_text('')
+            # self.helper_arr.helper_file_class.file_path_dst.write_text('')
             self.begin = False
         return True  # Continue the loading bar
 

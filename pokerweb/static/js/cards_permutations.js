@@ -69,7 +69,7 @@ class CardsPermutations {
 
         this.initializeUI();
         this.setupEventListeners();
-        this.connectWebSocket();
+        // this.connectWebSocket();
     }
 
     initializeUI() {
@@ -252,31 +252,32 @@ class CardsPermutations {
         const data = JSON.parse(event.data);
         
         // Update progress
-        if ('progress' in data) {
-            this.updateProgress(data.progress);
-            this.lastProgressUpdateTime = Date.now(); // Update the last progress time
+        const key_progress = `progress_${this.sessionId}`;
+        const key_data_script = `data_script_${this.sessionId}`
+        if (key_progress in data) {
+            this.updateProgress(data[key_progress]);
+            // this.lastProgressUpdateTime = Date.now(); // Update the last progress time
 
-            //Clear any existing timeout since we have new progress
-            clearTimeout(this.progressTimeout);
+            // //Clear any existing timeout since we have new progress
+            // clearTimeout(this.progressTimeout);
             
-            // Set a new timeout to check for hanging progress
-            this.progressTimeout = setTimeout(() => {
-                this.requestLatestDataScript(); // Function to request latest data_script
-            }, this.progressUpdateThreshold);
-            if (data.action == "request_latest_data_script") {
-                this.updateDataScript(data.data_script);
+            // // Set a new timeout to check for hanging progress
+            // this.progressTimeout = setTimeout(() => {
+            //     this.requestLatestDataScript(); // Function to request latest data_script
+            // }, this.progressUpdateThreshold);
+            if (data.action == key_data_script) {
+                this.updateDataScript(data[key_data_script]);
             }
         }
-        
-        if ('data_script' in data) {
-            console.log(data.data_script)
-            this.updateDataScript(data.data_script);
+        if (key_data_script in data) {
+            console.log(data[key_data_script])
+            this.updateDataScript(data[key_data_script]);
         }
 
-        if (data.progress == 100) {
+        if (data[key_progress] == 100) {
             this.finalizeProgress();
-            if ('data_script' in data) {
-                this.updateDataScript(data.data_script)
+            if (key_data_script in data) {
+                this.updateDataScript(data[key_data_script])
             }
         }
     }
@@ -504,7 +505,7 @@ class CardsPermutations {
     confirmDownload() {
         const userConfirmed = confirm("Pobrać plik?");
         if (userConfirmed) {
-            window.location.href = '/download_saved_file/';
+            window.location.href = `/download_saved_file/?session_id=${this.sessionId}`;
             this.resetProgressBar();
         } else {
             console.log("Download canceled by user.");

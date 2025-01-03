@@ -17,7 +17,7 @@ class MyThread(threading.Thread):
 
     def run(self):
         thread_id = threading.get_ident()  # Get unique thread identifier
-        print(f"Thread {self.name} is starting with flags: {self.flag1}, {self.flag2}")
+        print(f"Thread {self.name} is starting with flags: {self.flag1}, {self.flag2}, ID: {thread_id}")
 
         if self._target:
             if self.flag1 is not None and self.flag2 is not None:

@@ -13,8 +13,7 @@ import cProfile
 import pstats
 
 def main(data_queue_combinations = None, session_id = None, stop_event = None):
-    global task_manager
-    when_game_one_pair = redis_buffer_instance.redis_1.get('when_one_pair').decode('utf-8')
+    when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{session_id}').decode('utf-8')
     print("One Pair or not: ", when_game_one_pair)
 
     print(f"Thread started for session {session_id}")
@@ -41,7 +40,7 @@ def main(data_queue_combinations = None, session_id = None, stop_event = None):
         my_thread.join()
     else:
         # sys.stdout = StdoutRedirector(redis_buffer_instance)
-        Game(data_queue_combinations, session_id, task_manager.session_threads[session_id]["stop_event_progress"])
+        Game(data_queue_combinations, session_id, task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_progress"])
 
 
     # end_time = time.time() - start_time

@@ -27,8 +27,7 @@ redis_client = redis_buffer_instance_one_pair_game.redis_1
 class Croupier(object):
 
     def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, 
-                 prediction_mode = True, n = 1, session_id = None):
-        
+    prediction_mode = True, n = 1, session_id = None):
         #self.deck:Deck = Deck()
         self.cards:list = []
         self.players:list = []
@@ -58,7 +57,8 @@ class Croupier(object):
         self.second:bool = True
         self.p:bool = True
 
-        self.session_id = session_id        
+        self.session_id = session_id
+        
         self.stop_event_croupier = task_manager.session_threads[self.session_id]["thread_one_pair_game"].event["stop_event_croupier"]
         
         pd.set_option('display.max_columns', 100)

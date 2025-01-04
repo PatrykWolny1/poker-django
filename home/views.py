@@ -73,8 +73,7 @@ def get_session_id(request):
 
     elif which_app == "one_pair_game":
         _initialize_redis_values_gra_jedna_para(unique_session_id)
-
-
+        
     choice = redis_buffer_instance.redis_1.get(f'choice_{unique_session_id}').decode('utf-8')
 
     
@@ -98,7 +97,6 @@ def get_session_id(request):
     elif choice == '2':
         name = "thread_one_pair_game"
         
-        one_pair(request)
         
         task_manager.add_session(unique_session_id, name)
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
@@ -125,10 +123,11 @@ def stop_task_combs_perms(request):
 
         print("Session ID in stop_task_combs_perms: ", session_id)
 
-        task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_progress"].set()
-        task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_immediately"].set()
+        if session_id in task_manager.session_threads:
+            task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_progress"].set()
+            task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_immediately"].set()
 
-        if session_id:
+        if session_id in task_manager.session_threads:
             _stop_thread(request, session_id, "thread_perms_combs")
         return JsonResponse({"message": f"Task stopped for session {session_id}"})
     return JsonResponse({"error": "No active session."}, status=400)
@@ -146,18 +145,19 @@ def stop_task_one_pair_game(request):
         
         # session_id = redis_buffer_instance_one_pair_game.redis_1.get(request.session.session_key).decode('utf-8')
         session_id = data.get("session_id")
-
-        # session_id = request.session.session_key
-
+        print(session_id)
+        session_id = request.session.session_key
+        print(session_id)
         redis_buffer_instance_one_pair_game.redis_1.set(f'stop_event_send_updates', '1')
         redis_buffer_instance_one_pair_game.redis_1.set(f'wait_buffer', '1')
 
         name = "thread_one_pair_game"
-        task_manager.session_threads[session_id][name].event["stop_event_progress"].set()
-        task_manager.session_threads[session_id][name].event["stop_event_croupier"].set()
-        task_manager.session_threads[session_id][name].event["stop_event_immediately"].set()
+        if session_id in task_manager.session_threads:
+            task_manager.session_threads[session_id][name].event["stop_event_progress"].set()
+            task_manager.session_threads[session_id][name].event["stop_event_croupier"].set()
+            task_manager.session_threads[session_id][name].event["stop_event_immediately"].set()
 
-        if session_id:
+        if session_id in task_manager.session_threads:
             _stop_thread(request, session_id)
         return JsonResponse({"message": f"Task stopped for session {session_id}"})
     return JsonResponse({"error": "No active session."}, status=400)
@@ -194,6 +194,7 @@ def start_game(request):
 
 def _initialize_redis_values_gra_jedna_para(session_id):
     """Initialize Redis values specific to gra_jedna_para."""
+    redis_buffer_instance.redis_1.set(f'arrangement_{session_id}', '8')
     redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
     redis_buffer_instance.redis_1.set(f'choice_{session_id}', '2')
     redis_buffer_instance.redis_1.set(f'game_si_human_{session_id}', '2')
@@ -202,7 +203,8 @@ def _initialize_redis_values_gra_jedna_para(session_id):
     redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '10982') #one_pair 1098240
     redis_buffer_instance.redis_1.set(f'player_number_{session_id}', '0')
     redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
-    redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')    
+    redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')   
+     
 
 def _initialize_redis_values_perms_combs(request, session_id):
     redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')

@@ -26,9 +26,12 @@ class Arrangements(object):
         self.data_frame_ml:DataFrameML = DataFrameML()
         self.cards:list = cards
         self.cards_after:list = []
+        
+        which_arrangement = None
 
         if not all_arrangements:
-            which_arrangement = redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8') 
+            which_arrangement = redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8')   
+            print(which_arrangement)
 
         if which_arrangement == '9' or all_arrangements:
             self.high_card:HighCard = HighCard()

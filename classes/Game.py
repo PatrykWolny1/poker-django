@@ -27,7 +27,7 @@ atexit.register(cleanup)
 
 class Game(object):
         
-    def __init__(self, queue = None, session_id = None, stop_event = None):
+    def __init__(self, queue = None, session_id = None  ):
         self.all_combs_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_duplicates.csv'
         self.all_combs_update_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_to_update_duplicates.csv' 
         

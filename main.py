@@ -32,12 +32,8 @@ def main(data_queue_combinations = None, session_id = None, stop_event = None):
         task_manager.session_threads[session_id][name].thread[session_id].daemon = True
         task_manager.session_threads[session_id][name].thread[session_id].start()
 
-        Game(data_queue_combinations, session_id, task_manager.stop_event_progress)
-        my_thread.join()
-    else:
-        # sys.stdout = StdoutRedirector(redis_buffer_instance)
-        Game(data_queue_combinations, session_id, task_manager.session_threads[session_id]["thread_perms_combs"].event["stop_event_progress"])
-
+        Game(data_queue_combinations, session_id)
+        task_manager.session_threads[session_id][name].thread[session_id].join()
 
     # end_time = time.time() - start_time
     

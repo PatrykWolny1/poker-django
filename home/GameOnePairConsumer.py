@@ -27,8 +27,9 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
         self.outgoing_message_queue = asyncio.Queue()  # Initialize the message queue
         self.send_task = None  # Background task for send_from_queue
 
-        self.name = "thread_perms_combs"
+        self.name = "thread_one_pair_game"
         self.session_id = None
+        self.stop_event_var = False
 
     async def queue_message(self, data):
         """Add a message to the outgoing queue."""
@@ -489,12 +490,9 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
     
     def _should_stop(self):
         """Check if stop event or completion conditions are met."""
-        # Only lock around the Redis get operation
-        stop_event_var = '0'
-        if redis_buffer_instance_stop.redis_1.get('stop_event_var') is not None:
-            stop_event_var = redis_buffer_instance_stop.redis_1.get('stop_event_var').decode('utf-8')
-                
-        if stop_event_var == '1':
-            task_manager.session_threads[self.session_id]["stop_event_progress"].is_set()
 
-        return stop_event_var == '1'
+        if task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].is_set():
+            print(task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"])
+            self.stop_event_var = True
+
+        return self.stop_event_var

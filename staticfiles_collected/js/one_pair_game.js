@@ -337,7 +337,7 @@ class OnePairGame {
         }
     }
     async stopTask() {
-        const url = '/stop_task_view/';
+        const url = '/stop_task_one_pair_game/';
         const csrfToken = this.getCSRFToken();
         const data = JSON.stringify({
             session_id: this.socketHandler.sessionId,

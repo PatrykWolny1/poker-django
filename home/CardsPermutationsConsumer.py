@@ -1,5 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop, redis_buffer_instance_perms_combs
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
 from home.ThreadVarManagerSingleton import task_manager
 import json
 import asyncio
@@ -12,8 +12,6 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
         super().__init__(*args, **kwargs)
         self.session_id = None
         self.name = "thread_perms_combs"
-        self.thread_name = "Thread_combs_perms"
-
         self.stop_event_var = False
 
     async def connect(self):
@@ -34,19 +32,18 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-        with task_manager.session_threads[self.session_id][self.name].lock["lock_events"]:
-            task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].clear() 
-            task_manager.session_threads[self.session_id][self.name].event["stop_event_immediately"].clear() 
+        task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].clear() 
+        task_manager.session_threads[self.session_id][self.name].event["stop_event_immediately"].clear() 
 
-        # if not self.session_id:
-        #     print("No session ID provided. Closing WebSocket.")
-        #     await self.close()
-        #     return
+        if not self.session_id:
+            print("No session ID provided. Closing WebSocket.")
+            await self.close()
+            return
 
-        # if self.session_id not in task_manager.session_threads:
-        #     print(f"Session thread for {self.session_id} not initialized. Closing connection.")
-        #     await self.close(code=4001)
-        #     return
+        if self.session_id not in task_manager.session_threads:
+            print(f"Session thread for {self.session_id} not initialized. Closing connection.")
+            await self.close(code=4001)
+            return
         
         print("Attempting to accept WebSocket connection...", flush=True)
         await self.accept()
@@ -67,6 +64,7 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
             self.group_name,
             self.channel_name
         )
+        
         print(f"WebSocket connection closed for session {self.session_id}", flush=True)
 
     async def receive(self, text_data):
@@ -143,12 +141,11 @@ class CardsPermutationsConsumer(AsyncWebsocketConsumer):
 
     def _should_stop(self):
         """Check if stop event or completion conditions are met."""
-        with task_manager.session_threads[self.session_id][self.name].lock["lock_events"]:
-            if task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].is_set():
-                print(task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"])
-                self.stop_event_var = True
+        if task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].is_set():
+            print(task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"])
+            self.stop_event_var = True
 
-            return self.stop_event_var
+        return self.stop_event_var
 
     async def _finalize_progress(self):
         """Finalize the progress to 100% and send final updates."""

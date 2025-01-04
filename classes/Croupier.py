@@ -11,25 +11,24 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from operator import itemgetter
 from random import choice
-from home.redis_buffer_singleton import redis_buffer_instance_one_pair_game, redis_buffer_instance
+from home.redis_buffer_singleton import redis_buffer_instance_one_pair_game
 from home.ThreadVarManagerSingleton import task_manager
 import json
 import numpy as np
-import sys
-import os
 import random
 import pandas as pd
 import tensorflow as tf
 import re
 import logging
-import queue
 import time
-import redis
+
 redis_client = redis_buffer_instance_one_pair_game.redis_1
+
 class Croupier(object):
 
-    def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, prediction_mode = True, n = 1, session_id = None,
-                stop_event = None):
+    def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, 
+                 prediction_mode = True, n = 1, session_id = None):
+        
         #self.deck:Deck = Deck()
         self.cards:list = []
         self.players:list = []
@@ -59,9 +58,9 @@ class Croupier(object):
         self.second:bool = True
         self.p:bool = True
 
-        self.session_id = session_id
-        self.stop_event = stop_event
-
+        self.session_id = session_id        
+        self.stop_event_croupier = task_manager.session_threads[self.session_id]["thread_one_pair_game"].event["stop_event_croupier"]
+        
         pd.set_option('display.max_columns', 100)
         
     def clear_data(self):
@@ -122,14 +121,16 @@ class Croupier(object):
                 "player_index": self.player.index,
                 "event": "data_ready"
             }
+
             redis_client.rpush(f"game_queue_{self.session_id}", json.dumps(event))  # Push to list
             print(f"Queued data for player {self.player.index}")
 
             if self.player.index == len(self.players) - 1:
 
-                while not task_manager.session_threads[self.session_id]["stop_event"].is_set():
-                    time.sleep(0.1)
-            if task_manager.session_threads[self.session_id]["stop_event"].is_set():
+                while not self.stop_event_croupier.is_set():
+                    time.sleep(0.5)
+
+            if self.stop_event_croupier.is_set():
                 print("EXITING##################################")
                 exit()
             

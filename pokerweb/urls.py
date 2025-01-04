@@ -31,7 +31,7 @@ urlpatterns = [
     path('goodbye/', views.goodbye, name='home.goodbye'),
 
     path('start_task_combs_perms/', views.start_task_combs_perms, name='start_task_combs_perms'),
-    path('stop_task_view/', views.stop_task, name='stop_task_view'), 
+    path('stop_task_one_pair_game/', views.stop_task_one_pair_game, name='stop_task_one_pair_game'), 
     path('stop_task_combs_perms/', views.stop_task_combs_perms, name='stop_task_combs_perms'), 
     path('permutacje_view/', views.permutacje, name='permutacje_view'),
     path('kombinacje_view/', views.kombinacje, name='kombinacje_view'),

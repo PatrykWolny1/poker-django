@@ -5,7 +5,7 @@ import time
 import shutil
 import os
 from pathlib import Path
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
+from home.redis_buffer_singleton import redis_buffer_instance
 from home.ThreadVarManagerSingleton import task_manager
 
 class HelperArrangement(object):

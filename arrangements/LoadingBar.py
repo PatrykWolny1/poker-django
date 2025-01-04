@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from numpy import floor
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop, redis_buffer_instance_one_pair_game
+from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
 from home.ThreadVarManagerSingleton import task_manager
 import time
 import shutil
@@ -52,26 +52,24 @@ class LoadingBar:
         
     def check_stop_event(self):
         """Checks for stop event and finalizes if set."""
-        with task_manager.session_threads[self.session_id]["thread_perms_combs"].lock["lock_events"]:
-            if task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_immediately"].is_set():
-                self.ret_lb = False
-                # Copy the helper file and clear helper arrays
-                shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
-                                self.helper_arr.helper_file_class.file_path_dst.resolve())
-                self._log_saved_permutations()
-                time.sleep(0.2)
-                
-                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-                # Clear data structures in helper_arr
-                self.helper_arr.weight_gen.clear()
-                self.helper_arr.cards_all_permutations.clear()
-                
-                redis_buffer_instance.redis_1.set('prog_when_fast', '100')
-                return False  # Stop the loading bar
+        if task_manager.session_threads[self.session_id][self.thread_name].event["stop_event_immediately"].is_set():
+            self.ret_lb = False
+            # Copy the helper file and clear helper arrays
+            shutil.copyfile(self.helper_arr.helper_file_class.file_path.resolve(), 
+                            self.helper_arr.helper_file_class.file_path_dst.resolve())
+            self._log_saved_permutations()
+            time.sleep(0.2)
+            
+            # Clear data structures in helper_arr
+            self.helper_arr.weight_gen.clear()
+            self.helper_arr.cards_all_permutations.clear()
+            
+            redis_buffer_instance.redis_1.set('prog_when_fast', '100')
+            return False  # Stop the loading bar
 
         # Initialize helper file on the first run
         if self.begin:
-            # self.helper_arr.helper_file_class.file_path_dst.write_text('')
+            self.helper_arr.helper_file_class.file_path_dst.write_text('')
             self.begin = False
         return True  # Continue the loading bar
 

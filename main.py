@@ -1,6 +1,6 @@
 from classes.Game import Game
 from classes.Player import Player
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
+from home.redis_buffer_singleton import redis_buffer_instance
 from home.std_out_redirector import StdoutRedirector
 from home.MyThread import MyThread
 from threading import Event
@@ -19,22 +19,18 @@ def main(data_queue_combinations = None, session_id = None, stop_event = None):
     print(f"Thread started for session {session_id}")
     
     if when_game_one_pair == '1':
-        # thread_cards_permutations = threading.Thread(target=Player().cards_permutations, args=(False, True, data_queue_combinations,))
-        # thread_cards_permutations.start()
         data_queue_combinations = queue.Queue()
         
-        my_thread = MyThread(target=Player().cards_permutations, 
+        my_thread = MyThread(target=Player(thread=False, unique_session_id=session_id, all_arrangements=False).cards_permutations, 
                              data_queue=data_queue_combinations, 
                              flag1=False, 
                              flag2=True, 
-                             session_id=session_id, 
-                             stop_event_progress=task_manager.stop_event_progress)
+                             session_id=session_id)
         
-        task_manager.session_threads[session_id]["thread"] = my_thread
-        task_manager.session_threads[session_id]["stop_event_progress"] = task_manager.stop_event_progress
-        my_thread.daemon = True
-        my_thread.start()
-        
+        name = "thread_one_pair_game"
+        task_manager.session_threads[session_id][name].set_thread(session_id, my_thread)
+        task_manager.session_threads[session_id][name].thread[session_id].daemon = True
+        task_manager.session_threads[session_id][name].thread[session_id].start()
 
         Game(data_queue_combinations, session_id, task_manager.stop_event_progress)
         my_thread.join()

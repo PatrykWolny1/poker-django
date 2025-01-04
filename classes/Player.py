@@ -2,8 +2,7 @@ from classes.Arrangements import Arrangements
 from classes.Deck import Deck
 from classes.Card import Card
 from random import choice
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
-from home.ThreadVarManagerSingleton import task_manager
+from home.redis_buffer_singleton import redis_buffer_instance
 import sys
 import os
 
@@ -18,11 +17,11 @@ class Player(object):
     cards_2d:list = []
    
     def __init__(self, deck = Deck(), nick = "Nick", index = None, perm = None, if_deck = None, 
-                 cards = [], if_show_perm = None, si_boolean = None, thread = False, unique_session_id = None):
+                 cards = [], if_show_perm = None, si_boolean = None, thread = False, unique_session_id = None, all_arrangements = True):
         deck.shuffling()
         self.cards_exchanged:list = []
         self.nick:str = nick
-        self.arrangements:Arrangements = Arrangements(all_arrangements = False, unique_session_id = unique_session_id)
+        self.arrangements:Arrangements = Arrangements(all_arrangements=all_arrangements, unique_session_id=unique_session_id)
         self.cards:list = []
         self.all_comb_perm:list = []
         self.si_boolean:bool = si_boolean
@@ -136,7 +135,7 @@ class Player(object):
                 rand_arr = True
             elif if_rand == "3":
                 return 0
-            print("COMBS GEN IN CARDS PERMS: ", if_combs)
+                        
             # print(f"Wybierz uklad do wygenerowania:\n"
             #     "(1 - POKER/POKER KROLEWSKI)\n"
             #     "(2 - KARETA)\n"
@@ -173,7 +172,6 @@ class Player(object):
                 print("Generowanie permutacji kart...")
             #blockPrint()
             
-            redis_buffer_instance_one_pair_game.redis_1.set('thread_status', 'ready')
             print("Session ID for cards_permutations: ", session_id)
             if arrangement == "1":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.straight_royal_flush.straight_royal_flush_generating(self.random, if_combs, straight_royal_flush, session_id)

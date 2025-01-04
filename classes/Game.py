@@ -83,27 +83,30 @@ class Game(object):
         #                     "(10) - Wroc\n" +
         #                     "(11) - Wyjscie\n")
             
-        if choice == '1':
-            print(self.session_id, "SESSION ID ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-            if redis_buffer_instance.redis_1.get(f'perms_combs_{self.session_id}').decode('utf-8') == '1':
-                combs_gen_1 = True
-            if redis_buffer_instance.redis_1.get(f'perms_combs_{self.session_id}').decode('utf-8') == '0':
-                combs_gen_1 = False
-            print("Perms/Combs", combs_gen_1)
-            Player().cards_permutations(rand_arr = False, combs_gen=combs_gen_1, session_id=self.session_id)
-            return 0
+        # if choice == '1':
+        #     print(self.session_id, "SESSION ID ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        #     if redis_buffer_instance.redis_1.get(f'perms_combs_{self.session_id}').decode('utf-8') == '1':
+        #         combs_gen_1 = True
+        #     if redis_buffer_instance.redis_1.get(f'perms_combs_{self.session_id}').decode('utf-8') == '0':
+        #         combs_gen_1 = False
+
+        #     print("Perms/Combs", combs_gen_1)
+
+        #     Player().cards_permutations(rand_arr = False, combs_gen=combs_gen_1, session_id=self.session_id)
+
+        #     return 0
         
         if choice == '2':
             game_si_human = redis_buffer_instance.redis_1.get('game_si_human').decode('utf-8')
             if game_si_human == '1':
-                croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False, session_id=self.session_id,
-                                    stop_event=self.stop_event)
+                croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True,
+                                    tree_visible=False, session_id=self.session_id)
             if game_si_human == '2':
-                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=True, session_id=self.session_id,
-                                    stop_event=self.stop_event)
+                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True,
+                                    tree_visible=True, session_id=self.session_id)
             if game_si_human == '3':
-                croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True, tree_visible=False, session_id=self.session_id,
-                                    stop_event=self.stop_event)
+                croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True,
+                                    tree_visible=False, session_id=self.session_id)
                 
             croupier.play()
             return 0

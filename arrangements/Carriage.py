@@ -18,19 +18,13 @@ class Carriage(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         self.cardmarkings = CardMarkings()   #Oznaczenia kart
-        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
-
-        if self.max_value_generate < 100:
-            n_loading_bar = 1
-        else:
-            n_loading_bar = 100
-            
-        self.loading_bar = LoadingBar('carriage', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr) #Permutacje
-        self.loading_bar_combs = LoadingBar('carriage_combs', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)   #Kombinacje
         
-        self.max_combs:str = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
-        self.max_1:str = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
-
+        self.max_value_generate:int = 0
+        self.loading_bar:LoadingBar = None
+        self.loading_bar_combs:LoadingBar = None
+        self.max_combs:str = ''
+        self.max_1:str = ''
+            
         self.cards:list = []                      #Tablica do wstepnego przetwarzania
         self.cards_2d:list = []                   #Tablica do wstepnego przetwarzania
         self.cards_5:list = []                    #Tablca do wstepnego przetwarzania
@@ -50,7 +44,22 @@ class Carriage(HelperArrangement):
         self.random:bool = False                  #Jesli jest losowanie ukladu
         self.if_combs:bool = False
         self.stop:bool = True
+
+    def init_loading_bar(self, session_id):
+        self.max_value_generate = int(redis_buffer_instance.redis_1.get(f"entered_value_{session_id}").decode('utf-8'))
         
+        if self.max_value_generate < 100:
+            n_loading_bar = 1
+        else:
+            n_loading_bar = 100
+
+        self.loading_bar = LoadingBar('carriage', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr) #Permutacje
+        self.loading_bar_combs = LoadingBar('carriage_combs', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)   #Kombinacje
+
+        self.max_combs = str(int(self.loading_bar.total_steps/self.loading_bar.display_interval))
+        self.max_1 = str(int(self.loading_bar_combs.total_steps/self.loading_bar_combs.display_interval))
+    
+ 
     #Funkcja dla przykladowego ukladu wpisanego recznie
     def set_cards(self, cards):
         self.cards_perm = cards
@@ -246,6 +255,7 @@ class Carriage(HelperArrangement):
         self.if_combs = if_combs
 
         self.helper_arr.set_session_id(session_id)
+        self.init_loading_bar(session_id)
         self.loading_bar.set_session_id(session_id)
         self.loading_bar_combs.set_session_id(session_id)
         self.helper_file_class.set_session_id(session_id)

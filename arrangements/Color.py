@@ -19,16 +19,11 @@ class Color(HelperArrangement):
         self.helper_file_class = HelperFileClass(self.file_path.resolve())
         self.helper_arr = HelperArrangement(self.helper_file_class)
         
-        self.max_value_generate:int = int(redis_buffer_instance.redis_1.get("entered_value").decode('utf-8'))
-        if self.max_value_generate < 100:
-            n_loading_bar = 1
-        else:
-            n_loading_bar = 100
-        self.loading_bar_1:LoadingBar = LoadingBar('color', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
-        self.loading_bar_2:LoadingBar = LoadingBar('color_combs', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
-        
-        self.max_combs:str = str(int(self.loading_bar_1.total_steps/self.loading_bar_1.display_interval))
-        self.max_1:str = str(int(self.loading_bar_2.total_steps/self.loading_bar_2.display_interval))
+        self.max_value_generate:int = 0
+        self.loading_bar_1:LoadingBar = None
+        self.loading_bar_2:LoadingBar = None
+        self.max_combs:str = ''
+        self.max_1:str = ''
         
         self.cards_2d:list = []           # Przygotowanie listy do wstepnego przetwarzania
         self.perm:list = []               # Lista na permutacje
@@ -49,6 +44,19 @@ class Color(HelperArrangement):
         self.if_combs:bool = False
         self.stop:bool = True
 
+    def init_loading_bar(self, session_id):
+        self.max_value_generate = int(redis_buffer_instance.redis_1.get(f"entered_value_{session_id}").decode('utf-8'))
+        
+        if self.max_value_generate < 100:
+            n_loading_bar = 1
+        else:
+            n_loading_bar = 100
+        self.loading_bar_1 = LoadingBar('color', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
+        self.loading_bar_2 = LoadingBar('color_combs', self.max_value_generate, n_loading_bar, n_loading_bar, self.helper_arr)
+        
+        self.max_combs = str(int(self.loading_bar_1.total_steps/self.loading_bar_1.display_interval))
+        self.max_1 = str(int(self.loading_bar_2.total_steps/self.loading_bar_2.display_interval))
+    
     def set_cards(self, cards):
         self.perm = cards
         self.example = True
@@ -240,9 +248,12 @@ class Color(HelperArrangement):
         self.if_combs = if_combs
         
         self.helper_arr.set_session_id(session_id)
+        self.init_loading_bar(session_id)
         self.loading_bar_1.set_session_id(session_id)
         self.loading_bar_2.set_session_id(session_id)
         self.helper_file_class.set_session_id(session_id)
+
+        self.cards_2d = []
 
         if self.if_combs:     
             redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
@@ -250,8 +261,6 @@ class Color(HelperArrangement):
         else:
             redis_buffer_instance.redis_1.set(f'min_{session_id}', '0')
             redis_buffer_instance.redis_1.set(f'max_{session_id}', self.max_1)
-
-        self.cards_2d = []
 
         for idx in range(0, len(self.cardmarkings.colors)):
             self.cards_2d = []

@@ -1,6 +1,7 @@
-Django>4.0,<5.0
+django>4.0,<5.0
 django-redis
 django-extensions
+django-cors-headers
 daphne
 redis
 channels

@@ -52,7 +52,7 @@ urlpatterns = [
     # path('process_channel_name/', views.process_channel_name, name='process_channel_name'),
     
     path('get_redis_value/', views.get_redis_value, name='get_redis_value'),
-    path('start_game_view/', views.start_game, name='start_game'),   
+    path('start_game_view/', views.start_game, name='start_game_view'),   
 ]
 
 if settings.DEBUG:

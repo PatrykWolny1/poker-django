@@ -58,7 +58,8 @@ def get_session_id(request):
     unique_session_id = generate_unique_session_id(session_key)
     
     print("Session ID in get_session_id: ", unique_session_id)
-    redis_buffer_instance.redis_1.set(f'{session_key}', str(unique_session_id))
+    redis_buffer_instance.redis_1.set(f'{session_key}', unique_session_id)
+    redis_buffer_instance.redis_1.set(f'{unique_session_id}', session_key)
 
     which_app = redis_buffer_instance.redis_1.get(f'{session_key}_which_app').decode('utf-8')
     print(which_app, session_key)
@@ -97,16 +98,14 @@ def get_session_id(request):
     elif choice == '2':
         name = "thread_one_pair_game"
         
-        
         task_manager.add_session(unique_session_id, name)
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_croupier")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
-        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
-        task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].clear()
-        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
-
         redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+        redis_buffer_instance.redis_1.set(f'when_start_game_{unique_session_id}', '0')
+        redis_buffer_instance.redis_1.set(f'when_first_{unique_session_id}', 0)
+        redis_buffer_instance.redis_1.set(f'retreive_session_key_{unique_session_id}', session_key)
 
         start_thread_one_pair_game(request, unique_session_id, name)
 
@@ -132,35 +131,34 @@ def stop_task_combs_perms(request):
         return JsonResponse({"message": f"Task stopped for session {session_id}"})
     return JsonResponse({"error": "No active session."}, status=400)
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 @csrf_exempt
 def stop_task_one_pair_game(request):
     """Handle task stopping from POST request."""
     if request.method == 'POST':
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+            session_id = data.get('session_id')
 
-        csrf_token = data.get('csrfmiddlewaretoken')
+            print(f"Received session_id: {session_id}")
 
-        if csrf_token != request.META.get('CSRF_COOKIE'):
-            return JsonResponse({'error': 'Invalid CSRF token'}, status=403)
-        
-        # session_id = redis_buffer_instance_one_pair_game.redis_1.get(request.session.session_key).decode('utf-8')
-        session_id = data.get("session_id")
-        print(session_id)
-        session_id = request.session.session_key
-        print(session_id)
-        redis_buffer_instance_one_pair_game.redis_1.set(f'stop_event_send_updates', '1')
-        redis_buffer_instance_one_pair_game.redis_1.set(f'wait_buffer', '1')
+            name = "thread_one_pair_game"
+            if session_id in task_manager.session_threads:
+                task_manager.session_threads[session_id]["thread_one_pair_game"].event["stop_event_croupier"].set()
+                task_manager.session_threads[session_id]["thread_one_pair_game"].event["stop_event_progress"].set()
+                task_manager.session_threads[session_id]["thread_one_pair_game"].event["stop_event_immediately"].set()
 
-        name = "thread_one_pair_game"
-        if session_id in task_manager.session_threads:
-            task_manager.session_threads[session_id][name].event["stop_event_progress"].set()
-            task_manager.session_threads[session_id][name].event["stop_event_croupier"].set()
-            task_manager.session_threads[session_id][name].event["stop_event_immediately"].set()
+            if session_id in task_manager.session_threads:
+                _stop_thread(request, session_id, name)
 
-        if session_id in task_manager.session_threads:
-            _stop_thread(request, session_id)
-        return JsonResponse({"message": f"Task stopped for session {session_id}"})
-    return JsonResponse({"error": "No active session."}, status=400)
+            return JsonResponse({"message": f"Task stopped for session {session_id}"})
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({"error": "An error occurred while processing the request."}, status=500)
+
+    return JsonResponse({"error": "Invalid request method."}, status=400)
 
 def download_saved_file(request):
     """Serve a saved file as an attachment download."""
@@ -183,15 +181,43 @@ def submit_number(request):
     return JsonResponse({"error": "Invalid request"}, status=400)
 
 def start_game(request):
-    _initialize_redis_values_gra_jedna_para()
-    redis_buffer_instance.redis_1.set('when_one_pair', '0')
+    if request.method == "POST":
+        session_key = request.session.session_key  # Retrieve the session key
 
-    if request.method == 'POST':
-        
-        return JsonResponse({'status': 'Game started'})
-    else:
-        return JsonResponse({'error': 'Invalid request method'}, status=400)
+        unique_session_id = redis_buffer_instance.redis_1.get(f'{session_key}').decode('utf-8')
+        print("In start_game: ", unique_session_id)
+        # redis_buffer_instance.redis_1.set(f'retreive_session_key_{unique_session_id}', session_key)
 
+        name = "thread_one_pair_game"
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].set()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].set()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].set()
+        task_manager.session_threads[unique_session_id][name].thread[unique_session_id].join()
+
+        unique_session_id = generate_unique_session_id(session_key)
+
+        _initialize_redis_values_gra_jedna_para(unique_session_id)
+        redis_buffer_instance.redis_1.set(f'when_first_{unique_session_id}', 1)
+        redis_buffer_instance.redis_1.set(f'when_start_game_{unique_session_id}', '1')
+        redis_buffer_instance.redis_1.set(f'get_start_game_key_{session_key}', unique_session_id)
+        redis_buffer_instance.redis_1.set(f'{session_key}', unique_session_id)
+        redis_buffer_instance.redis_1.set(f'retreive_session_key_{unique_session_id}', session_key)
+
+
+        task_manager.add_session(unique_session_id, name)
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_croupier")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
+
+        # Store thread details using the unique session ID
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
+
+        start_thread_one_pair_game(request, unique_session_id, name)
+
+        return JsonResponse({"status": "success", "message": "Game started"})
+    return JsonResponse({"status": "success", "message": "WRONG"})
 def _initialize_redis_values_gra_jedna_para(session_id):
     """Initialize Redis values specific to gra_jedna_para."""
     redis_buffer_instance.redis_1.set(f'arrangement_{session_id}', '8')
@@ -211,7 +237,6 @@ def _initialize_redis_values_perms_combs(request, session_id):
     redis_buffer_instance.redis_1.set(f'choice_{session_id}', '1')
     number = redis_buffer_instance.redis_1.get(f'number_{request.session.session_key}').decode('utf-8')
     redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', number)
-    redis_buffer_instance.redis_1.set(f'when_one_pair_{session_id}', '0')
     redis_buffer_instance.redis_1.set(f'prog_when_fast_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'min_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'max_{session_id}', '-1')
@@ -241,7 +266,7 @@ def start_thread_one_pair_game(request, unique_session_id, name):
     task_manager.session_threads[unique_session_id][name].set_thread(unique_session_id, my_thread)
     task_manager.session_threads[unique_session_id][name].thread[unique_session_id].daemon = True
     task_manager.session_threads[unique_session_id][name].thread[unique_session_id].start()
-    print(task_manager.session_threads)
+    # print(task_manager.session_threads)
 
     return JsonResponse({'task_status': 'Thread started', 'thread_id': unique_session_id})
 
@@ -275,6 +300,8 @@ def _stop_thread(request, session_id, name):
 
     if session_id in task_manager.session_threads:
         task_manager.session_threads[session_id][name].thread[session_id].join()  # Wait for the thread to terminate
+        # task_manager.session_threads[session_id]  # TODO if there are 2 session_ids then del first 
+
         print(f"Thread {session_id} stopped")
         return JsonResponse({'status': 'Success on stopping thread', 'message': 'Thread stopped successfully'}, status=200)
     else:

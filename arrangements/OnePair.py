@@ -403,6 +403,7 @@ class OnePair(HelperArrangement):
                     if not self.loading_bar_combs.update_progress(len_comb):
                         self.helper_arr.check_if_weights_larger(False)
                         self.file.close()
+                        print("AFTER UPDATE PROGRSS!")
                         return self.helper_arr.random_arrangement()
                 
                     if not self.loading_bar_combs.check_stop_event():
@@ -434,6 +435,7 @@ class OnePair(HelperArrangement):
                         if not self.loading_bar.update_progress(self.num_arr):
                             self.helper_arr.check_if_weights_larger(False)
                             self.file.close()
+                            print("AFTER UPDATE PROGRSS!")
                             return self.helper_arr.random_arrangement()
                     
                         if not self.loading_bar.check_stop_event():

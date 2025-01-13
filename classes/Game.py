@@ -28,19 +28,27 @@ atexit.register(cleanup)
 class Game(object):
         
     def __init__(self, queue = None, session_id = None  ):
+        global pass_all_comb_perm
+
         self.all_combs_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_duplicates.csv'
         self.all_combs_update_with_duplicates = 'ml_data/poker_game_one_pair_combs_all_to_update_duplicates.csv' 
         
         self.file_all_to_update = 'ml_data/poker_game_one_pair_combs_all_to_update.csv'
         self.file_one_pair_combs_all = 'ml_data/poker_game_one_pair_combs_all.csv'  
         
-        when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{session_id}').decode('utf-8')
+        when_first = int(redis_buffer_instance.redis_1.get(f'when_first_{session_id}').decode('utf-8'))
         
-        if when_game_one_pair == '1' and queue is not None:
+        if when_first == 0 and queue is not None:
             self.all_comb_perm = queue.get()
             pass_all_comb_perm.set_all_comb_perm(self.all_comb_perm)
-        elif pass_all_comb_perm.get_all_comb_perm() is not None:
+            # pass_all_comb_perm.set_pickle_combs_one_pair_game(session_id)
+            print(f"when_first == 0 : session_id: {session_id}")
+
+        elif when_first > 0 and pass_all_comb_perm.get_all_comb_perm() is not None:
             self.all_comb_perm = pass_all_comb_perm.get_all_comb_perm()
+            # self.all_combs_perm = pass_all_comb_perm.get_pickle_combs_one_pair_game(session_id)
+            print(f"when_first > 0 : session_id: {session_id}")
+
         self.session_id = session_id
 
         print(f"Working on task for session {session_id}")
@@ -48,6 +56,7 @@ class Game(object):
         self.Game()
         
     def Game(self): 
+        print("FROM GAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         # print(f"" + 
         #         "(1)" +
         #         "- Zbieranie rozgrywek do pliku" +

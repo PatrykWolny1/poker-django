@@ -1,10 +1,8 @@
 import random
 from itertools import chain
-import pickle
-import time
 import shutil
-import os
 from pathlib import Path
+import numpy as np
 from home.redis_buffer_singleton import redis_buffer_instance
 from home.ThreadVarManagerSingleton import task_manager
 
@@ -104,7 +102,13 @@ class HelperArrangement(object):
                         pass
                         # print(indices[idx])
                 # print()
+    def random_with_key_numpy(self):
+        # Convert the key to an integer seed
+        seed = hash(self.session_id) & 0xFFFFFFFF  # Ensure seed fits into 32-bit range
+        rng = np.random.default_rng(seed)
 
+        return rng.integers(0, len(self.weight_gen) - 1, size=2)  # Generate 5 integers in [0, max_value)
+    
     def random_arrangement(self, if_combs=True):
         #Zerowanie pustych wierszy
         self.cards_all_permutations = [ele for ele in self.cards_all_permutations if ele != []]
@@ -116,7 +120,9 @@ class HelperArrangement(object):
                 cards = [self.cards_all_permutations[self.rand_int[0]],  
                         self.cards_all_permutations[self.rand_int[0]]]
             else:
-                self.rand_int = random.sample(range(0, len(self.weight_gen)), 2)
+                # self.rand_int = random.sample(range(0, len(self.weight_gen)), 2)
+                self.rand_int = self.random_with_key_numpy()
+                print(self.rand_int)
                 cards = [self.cards_all_permutations[self.rand_int[0]],  
                         self.cards_all_permutations[self.rand_int[1]]]
         except IndexError:
@@ -173,7 +179,7 @@ class HelperArrangement(object):
         when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{self.session_id}').decode('utf-8')
         print("In HelperArrangement when_game_one_pair", when_game_one_pair)
 
-        if when_game_one_pair == '0':
+        if when_game_one_pair != '1':
             self.weight_gen.clear()
             self.cards_all_permutations.clear()
         

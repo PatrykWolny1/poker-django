@@ -6,11 +6,10 @@ services:
       - "6379:6379"  # Exposes Redis on the default port
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf  # Mount the custom config file
-    command: /usr/local/bin/redis-server /usr/local/etc/redis/redis.conf  # Use the custom config file
+    command: redis-server /usr/local/etc/redis/redis.conf  # Use the custom config file
     networks:
       - my_network  # Add to the same network
   django:
-    image: poker-web-gui-dev
     build:
       context: ./    # Path to the directory containing Dockerfile
       dockerfile: Dockerfile

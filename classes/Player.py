@@ -192,10 +192,10 @@ class Player(object):
             if arrangement == "9":
                 self.cards, self.rand_int, self.all_comb_perm = self.arrangements.high_card.high_card_generating(self.random, if_combs, session_id)
             
-            when_game_one_pair = redis_buffer_instance.redis_1.get(f'when_one_pair_{session_id}').decode('utf-8')
+            when_first = int(redis_buffer_instance.redis_1.get(f'when_first_{session_id}').decode('utf-8'))
 
-            if queue is not None and when_game_one_pair == '1':
-                print("One pair game or not: ", when_game_one_pair)
+            if queue is not None and when_first == 0:
+                print("On first open: ", when_first)
                 queue.put(self.all_comb_perm)
             
             print(self.cards)
@@ -212,9 +212,7 @@ class Player(object):
             if choice == '1':
                 print("EXIT")
                 exit()
-            if choice == '2':
-                print("EXIT")
-                exit()
+                
             return self.cards, self.rand_int, self.all_comb_perm
 
                 

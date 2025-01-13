@@ -14,6 +14,7 @@ class OnePairGame {
         this.isResult = false;
         this.socketHandler = null;
         this.blockRefresh = false;
+        this.start_game = false;
 
         // Player names
         this.player1Name = document.getElementById("player1").value;
@@ -103,38 +104,86 @@ class OnePairGame {
     async startGame() {
         this.elements.nextButton1.disabled = true;
         this.elements.nextButton2.disabled = true;
-        await this.stopTask();
+        this.start_game = true;
         console.log("startGame function called");
-
-        fetch("/start_game_view/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": this.getCSRFToken(),
-            },
-            body: JSON.stringify({}),
-            credentials: "same-origin",
-        })
-            .then((response) => response.json())
-            .then(async () => {
-                this.reinitializeInstance();
-                await this.initializeWebSocket();
-                this.updatePlayerNames();
-
-                // Now the socket is open, send the start_task message
-                if (this.socketHandler.socket.readyState === WebSocket.OPEN) {
-                    this.socketHandler.socket.send(JSON.stringify({ action: 'close', reason: 'button_click' }));
-                    console.log("After executing send");
-                } else {
-                    console.error("WebSocket is not open. Current state:", this.socketHandler.socket.readyState);
-                }        
-            })
-            .catch((error) => {
-                console.error("Error starting game:", error);
-                alert("An error occurred while starting the game. Please try again.");
+    
+        try {
+            await this.stopTask();
+            const response = await fetch("/start_game_view/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": this.getCSRFToken(),
+                },
+                body: JSON.stringify({}),
+                credentials: "same-origin",
             });
-    }
+            // Reinitialize and update UI first
+            this.reinitializeInstance();
+            this.updatePlayerNames();
+            
+            this.sessionId = await this.socketHandler.fetchSessionId(); 
+            
+            this.socketHandler.sessionId = this.sessionId;
 
+            // Check and close the old WebSocket
+            if (this.socketHandler.socket) {
+                if (this.socketHandler.socket.readyState === WebSocket.OPEN) {
+                    this.socketHandler.socket.send(
+                        JSON.stringify({ 
+                            action: "close", 
+                            reason: "button_click",
+                            session_id: this.sessionId,
+                        })
+                    );
+                    console.log("WebSocket message sent: { action: 'close', reason: 'button_click' }");
+                } else {
+                    console.warn("Closing WebSocket in state:", this.socketHandler.socket.readyState);
+                }
+                // this.socketHandler.socket.close();
+                console.log("Old WebSocket connection closed.");
+            }
+            console.log("New WebSocket connection initialized.");
+    
+        
+            
+
+            await this.socketHandler.setupSocketHandlers();
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log("Server Response:", result);
+            
+            if (result.status === "success") {
+                console.log("Game started successfully on the server");
+                // Proceed with additional logic if needed
+            } else {
+                console.error("Error from server:", result.message);
+                alert("Failed to start the game. Please try again.");
+            }
+            
+        } catch (error) {
+            console.error("Error starting game:", error);
+            alert("An error occurred while starting the game. Please try again.");
+        }
+        // try {
+        //     this.socketHandler.socket.send(JSON.stringify({ action: "close", reason: "on_refresh" }));
+        //     const start = performance.now();
+        //     while (performance.now() - start < 100) {} // 100ms delay
+        //     await this.stopTask();
+        //     this.socketHandler.socket.close(1000, "Unload");
+        //     const start2 = performance.now();
+        //     while (performance.now() - start2 < 100) {} // 100ms delay
+        // } catch (error) {
+        //     console.error('Error in beforeunload:', error);
+        // }
+    }
+    
+    
+    
     async reinitializeInstance() {
         console.log("Reinitializing instance...");
         await this.resetInstanceVariables();
@@ -157,10 +206,11 @@ class OnePairGame {
         this.isChances = true;
         this.isResult = false;
         this.isName = true;
-        this.socket = null;
+        // this.socket = null;
         this.executeFunction = false;
         this.arrangement_result_off = null;
-        this.socketHandler = null;
+        // this.socketHandler = null;
+        this.start_game = true;
 
         // Update player names based on input values
         this.player1Name = document.getElementById('player1').value;
@@ -279,10 +329,11 @@ class OnePairGame {
         console.log("Page is being reloaded or unloaded.");
 
         try {
+            this.start_game = false;
+            await this.stopTask();
             this.socketHandler.socket.send(JSON.stringify({ action: "close", reason: "on_refresh" }));
             const start = performance.now();
             while (performance.now() - start < 100) {} // 100ms delay
-            await this.stopTask();
             this.socketHandler.socket.close(1000, "Unload");
             const start2 = performance.now();
             while (performance.now() - start2 < 100) {} // 100ms delay
@@ -336,42 +387,67 @@ class OnePairGame {
 
         }
     }
-    async stopTask() {
-        const url = '/stop_task_one_pair_game/';
-        const csrfToken = this.getCSRFToken();
-        const data = JSON.stringify({
-            session_id: this.socketHandler.sessionId,
-            csrfmiddlewaretoken: csrfToken,
-        });
-        // Use sendBeacon for reliable request on unload
-        const blob = new Blob([data], { type: 'application/json' });
-        navigator.sendBeacon(url, blob);
-    }
-    
-    // async stopTask() {
-    //     fetch("/stop_task_view/", {
-    //         method: "POST",
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //             "X-CSRFToken": this.getCSRFToken(),
-    //         },
-    //         body: JSON.stringify({ session_id: this.socketHandler.sessionId }),
-    //         credentials: "same-origin",
-    //     })
-    //         .then((response) => response.json())
-    //         .then((data) => {
-    //             console.log(data);
-    //             if (data.status === "Task stopped successfully") {
-    //                 console.log("Task stopped successfully");
-    //                 this.elements.resetProgressBar();
-    //             }
-    //         })
-    //         .catch((error) => {
-    //             console.error("Error stopping task:", error);
-    //             alert("An error occurred while stopping the task. Please try again.");
-    //         });
-    // }
 
+    async stopTask() {
+        try {
+
+            let requestBody;
+            if (this.start_game) {
+                requestBody = JSON.stringify({
+                    session_id: this.sessionId,
+                });
+            } else {
+                requestBody = JSON.stringify({
+                    session_id: this.socketHandler.sessionId,
+                });
+            }
+
+            const response = await fetch("/stop_task_one_pair_game/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": this.getCSRFToken(), // Include the CSRF token
+                },
+                body: requestBody,
+        
+                credentials: "same-origin", // Ensure cookies are included
+            });
+    
+            if (!response.ok) {
+                console.error("Failed to stop task:", response.status);
+                alert("Failed to stop the task. Please try again.");
+                return;
+            }
+    
+            const data = await response.json();
+            console.log("Response data:", data);
+    
+            if (data.message) {
+                console.log(data.message);
+                if (!this.start_game) {
+                    this.elements.resetProgressBar();
+                }
+            }
+        } catch (error) {
+            console.error("Error stopping task:", error);
+        }
+                // const url = '/stop_task_one_pair_game/';
+        // const csrfToken = this.getCSRFToken(); // Fetch the CSRF token from a meta tag or cookies
+    
+        // // Use URLSearchParams to send the data
+        // const data = new URLSearchParams();
+        // data.append('csrfmiddlewaretoken', csrfToken);
+        // data.append('session_id', this.socketHandler.sessionId);
+    
+        // // Use sendBeacon to send the data
+        // const blob = new Blob([data.toString()], { type: 'application/x-www-form-urlencoded' });
+        // const success = navigator.sendBeacon(url, blob);
+    
+        // if (!success) {
+        //     console.error("Failed to send data using sendBeacon.");
+        // }
+    }
+        
     getCSRFToken() {
         let token = document.cookie.split(";").find((row) => row.startsWith("csrftoken="));
         return token ? token.split("=")[1] : "";
@@ -740,8 +816,9 @@ class WebSocketHandler {
         // }
         this.socket = await this.createWebSocket();
         console.log(this.socket)
-        console.log("WebSocket opened");
+        console.log("WebSocket opening...");
         await this.waitForSocketOpen();
+        console.log("WebSocket opened");
         this.setupSocketHandlers();
     }
 

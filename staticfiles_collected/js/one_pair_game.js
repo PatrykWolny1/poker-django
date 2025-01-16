@@ -210,7 +210,7 @@ class OnePairGame {
         this.executeFunction = false;
         this.arrangement_result_off = null;
         // this.socketHandler = null;
-        this.start_game = true;
+        this.start_game = false;
 
         // Update player names based on input values
         this.player1Name = document.getElementById('player1').value;
@@ -611,7 +611,7 @@ class OnePairGame {
     updateBorders(progressGames, isFirstSet, data) {
         if (!progressGames) return;
 
-        if ('exchange_cards' in data) {
+        if (`exchange_cards_${this.sessionId}` in data) {
             const exchangeCardsText = data.exchange_cards === 't' ? 'TAK' : 'NIE';
             if (progressGames[0]) progressGames[0].textContent = `Wymiana kart: ${exchangeCardsText}`;
         }
@@ -894,7 +894,8 @@ class WebSocketHandler {
             this.handleArrangementData(data[`type_arrangement_${this.sessionId}`]);
         }
 
-        if ('exchange_cards' in data || 'amount' in data || 'type_arrangement_result' in data || 'chances' in data) {
+        if (`exchange_cards_${this.sessionId}` in data || `amount_${this.sessionId}` in data ||
+            `type_arrangement_result_${this.sessionId}` in data || `chances_${this.sessionId}` in data) {
             // Determine which game border set to update based on `isProgressGameBorders`
             const progressGames = this.gameInstance.isProgressGameBorders === false 
                 ? this.gameInstance.progressGameBorders1[0].querySelectorAll('.progress-game')
@@ -903,13 +904,13 @@ class WebSocketHandler {
             this.gameInstance.updateBorders(progressGames, this.gameInstance.isProgressGameBorders, data);
 
             // Specifically handle chances data for dynamic updates
-            if ('chances' in data) {
+            if (`chances_${this.sessionId}` in data) {
                 this.gameInstance.waitForChances(data, progressGames);
             }
         }
 
-        if ('progress' in data) {
-            this.gameInstance.updateProgress(data.progress);
+        if (`progress_${this.sessionId}` in data) {
+            this.gameInstance.updateProgress(data[`progress_${this.sessionId}`]);
         }
 
         if ('first_second' in data) {

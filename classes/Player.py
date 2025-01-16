@@ -197,7 +197,7 @@ class Player(object):
             if queue is not None and when_first == 0:
                 print("On first open: ", when_first)
                 queue.put(self.all_comb_perm)
-            
+                
             print(self.cards)
             
             self.cards = list(self.cards)
@@ -210,6 +210,9 @@ class Player(object):
             
             #enablePrint()
             if choice == '1':
+                print("EXIT")
+                exit()
+            if choice == '2':
                 print("EXIT")
                 exit()
                 

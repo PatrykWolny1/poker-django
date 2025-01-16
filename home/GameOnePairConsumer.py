@@ -124,7 +124,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                 data = json.loads(message_data)
                 # print("Decoded data:", data)
 
-                if data["event"] == "data_ready":
+                if "cards_shuffle" in data and data["cards_shuffle"] == "data_ready":
                     player_index = str(data["player_index"])
                     print(f"In data_ready: {self.session_id}")
 
@@ -145,6 +145,32 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                         await self.queue_message({
                             f"type_arrangement_{self.session_id}": type_arr_str,
                             f"cards_{self.session_id}": cards_list
+                        })
+
+                if "exchange_cards" in data and data["exchange_cards"] == "data_ready":
+                    print(f"In exchange_ready: {self.session_id}")
+                    player_index = str(data["player_index"])
+
+                    exchange_key = f'exchange_cards_{player_index}_{self.session_id}'
+                    exchange_data = redis_client.get(exchange_key)
+
+                    if exchange_data:
+                        exchange_cards = exchange_data.decode('utf-8')
+                        await self.queue_message({
+                            f"exchange_cards_{self.session_id}": exchange_cards
+                        })
+
+                if "chance" in data and data["chance"] == "data_ready":
+                    print(f"In chance: {self.session_id}")
+                    player_index = str(data["player_index"])
+
+                    chance_key = f'chance_{player_index}_{self.session_id}'
+                    chance_data = redis_client.get(chance_key)
+
+                    if chance_data:
+                        chance = chance_data.decode('utf-8')
+                        await self.queue_message({
+                            f"chance_{self.session_id}": chance
                         })
 
             except json.JSONDecodeError as e:
@@ -506,7 +532,7 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
             if mapped_progress >= 100:
                 mapped_progress = 100
             if mapped_progress != 0:
-                await self.queue_message({"progress": str(mapped_progress)})
+                await self.queue_message({f"progress_{self.session_id}": str(mapped_progress)})
                        
     def _map_progress(self, progress, from_min, from_max):
         """Map and return the progress value to a 0-100 range."""

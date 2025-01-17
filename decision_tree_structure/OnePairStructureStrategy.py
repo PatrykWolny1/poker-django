@@ -9,14 +9,15 @@ from decision_tree_strategies.TwoThreeCardsProbability import TwoThreeCardsProba
 
 
 class OnePairStructureStrategy(object):
-    def __init__(self, cards: list = None):
+    def __init__(self, cards: list = None, player_index : int = None, session_id: str = None):
         self.cards_rest = cards
         self.nk = [[13, 1], [4, 2], [47, 2]]
         self.computeobject = None
+        self.session_id = session_id
         #####################################self.compute_object = ComputeObject()
 
-    def set_root(self, visited=False, amount=None, exchange=None):
-        self.root = Node(name="ONE PAIR", visited=visited, amount=amount, exchange=exchange)               
+    def set_root(self, visited=False, amount=None, exchange=None, player_index=None):
+        self.root = Node(name="ONE PAIR", visited=visited, amount=amount, exchange=exchange, player_index=player_index, session_id=self.session_id)               
         
     def build_tree(self): 
         

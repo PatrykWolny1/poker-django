@@ -15,6 +15,7 @@ class OnePairGame {
         this.socketHandler = null;
         this.blockRefresh = false;
         this.start_game = false;
+        this.sessionId = null;
 
         // Player names
         this.player1Name = document.getElementById("player1").value;
@@ -74,13 +75,13 @@ class OnePairGame {
         });
 
         this.elements.nextButton1.addEventListener("click", () => {
-            this.fetchRedisValue("wait_buffer");
+            this.fetchRedisValue();
             this.elements.nextButton1.disabled = true;
             this.elements.nextButton2.disabled = false;
         });
 
         this.elements.nextButton2.addEventListener("click", () => {
-            this.fetchRedisValue("wait_buffer");
+            this.fetchRedisValue();
             this.elements.nextButton1.disabled = true;
             this.elements.nextButton2.disabled = true;
 
@@ -99,6 +100,7 @@ class OnePairGame {
     async initializeWebSocket() {
         this.socketHandler = new WebSocketHandler(this);
         await this.socketHandler.init();
+        this.sessionId = this.socketHandler.sessionId;
     }
 
     async startGame() {
@@ -450,17 +452,19 @@ class OnePairGame {
         
     getCSRFToken() {
         let token = document.cookie.split(";").find((row) => row.startsWith("csrftoken="));
+        console.log("CSRF Token:", token ? token.split("=")[1] : "Not Found");
         return token ? token.split("=")[1] : "";
     }
 
-    fetchRedisValue(key) {
+    fetchRedisValue() {
+        console.log(this.socketHandler.sessionId);
         fetch("/get_redis_value/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "X-CSRFToken": this.getCSRFToken(),
             },
-            body: JSON.stringify({ key }),
+            body: JSON.stringify({ session_id : this.socketHandler.sessionId }),
         })
             .then((response) => response.json())
             .then((data) => {
@@ -527,24 +531,24 @@ class OnePairGame {
 
         if (this.isMobile) {
             keysToUpdate = {
-                p1_2x_1: 'top-left-text-mobile',
-                p1_2x_0: 'top-right-text-mobile',
-                p2x: 'bottom-left-text-mobile',
-                p1x: 'bottom-right-text-mobile'
+                [`p1_2x_1_${this.sessionId}`]: 'top-left-text-mobile',
+                [`p1_2x_0_${this.sessionId}`]: 'top-right-text-mobile',
+                [`p2x_${this.sessionId}`]: 'bottom-left-text-mobile',
+                [`p1x_${this.sessionId}`]: 'bottom-right-text-mobile'
             };
         } else {
             keysToUpdate = {
-                p1_2x_1: 'top-left-text',
-                p1_2x_0: 'top-right-text',
-                p2x: 'bottom-left-text',
-                p1x: 'bottom-right-text'
+                [`p1_2x_1_${this.sessionId}`]: 'top-left-text',
+                [`p1_2x_0_${this.sessionId}`]: 'top-right-text',
+                [`p2x_${this.sessionId}`]:'bottom-left-text',
+                [`p1x_${this.sessionId}`]:'bottom-right-text'
             };
         }
 
         // Iterate over the data object to process the strategy data
         for (const [key, value] of Object.entries(data)) {
             // Handle yes/no and cards_2_3 type keys for binary tree routes
-            if (key.includes('yes_no') || key.includes('cards_2_3')) {
+            if (key.includes(`yes_no_${this.sessionId}`) || key.includes(`cards_2_3_${this.sessionId}`)) {
                 if (value.startsWith('Yes')) {
                     this.arrayTemp.push(value);
                 } else if (value.includes('No')) {
@@ -554,21 +558,32 @@ class OnePairGame {
                 } else if (value.startsWith('Three')) {
                     this.arrayTemp.push(value);
                 }
+                
+            // Manage the iteration and arrayRouteBinTree updates
+            if (this.iterations.iter1 === 0 && (this.arrayTemp.length === 2 || this.arrayTemp[0] === "No")) {
+                this.arrayTemp.unshift("main");
+                this.arrayRouteBinTree1 = JSON.parse(JSON.stringify(this.arrayTemp));
+                console.log("ArrayRouteBinTree1:", this.arrayRouteBinTree1, "Iteration: 0");
+            
+                // Persist arrayRouteBinTree1 to localStorage
+                localStorage.setItem('arrayRouteBinTree1', JSON.stringify(this.arrayRouteBinTree1));
+            
+                this.arrayTemp = [];
+                this.iterations.iter1 += 1;
+            } else if (this.iterations.iter1 === 1 && (this.arrayTemp.length === 2 || this.arrayTemp[0] === "No")) {
+                this.arrayTemp.unshift("main");
+                this.arrayRouteBinTree2 = JSON.parse(JSON.stringify(this.arrayTemp));
+                console.log("ArrayRouteBinTree2:", this.arrayRouteBinTree2, "Iteration: 1");
+            
+                // Persist arrayRouteBinTree2 to localStorage
+                localStorage.setItem('arrayRouteBinTree2', JSON.stringify(this.arrayRouteBinTree2));
+            
+                this.arrayTemp = [];
+                this.iterations.iter1 += 1;
+            }
+            
 
-                // Manage the iteration and arrayRouteBinTree updates
-                if (this.iterations.iter1 === 0 && (this.arrayTemp.length === 2 || this.arrayTemp[0] === 'No')) {
-                    this.arrayTemp.unshift("main");
-                    this.arrayRouteBinTree1 = this.arrayTemp.slice(); // Shallow copy to store the values
-                    console.log(this.arrayTemp, "1");
-                    this.arrayTemp = [];
-                    this.iterations.iter1 += 1;
-                } else if (this.iterations.iter1 === 1 && (this.arrayTemp.length === 2 || this.arrayTemp[0] === 'No')) {
-                    this.arrayTemp.unshift("main");
-                    this.arrayRouteBinTree2 = this.arrayTemp.slice(); // Shallow copy to store the values
-                    console.log(this.arrayTemp, "2");
-                    this.arrayTemp = [];
-                    this.iterations.iter1 += 1;
-                }
+
             }
 
             // Update percentage texts in the DOM based on keysToUpdate mapping
@@ -589,7 +604,7 @@ class OnePairGame {
     }
 
     logStrategyKey(key, value) {
-        const strategyKeys = ['yes_no', 'strategy_one', 'strategy_two'];
+        const strategyKeys = [`yes_no_${this.sessionId}`, `strategy_one_${this.sessionId}`, `strategy_two_${this.sessionId}`];
         if (strategyKeys.includes(key)) {
             console.log(`Received ${key}: ${value}`);
         }
@@ -612,23 +627,23 @@ class OnePairGame {
         if (!progressGames) return;
 
         if (`exchange_cards_${this.sessionId}` in data) {
-            const exchangeCardsText = data.exchange_cards === 't' ? 'TAK' : 'NIE';
+            const exchangeCardsText = data[`exchange_cards_${this.sessionId}`] === 't' ? 'TAK' : 'NIE';
             if (progressGames[0]) progressGames[0].textContent = `Wymiana kart: ${exchangeCardsText}`;
         }
 
-        if ('amount' in data) {
-            const amount = data.amount;
+        if (`amount_${this.sessionId}` in data) {
+            const amount = data[`amount_${this.sessionId}`];
             if (progressGames[3]) progressGames[3].textContent = `Ile kart: ${amount}`;
             this.isProgressGameBorders = !isFirstSet;
         }
 
-        if ('type_arrangement_result' in data) {
-            const typeArrangementResult = data.type_arrangement_result;
-            const arrangementElement = this.iterations.iter4 === 0 ?
+        if (`type_arrangement_result_${this.sessionId}` in data) {
+            const typeArrangementResult = data[`type_arrangement_result_${this.sessionId}`];
+            const arrangementElementResult = this.iterations.iter4 === 0 ?
                 (this.isMobile ? document.querySelector('.mobile-only .arrangement-result-1') : document.querySelector('.arrangement-result-1')) :
                 (this.isMobile ? document.querySelector('.mobile-only .arrangement-result-2') : document.querySelector('.arrangement-result-2'));
-            if (arrangementElement) {
-                arrangementElement.textContent = typeArrangementResult;
+            if (arrangementElementResult) {
+                arrangementElementResult.textContent = typeArrangementResult;
 
                 if (this.iterations.iter4 === 1) {
                     this.arrangement_result_off = true
@@ -642,7 +657,8 @@ class OnePairGame {
     // Function to check if required keys are in the data
     hasRequiredKeys(data) {
         // Define the keys you're expecting in `data`
-        const requiredKeys = ['p1_2x_1', 'p1_2x_0', 'p2x', 'p1x', 'yes_no', 'cards_2_3'];
+        const requiredKeys = [`p1_2x_1_${this.sessionId}`, `p1_2x_0_${this.sessionId}`, `p2x_${this.sessionId}`,
+            `p1x_${this.sessionId}`, `yes_no_${this.sessionId}`, `cards_2_3_${this.sessionId}`];
         return requiredKeys.some(key => key in data);  // Returns true if any of the required keys exist in `data`
     }
 
@@ -662,9 +678,9 @@ class OnePairGame {
             clearInterval(this.chancesInterval);
         }
 
-        this.chancesInterval = setInterval(() => {
-            if ('chances' in data) {
-                const chances = data.chances;
+        // this.chancesInterval = setInterval(() => {
+            if (data[`chances_${this.sessionId}`]) {
+                const chances = data[`chances_${this.sessionId}`]
                 console.log("Chances before: ", chances);
 
                 if (this.isChances) {
@@ -683,75 +699,98 @@ class OnePairGame {
 
                 const chances_2 = progressGames[1]?.textContent.includes("Szansa (2 karty)");
                 const chances_3 = progressGames[2]?.textContent.includes("Szansa (3 karty)");
-                if (chances_2 && chances_3) {
-                    clearInterval(this.chancesInterval);
-                }
+                // if (chances_2 && chances_3) {
+                //     clearInterval(this.chancesInterval);
+                // }
             }
-        }, 100);
+        // }, 100);
     }
 
         // Animate the binary tree with the data from the binary tree arrays
-        animateBinaryTree() {
-            const delay = 500; // Delay between steps in milliseconds
-            const animationContainer = [
-                { array: this.arrayRouteBinTree1, label: "Tree 1" },
-                { array: this.arrayRouteBinTree2, label: "Tree 2" },
-            ];
+    animateBinaryTree() {
+        const delay = 500; // Delay between steps in milliseconds
     
-            const processArray = (array, callback) => {      
-                this.timeoutIds = [];
-    
-                array.forEach((element, index) => {
-                    const timeoutId = setTimeout(() => {
-                        // Reset all active classes before starting
-                        this.resetClasses();
-            
-                        // Set appropriate classes based on the element
-                        if (element.includes("main")) {
-                            this.toggleClass("main", "active", "diagram-container");
-                        } else if (element.startsWith("Yes")) {
-                            this.toggleClass("top-left", "active", "diagram-container");
-                            this.toggleClass("line-top-left", "active", "diagram-container");
-                        } else if (element.includes("No")) {
-                            this.toggleClass("top-right", "active", "diagram-container");
-                            this.toggleClass("line-top-right", "active", "diagram-container");
-                        } else if (element.startsWith("Two")) {
-                            this.toggleClass("bottom-left", "active", "diagram-container");
-                            this.toggleClass("line-bottom-left", "active", "diagram-container");
-                        } else if (element.startsWith("Three")) {
-                            this.toggleClass("bottom-right", "active", "diagram-container");
-                            this.toggleClass("line-bottom-right", "active", "diagram-container");
-                        }
-    
-                        // After the last element, invoke the callback
-                        if (index === array.length - 1 && callback) {
-                            setTimeout(callback, delay);
-                        }
-                    }, index * delay);
-    
-                    this.timeoutIds.push(timeoutId);
-                });
-                this.resetClasses();
-            };
-    
-            const playerName = this.isMobile 
-                ? document.getElementById('player-name-text-mobile')
-                : document.querySelector('.player-name-text');
-    
-            if (this.iterations.iter2 === 0) {
-                playerName.textContent = this.player1Name;
-                this.iterations.iter2 = 1;
-            }
-            processArray(animationContainer[0].array, () => {
-                if (this.iterations.iter2 === 1) {
-                    playerName.textContent = this.player2Name;
-                    this.iterations.iter2 = 0;
-                }
-                processArray(animationContainer[1].array, () => {
-                    this.animateBinaryTree();
-                });
-            });
+        // Load animation container arrays
+        const persistedRouteBinTree1 = localStorage.getItem('arrayRouteBinTree1');
+        const persistedRouteBinTree2 = localStorage.getItem('arrayRouteBinTree2');
+
+        if (persistedRouteBinTree1) {
+            this.arrayRouteBinTree1 = JSON.parse(persistedRouteBinTree1);
+            console.log("Restored ArrayRouteBinTree1:", this.arrayRouteBinTree1);
         }
+
+        if (persistedRouteBinTree2) {
+            this.arrayRouteBinTree2 = JSON.parse(persistedRouteBinTree2);
+            console.log("Restored ArrayRouteBinTree2:", this.arrayRouteBinTree2);
+        }
+        const animationContainer = [
+            { array: this.arrayRouteBinTree1, label: "Tree 1" },
+            { array: this.arrayRouteBinTree2, label: "Tree 2" },
+        ];
+    
+        // Function to process arrays sequentially
+        const processArray = (array, label, callback) => {
+            console.log(`Starting animation for: ${label}`);
+            this.timeoutIds = [];
+    
+            array.forEach((element, index) => {
+                const timeoutId = setTimeout(() => {
+                    // Reset classes for each step
+                    this.resetClasses();
+    
+                    // Animate based on the element's content
+                    if (element.includes("main")) {
+                        this.toggleClass("main", "active", "diagram-container");
+                    } else if (element.startsWith("Yes")) {
+                        this.toggleClass("top-left", "active", "diagram-container");
+                        this.toggleClass("line-top-left", "active", "diagram-container");
+                    } else if (element.includes("No")) {
+                        this.toggleClass("top-right", "active", "diagram-container");
+                        this.toggleClass("line-top-right", "active", "diagram-container");
+                    } else if (element.startsWith("Two")) {
+                        this.toggleClass("bottom-left", "active", "diagram-container");
+                        this.toggleClass("line-bottom-left", "active", "diagram-container");
+                    } else if (element.startsWith("Three")) {
+                        this.toggleClass("bottom-right", "active", "diagram-container");
+                        this.toggleClass("line-bottom-right", "active", "diagram-container");
+                    }
+    
+                    // After the last element, invoke the callback
+                    if (index === array.length - 1 && callback) {
+                        setTimeout(callback, delay);
+                    }
+                }, index * delay);
+    
+                this.timeoutIds.push(timeoutId);
+            });
+        };
+    
+        // Set player name based on current iteration
+        const playerName = this.isMobile
+            ? document.getElementById("player-name-text-mobile")
+            : document.querySelector(".player-name-text");
+    
+        if (this.iterations.iter2 === 0) {
+            playerName.textContent = this.player1Name;
+            this.iterations.iter2 = 1;
+        }
+    
+        // Animate the first array
+        processArray(animationContainer[0].array, animationContainer[0].label, () => {
+            // Update player name for the second array
+            if (this.iterations.iter2 === 1) {
+                playerName.textContent = this.player2Name;
+                this.iterations.iter2 = 0;
+            }
+    
+            // Animate the second array
+            processArray(animationContainer[1].array, animationContainer[1].label, () => {
+                console.log("Completed both animations. Restarting.");
+                this.animateBinaryTree(); // Restart the animation
+            });
+        });
+    }
+        
     
         // Helper function to reset all classes
         resetClasses() {
@@ -888,7 +927,7 @@ class WebSocketHandler {
         const data = JSON.parse(event.data);
         console.log("Received data: ", data)
 
-        if (`cards_${this.sessionId}` in data && `type_arrangement_${this.sessionId}` in data) {
+        if (`cards_${this.sessionId}` in data || `type_arrangement_${this.sessionId}` in data) {
             console.log("Cards and type arrangement received:", data);
             this.handleCardsData(data[`cards_${this.sessionId}`]);
             this.handleArrangementData(data[`type_arrangement_${this.sessionId}`]);
@@ -913,8 +952,8 @@ class WebSocketHandler {
             this.gameInstance.updateProgress(data[`progress_${this.sessionId}`]);
         }
 
-        if ('first_second' in data) {
-            this.gameInstance.firstSecond = data.first_second;
+        if (`first_second_${this.sessionId}` in data) {
+            this.gameInstance.firstSecond = data[`first_second_${this.sessionId}`];
             if (this.gameInstance.firstSecond === '0') {
                 this.gameInstance.toggleClass("result-info-1", "active", 'result');
             } else if (this.gameInstance.firstSecond === '1') {
@@ -925,17 +964,19 @@ class WebSocketHandler {
 
         }
 
-        if ('strategy_one' in data || 'strategy_two' in data) {
-            this.gameInstance.processStrategyData(data);
+        if (`strategy_one_${this.sessionId}` in data || `strategy_two_${this.sessionId}` in data) {
+            console.log(data)
+            // this.gameInstance.processStrategyData(data);
+            if (this.gameInstance.hasRequiredKeys(data)) {
+                this.gameInstance.processStrategyData(data);
+            }
+
+            if (this.gameInstance.iterations.iter1 === 2) {
+                this.gameInstance.animateBinaryTree();
+            }
         }
 
-        if (this.gameInstance.hasRequiredKeys(data)) {
-            this.gameInstance.processStrategyData(data);
-        }
-
-        if (this.gameInstance.iterations.iter1 === 2) {
-            this.gameInstance.animateBinaryTree();
-        }
+        
     }
 
     handleCardsData(cards) {
@@ -1016,24 +1057,30 @@ class WebSocketHandler {
     }
 
     handleArrangementData(typeArrangement) {
+        if (!typeArrangement) {
+            console.log("typeArrangement is invalid or empty.");
+            return;
+        }
+    
         const arrangementSelector = this.gameInstance.iterations.iter3 === 0 ? '.arrangement-1' : '.arrangement-2';
-        let arrangementElement;
     
         if (this.gameInstance.isMobile) {
-            // Use querySelectorAll for mobile and ensure we set textContent for each matching element
+            // Mobile: Update all matching elements
             const arrangementElements = document.querySelectorAll(`.mobile-only ${arrangementSelector}`);
             if (arrangementElements.length > 0) {
                 arrangementElements.forEach(element => {
                     element.textContent = typeArrangement;
+                    console.log(`Updated mobile element:`, element);
                 });
             } else {
                 console.warn(`Mobile arrangement element with selector '.mobile-only ${arrangementSelector}' not found.`);
             }
         } else {
-            // Use querySelector for desktop
-            arrangementElement = document.querySelector(arrangementSelector);
+            // Desktop: Update single matching element
+            const arrangementElement = document.querySelector(arrangementSelector);
             if (arrangementElement) {
                 arrangementElement.textContent = typeArrangement;
+                console.log(`Updated desktop element:`, arrangementElement);
             } else {
                 console.warn(`Desktop arrangement element with selector '${arrangementSelector}' not found.`);
             }
@@ -1041,7 +1088,11 @@ class WebSocketHandler {
     
         // Update the iteration counter
         this.gameInstance.iterations.iter3 = (this.gameInstance.iterations.iter3 + 1) % 2;
+    
+        localStorage.setItem('lastArrangement', typeArrangement);
+        localStorage.setItem('lastIteration', this.gameInstance.iterations.iter3);
     }
+    
 }
 
 // Wait until the DOM is fully loaded and then initialize the class

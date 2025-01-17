@@ -128,9 +128,6 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                     player_index = str(data["player_index"])
                     print(f"In data_ready: {self.session_id}")
 
-                    # session_id = self.scope["session"].session_key
-
-                    # Retrieve additional data from Redis
                     cards_key = f'cards_{player_index}_{self.session_id}'
                     type_arr_key = f'type_arrangement_{player_index}_{self.session_id}'
                     
@@ -170,8 +167,105 @@ class GameOnePairConsumer(AsyncWebsocketConsumer):
                     if chance_data:
                         chance = chance_data.decode('utf-8')
                         await self.queue_message({
-                            f"chance_{self.session_id}": chance
+                            f"chances_{self.session_id}": chance
                         })
+
+                if "number_exchange" in data and data["number_exchange"] == "data_ready":
+                        print(f"In chance: {self.session_id}")
+                        player_index = str(data["player_index"])
+
+                        number_exchange_key = f'number_exchange_{player_index}_{self.session_id}'
+                        number_exchange_data = redis_client.get(number_exchange_key)
+
+                        if number_exchange_data:
+                            number_exchange = number_exchange_data.decode('utf-8')
+                            await self.queue_message({
+                                f"amount_{self.session_id}": number_exchange
+                            })
+
+                if "result" in data and data["result"] == "data_ready":
+                    print(f"In result: {self.session_id}")
+                    player_index = str(data["player_index"])
+
+                    cards_result_key = f'cards_result_{player_index}_{self.session_id}'
+                    type_arrangement_result_key = f'type_arrangement_result_{player_index}_{self.session_id}'
+                    
+                    cards_result_data = redis_client.get(cards_result_key)
+                    type_arrangement_result_data = redis_client.get(type_arrangement_result_key)
+
+                    if cards_data and type_arr_data:
+                        cards_result = json.loads(cards_result_data.decode('utf-8'))
+                        type_arrangement_result = type_arrangement_result_data.decode('utf-8')
+                        # Send data to the WebSocket client
+                    
+                        await self.queue_message({
+                            f"cards_{self.session_id}": cards_result,
+                            f"type_arrangement_result_{self.session_id}": type_arrangement_result
+                        })
+                if "first_second" in data and data["first_second"] == "data_ready":
+                    player_index = str(data["player_index"])
+
+                    first_second_key = f'first_second_{player_index}_{self.session_id}'
+                    first_second_data = redis_client.get(first_second_key)
+
+
+                    if first_second_data:
+                        first_second = first_second_data.decode('utf-8')
+                        await self.queue_message({
+                            f"first_second_{self.session_id}": first_second
+                        })
+
+                if "tree" in data and data["tree"] == "data_ready":
+                    player_index = str(data["player_index"])
+                    print("################################################################a")
+
+                    # Keys
+                    p1_2x_1_key = [f'p1_2x_{number}_{player_index}_{self.session_id}' for number in range(2)]
+                    yes_no_key = f'yes_no_{player_index}_{self.session_id}'
+                    p1x_key = f'p1x_{player_index}_{self.session_id}'
+                    p2x_key = f'p2x_{player_index}_{self.session_id}'
+                    cards_2_3_key = f'cards_2_3_{player_index}_{self.session_id}'
+
+                    # Fetch strategy data
+                    p1_2x_1 = [redis_client.get(key).decode('utf-8') for key in p1_2x_1_key]
+                    yes_no = redis_client.get(yes_no_key).decode('utf-8')
+                    p1x = redis_client.get(p1x_key).decode('utf-8')
+                    p2x = redis_client.get(p2x_key).decode('utf-8')
+
+                    cards_2_3 = redis_client.get(cards_2_3_key).decode('utf-8')
+
+                    strategy_key = f'strategy_{player_index}_{self.session_id}'
+                    strategy = redis_client.get(strategy_key).decode('utf-8')
+                    print("STRATEGY: ", strategy)
+                    # Send data to the WebSocket client
+                    message = {
+                        f"yes_no_{self.session_id}": yes_no,
+                        f"p1x_{self.session_id}": p1x,
+                        f"p2x_{self.session_id}": p2x,
+                        f"cards_2_3_{self.session_id}": cards_2_3,
+                    }
+                    asyncio.sleep(1)
+                    # Strategy-specific data
+                    if strategy == '0':
+                        for number in range(2):
+                            message[f'p1_2x_{number}_{self.session_id}'] = p1_2x_1[number]
+                        message[f'strategy_one_{self.session_id}'] = strategy
+                        redis_client.delete(strategy_key)
+                    elif strategy == '1':
+                        for number in range(2):
+                            message[f'p1_2x_{number}_{self.session_id}'] = p1_2x_1[number]
+                        message[f'strategy_two_{self.session_id}'] = strategy
+                        redis_client.delete(strategy_key)
+                    # Send message
+                    await self.queue_message(message)
+                    
+                    # del message[f"cards_2_3_{self.session_id}"]
+                    # del message[f"p1x_{self.session_id}"]
+                    # del message[f"p2x_{self.session_id}"]
+                    # del message[f"yes_no_{self.session_id}"]
+                    # for number in range(2):
+                    #     del message[f'p1_2x_{number}_{self.session_id}']
+                    # # del message[f'strategy_one_{self.session_id}']
 
             except json.JSONDecodeError as e:
                 print("JSON decode error:", e)

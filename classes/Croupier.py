@@ -60,7 +60,7 @@ class Croupier(object):
         self.session_id = session_id
         
         self.stop_event_croupier = task_manager.session_threads[self.session_id]["thread_one_pair_game"].event["stop_event_croupier"]
-        
+        self.stop_event_next = task_manager.session_threads[self.session_id]["thread_one_pair_game"].event["stop_event_next"]
         pd.set_option('display.max_columns', 100)
         
     def clear_data(self):
@@ -142,15 +142,11 @@ class Croupier(object):
             redis_client.rpush(f"game_queue_{self.session_id}", json.dumps(event))  # Push to list
             print(f"Queued data for player {self.player.index}")
 
-            # if self.player.index == len(self.players) - 1:
+            if self.player.index == len(self.players) - 1:
+                while not self.stop_event_next.is_set():
+                    time.sleep(0.5)
+            self.stop_event_next.clear()
 
-            #     while not self.stop_event_croupier.is_set():
-            #         time.sleep(0.5)
-
-            # if self.stop_event_croupier.is_set():
-            #     print("EXITING##################################")
-            #     exit()
-            
             # self.player.arrangements.set_rand_int()
             
             
@@ -204,7 +200,7 @@ class Croupier(object):
             
             [self.player.arrangements.data_frame_ml.set_cards_before(card.weight) for card in self.player.cards]
             
-            self.one_pair_strategy.append(OnePairStructureStrategy(cards=self.weights_cards[self.num]))
+            self.one_pair_strategy.append(OnePairStructureStrategy(cards=self.weights_cards[self.num], session_id=self.session_id))
             
             self.num += 1
         
@@ -234,32 +230,37 @@ class Croupier(object):
             if self.game_visible == True:
                 pass
                 # self.player.print(False)
-            self.player.arrangements.check_arrangement(game_visible=False)
+            type_arr_str = self.player.arrangements.check_arrangement(game_visible=False)
             self.player.arrangements.set_weights()
             self.player.arrangements.data_frame_ml.set_id_arr_after(self.player.arrangements.get_id())
 
-            redis_buffer_instance_one_pair_game.redis_1.set('player', self.player.nick)
             cards_str.clear()
 
             for card in self.player.cards:
                 cards_str.append(card.name + card.color)
             
+            time.sleep(0.2)
+            # Prepare data
+            print("Session ID in Croupier result:", self.session_id)
+            # Store data in Redis
+            redis_client.set(f'cards_result_{self.player.index}_{self.session_id}', json.dumps(cards_str))
+            redis_client.set(f'type_arrangement_result_{self.player.index}_{self.session_id}', type_arr_str)
+
+            # Add the event to a Redis list
+            event = {
+                "player_index": self.player.index,
+                "result": "data_ready"
+            }
+
+            redis_client.rpush(f"game_queue_{self.session_id}", json.dumps(event))  # Push to list
+
+            print(f"Queued data for player {self.player.index}")
             
-            self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
-            while self.player_number == self.player.index:
-                if self.player_number == self.player.index:    
-                    str_arr = self.player.arrangements.check_arrangement(game_visible=False, is_result=True)    
-                    redis_buffer_instance_one_pair_game.redis_1.set(f'cards_result_{self.player_number}', json.dumps(cards_str))
-                    redis_buffer_instance_one_pair_game.redis_1.set('type_arrangement_result', str_arr)
-                if self.player_number == len(self.players) - 1:
-                    while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
-                        time.sleep(0.2)   
-                    if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':
-                        redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
-                    break
-                self.player_number = int(redis_buffer_instance_one_pair_game.redis_1.get('player_number').decode('utf-8'))
-            # print(self.player_number)
-            
+            if self.player.index == len(self.players) - 1:
+                while not self.stop_event_next.is_set():
+                    time.sleep(0.5)
+                self.stop_event_next.clear()
+    
             
         if self.game_visible == True:
             print("Wagi ukladow graczy: ", self.weights)
@@ -277,26 +278,27 @@ class Croupier(object):
             print("-"*100)
 
         for strategy in self.one_pair_strategy:
+            time.sleep(0.2)
             if self.tree_visible == True:
                 print(self.amount_list)
                 print("Liczba wymienionych kart: " + str(self.amount_list[num_1]) 
                     + "\nCzy wymienic? " + str(self.exchange_list[num_1]))
                 print("\n")
-                
-            strategy.set_root(visited=True, amount=self.amount_list[num_1], exchange=self.exchange_list[num_1])
+
+            # Add the event to a Redis list
+            redis_client.set(f'strategy_{num_1}_{self.session_id}', num_1)
+
+            strategy.set_root(visited=True, amount=self.amount_list[num_1], exchange=self.exchange_list[num_1], player_index=num_1)
             strategy.build_tree()
 
             if self.tree_visible == True:
                 print(str(strategy.root))
-                redis_buffer_instance_one_pair_game.redis_1.set('strategy', num_1)
-                time.sleep(0.1)
+            
             if self.tree_visible == True:
                 print("\n")
                 print("-"*100)
             num_1 += 1
-            
-        redis_buffer_instance_one_pair_game.redis_1.delete('strategy')
-        
+                    
 
     def set_cards(self):
         self.cards = [[Card("2", "Ka"),
@@ -588,7 +590,7 @@ class Croupier(object):
                         # Prepare data
                         print("Session ID in Croupier: ex_cards", self.session_id)
                         # Store data in Redis
-                        redis_client.set(f'chance_{self.player.index}_{self.session_id}', round(y_preds[0] * 100, 2))
+                        redis_client.set(f'chance_{self.player.index}_{self.session_id}', "N/A")
 
                         # Add the event to a Redis list
                         event = {
@@ -600,16 +602,6 @@ class Croupier(object):
 
                         print(f"Queued data for player {self.player.index}")
 
-                        ################################################
-            if self.player.index == 0:
-
-                while not self.stop_event_croupier.is_set():
-                    time.sleep(0.5)
-
-            if self.stop_event_croupier.is_set():
-                print("EXITING##################################")
-                exit()
-
             if self.exchange == 't':
                 # Wybieranie ilosci kart do wymiany zgodnie z prawdopodobienstwem
                 self.amount = np.random.choice([2, 3], size=1, 
@@ -619,17 +611,32 @@ class Croupier(object):
                 self.amount = int(self.amount)
             else:
                 self.amount = 0
-                
+
+            time.sleep(0.2)
+            # Prepare data
+            print("Session ID in Croupier: ex_cards", self.session_id)
+            # Store data in Redis
+            redis_client.set(f'number_exchange_{self.player.index}_{self.session_id}', self.amount)
+
+            # Add the event to a Redis list
+            event = {
+                "player_index": self.player.index,
+                "number_exchange": "data_ready"
+            }
+
+            redis_client.rpush(f"game_queue_{self.session_id}", json.dumps(event))  # Push to list
+
+            print(f"Queued data for player {self.player.index}")
+
             redis_buffer_instance_one_pair_game.redis_1.set('number_exchange', str(self.amount))
 
-            self.amount_list.append(self.amount)
+            if self.player.index == 0 or self.player.index == 1:
+                while not self.stop_event_next.is_set():
+                    time.sleep(0.5)
 
-            # if (self.player_number == self.idx_p - 1):
-            if (self.player_number == self.idx_p - 1):
-                while redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '0':
-                    time.sleep(0.5)   
-                if redis_buffer_instance_one_pair_game.redis_1.get('wait_buffer').decode('utf-8') == '1':  
-                    redis_buffer_instance_one_pair_game.redis_1.set('wait_buffer', '0')
+            self.stop_event_next.clear()
+
+            self.amount_list.append(self.amount)
     
         # Gracz: Czlowiek
         else:
@@ -728,7 +735,17 @@ class Croupier(object):
 
                 if self.game_visible == True:
                     self.player.print(False)
-                    redis_buffer_instance_one_pair_game.redis_1.set('first_second', self.player.index)
+                    time.sleep(0.2)
+ 
+                    # Prepare data
+                    redis_client.set(f'first_second_{self.player.index}_{self.session_id}', self.player.index)
+                    # Add the event to a Redis list
+                    event = {
+                        "player_index": self.player.index,
+                        "first_second": "data_ready"
+                    }
+
+                    redis_client.rpush(f"game_queue_{self.session_id}", json.dumps(event))  # Push to list
                     
                 self.player.arrangements.check_arrangement(game_visible=True)
 

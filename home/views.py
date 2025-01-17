@@ -101,7 +101,12 @@ def get_session_id(request):
         task_manager.add_session(unique_session_id, name)
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_croupier")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_next")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_next"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
         redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
         redis_buffer_instance.redis_1.set(f'when_start_game_{unique_session_id}', '0')
         redis_buffer_instance.redis_1.set(f'when_first_{unique_session_id}', 0)
@@ -207,11 +212,13 @@ def start_game(request):
         task_manager.add_session(unique_session_id, name)
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_croupier")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_next")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
 
         # Store thread details using the unique session ID
         task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
         task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_next"].clear()
         task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
 
         start_thread_one_pair_game(request, unique_session_id, name)
@@ -390,18 +397,15 @@ def get_redis_value(request):
 
     try:
         body = json.loads(request.body)
-        key = body.get("key")  # Extract the key from the JSON body
-        if not key:
-            return JsonResponse({"error": "Key is missing"}, status=400)
-
-        redis_buffer_instance.redis_1.set(key, '1')
-
+        session_id = body.get("session_id")  # Extract the key from the JSON body
+        if not session_id:
+            return JsonResponse({"error": "Session ID is missing"}, status=400)
         
-        # Use the value (key) as needed
-        print(f"Received key: {key}")
-
-        # Example response
-        return JsonResponse({"message": f"Key '{key}' received successfully"})
+        print(f"Received key: {session_id}")
+        
+        task_manager.session_threads[session_id]["thread_one_pair_game"].event["stop_event_next"].set()
+        
+        return JsonResponse({"message": f"Next clicked!"})
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
     

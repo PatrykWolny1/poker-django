@@ -111,8 +111,8 @@ class Game(object):
                 croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True,
                                     tree_visible=False, session_id=self.session_id)
             if game_si_human == '2':
-                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=True,
-                                    tree_visible=True, session_id=self.session_id)
+                croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=False,
+                                    tree_visible=False, session_id=self.session_id)
             if game_si_human == '3':
                 croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True,
                                     tree_visible=False, session_id=self.session_id)

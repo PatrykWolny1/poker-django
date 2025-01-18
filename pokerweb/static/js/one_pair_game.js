@@ -108,7 +108,7 @@ class OnePairGame {
         this.elements.nextButton2.disabled = true;
         this.start_game = true;
         console.log("startGame function called");
-    
+        
         try {
             await this.stopTask();
             const response = await fetch("/start_game_view/", {
@@ -123,7 +123,7 @@ class OnePairGame {
             // Reinitialize and update UI first
             this.reinitializeInstance();
             this.updatePlayerNames();
-            
+
             this.sessionId = await this.socketHandler.fetchSessionId(); 
             
             this.socketHandler.sessionId = this.sessionId;
@@ -303,6 +303,8 @@ class OnePairGame {
         }
         
         this.elements.nextButton1.disabled = false;
+
+        this.stopAnimation();
 
         // Bind methods to ensure correct reference to `this`
         this.updatePlayerNames = this.updatePlayerNames.bind(this);
@@ -706,23 +708,23 @@ class OnePairGame {
         // }, 100);
     }
 
-        // Animate the binary tree with the data from the binary tree arrays
+    // Animate the binary tree with the data from the binary tree arrays
     animateBinaryTree() {
         const delay = 500; // Delay between steps in milliseconds
     
-        // Load animation container arrays
-        const persistedRouteBinTree1 = localStorage.getItem('arrayRouteBinTree1');
-        const persistedRouteBinTree2 = localStorage.getItem('arrayRouteBinTree2');
+        // // Load animation container arrays
+        // const persistedRouteBinTree1 = localStorage.getItem('arrayRouteBinTree1');
+        // const persistedRouteBinTree2 = localStorage.getItem('arrayRouteBinTree2');
 
-        if (persistedRouteBinTree1) {
-            this.arrayRouteBinTree1 = JSON.parse(persistedRouteBinTree1);
-            console.log("Restored ArrayRouteBinTree1:", this.arrayRouteBinTree1);
-        }
+        // if (persistedRouteBinTree1) {
+        //     this.arrayRouteBinTree1 = JSON.parse(persistedRouteBinTree1);
+        //     console.log("Restored ArrayRouteBinTree1:", this.arrayRouteBinTree1);
+        // }
 
-        if (persistedRouteBinTree2) {
-            this.arrayRouteBinTree2 = JSON.parse(persistedRouteBinTree2);
-            console.log("Restored ArrayRouteBinTree2:", this.arrayRouteBinTree2);
-        }
+        // if (persistedRouteBinTree2) {
+        //     this.arrayRouteBinTree2 = JSON.parse(persistedRouteBinTree2);
+        //     console.log("Restored ArrayRouteBinTree2:", this.arrayRouteBinTree2);
+        // }
         const animationContainer = [
             { array: this.arrayRouteBinTree1, label: "Tree 1" },
             { array: this.arrayRouteBinTree2, label: "Tree 2" },
@@ -730,7 +732,7 @@ class OnePairGame {
     
         // Function to process arrays sequentially
         const processArray = (array, label, callback) => {
-            console.log(`Starting animation for: ${label}`);
+            // console.log(`Starting animation for: ${label}`);
             this.timeoutIds = [];
     
             array.forEach((element, index) => {
@@ -764,7 +766,7 @@ class OnePairGame {
                 this.timeoutIds.push(timeoutId);
             });
         };
-    
+
         // Set player name based on current iteration
         const playerName = this.isMobile
             ? document.getElementById("player-name-text-mobile")
@@ -785,34 +787,50 @@ class OnePairGame {
     
             // Animate the second array
             processArray(animationContainer[1].array, animationContainer[1].label, () => {
-                console.log("Completed both animations. Restarting.");
+                // console.log("Completed both animations. Restarting.");
                 this.animateBinaryTree(); // Restart the animation
             });
         });
     }
         
-    
-        // Helper function to reset all classes
-        resetClasses() {
-            const container = this.isMobile 
-                ? document.querySelector(".mobile-only .diagram-container")
-                : document.querySelector(".diagram-container");
-    
-            const allClasses = [
-                "main",
-                "top-left",
-                "top-right",
-                "bottom-left",
-                "bottom-right",
-                "line-top-left",
-                "line-top-right",
-                "line-bottom-left",
-                "line-bottom-right",
-            ];
-            allClasses.forEach((className) => {
-                const element = container.querySelector(`.${className}`);
-                if (element) {
-                    element.classList.remove("active");
+    stopAnimation() {
+        if (this.timeoutIds && this.timeoutIds.length > 0) {
+            // Clear each timeout
+            this.timeoutIds.forEach(timeoutId => clearTimeout(timeoutId));
+            
+            // Reset the timeoutIds array
+            this.timeoutIds = [];
+            
+            console.log("Animation stopped.");
+        } else {
+            console.log("No animation to stop.");
+        }
+        this.iterations.iter1 = 0;
+        // Optionally reset the classes
+        this.resetClasses();
+    }
+
+    // Helper function to reset all classes
+    resetClasses() {
+        const container = this.isMobile 
+            ? document.querySelector(".mobile-only .diagram-container")
+            : document.querySelector(".diagram-container");
+
+        const allClasses = [
+            "main",
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+            "line-top-left",
+            "line-top-right",
+            "line-bottom-left",
+            "line-bottom-right",
+        ];
+        allClasses.forEach((className) => {
+            const element = container.querySelector(`.${className}`);
+            if (element) {
+                element.classList.remove("active");
                 }
             });
         }

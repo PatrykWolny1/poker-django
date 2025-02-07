@@ -125,7 +125,7 @@ class Game(object):
             croupier.play()
         
         if choice == '4':
-            n = int(input("Podaj ilosc rozgrywek do zapisania: "))
+            n = redis_buffer_instance.redis_1.get(f'entered_number_{self.session_id}').decode('utf-8')
             croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=False, tree_visible=False, prediction_mode=False, n=n)
             croupier.gather_data()
             

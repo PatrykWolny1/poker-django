@@ -28,8 +28,9 @@ urlpatterns = [
     path('', views.index, name='home.index'),
     path('cards_permutations/', views.cards_permutations, name='home.cards_permutations'),
     path('one_pair_game/', views.one_pair_game, name='home.one_pair_game'),
+    path('gathering_games/', views.gathering_games, name='home.gathering_games'),
     path('goodbye/', views.goodbye, name='home.goodbye'),
-
+    
     path('start_task_combs_perms/', views.start_task_combs_perms, name='start_task_combs_perms'),
     path('stop_task_one_pair_game/', views.stop_task_one_pair_game, name='stop_task_one_pair_game'), 
     path('stop_task_combs_perms/', views.stop_task_combs_perms, name='stop_task_combs_perms'), 

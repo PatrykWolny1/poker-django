@@ -45,6 +45,18 @@ def one_pair_game(request):
     if request.method == 'GET':
         return render(request, 'home/one_pair_game.html', {'is_dev': is_dev})
 
+def gathering_games(request):
+    is_dev = os.getenv('IS_DEV', 'yes')
+
+    # Force session creation
+    if not request.session.session_key:
+        request.session.save()  # This ensures a session key is generated
+    
+    redis_buffer_instance.redis_1.set(f'{request.session.session_key}_which_app', "gathering_games")
+
+    if request.method == 'GET':
+        return render(request, 'home/gathering_games.html', {'is_dev': is_dev})
+
 def get_session_id(request):
     """Ensure a session exists and return its ID."""
     # Accessing request.session ensures the session exists
@@ -74,7 +86,9 @@ def get_session_id(request):
 
     elif which_app == "one_pair_game":
         _initialize_redis_values_gra_jedna_para(unique_session_id)
-        
+    elif which_app == "gathering_games":
+        _initialize_redis_values_gathering_games(unique_session_id)
+
     choice = redis_buffer_instance.redis_1.get(f'choice_{unique_session_id}').decode('utf-8')
 
     
@@ -113,6 +127,22 @@ def get_session_id(request):
         redis_buffer_instance.redis_1.set(f'retreive_session_key_{unique_session_id}', session_key)
 
         start_thread_one_pair_game(request, unique_session_id, name)
+
+    elif choice == '4':
+        name = "gathering_games"
+
+        task_manager.add_session(unique_session_id, name)
+
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+
+        print(task_manager.session_threads)
+        print(task_manager.session_threads[unique_session_id][name].event)
+
+        start_thread_gathering_games(request, unique_session_id, name)
 
     return JsonResponse({"status" : f"Started thread combs_perms. ID: {unique_session_id}"})
     
@@ -253,6 +283,14 @@ def _initialize_redis_values_perms_combs(request, session_id):
     redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
     redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
 
+def _initialize_redis_values_gathering_games(session_id):
+    redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
+    redis_buffer_instance.redis_1.set(f'choice_{session_id}', '4')
+    redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '10912')
+    redis_buffer_instance.redis_1.set(f'prog_when_fast_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
+    redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
+
 def generate_unique_session_id(session_id):
     """Generate a unique identifier by combining session ID and UUID."""
     return f"{session_id}_{uuid.uuid4().hex}"
@@ -267,6 +305,7 @@ def start_thread_one_pair_game(request, unique_session_id, name):
     my_thread = MyThread(
         target=main,
         session_id=unique_session_id,
+        name = name,
     )
 
     # Store thread details using the unique session ID
@@ -297,6 +336,23 @@ def start_thread_combs_perms(request, unique_session_id, name):
     print(task_manager.session_threads)
 
     return JsonResponse({'task_status': 'Thread started', 'thread_id': unique_session_id}, status=200)
+
+def start_thread_gathering_games(request, unique_session_id, name):
+    print("Session ID in start_thread: ", unique_session_id)
+    
+    my_thread = MyThread(
+        target=main,
+        session_id=unique_session_id,
+        name = name,
+    )
+
+    # Store thread details using the unique session ID
+    task_manager.session_threads[unique_session_id][name].set_thread(unique_session_id, my_thread)
+    task_manager.session_threads[unique_session_id][name].thread[unique_session_id].daemon = True
+    task_manager.session_threads[unique_session_id][name].thread[unique_session_id].start()
+    # print(task_manager.session_threads)
+
+    return JsonResponse({'task_status': 'Thread started', 'thread_id': unique_session_id})
 
 def _stop_thread(request, session_id, name):
     """Stop the thread based on the unique session ID."""

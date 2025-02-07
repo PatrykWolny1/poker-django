@@ -12,7 +12,7 @@ import time
 import cProfile
 import pstats
 
-def main(data_queue_combinations = None, session_id = None, stop_event = None):
+def main(data_queue_combinations = None, session_id = None, name = None, stop_event = None):
     when_start_game = redis_buffer_instance.redis_1.get(f'when_start_game_{session_id}').decode('utf-8')
     
     print(f"Start game: {when_start_game}")
@@ -28,7 +28,6 @@ def main(data_queue_combinations = None, session_id = None, stop_event = None):
                              flag2=True, 
                              session_id=session_id)
         
-        name = "thread_one_pair_game"
         task_manager.session_threads[session_id][name].set_thread(session_id, my_thread)
         task_manager.session_threads[session_id][name].thread[session_id].daemon = True
         task_manager.session_threads[session_id][name].thread[session_id].start()

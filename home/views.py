@@ -134,10 +134,16 @@ def get_session_id(request):
         task_manager.add_session(unique_session_id, name)
 
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_croupier")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_next")
         task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
         task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_next"].clear()
         task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
         redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+        redis_buffer_instance.redis_1.set(f'when_start_game_{unique_session_id}', '0')
+        redis_buffer_instance.redis_1.set(f'when_first_{unique_session_id}', 0)
 
         print(task_manager.session_threads)
         print(task_manager.session_threads[unique_session_id][name].event)
@@ -284,10 +290,14 @@ def _initialize_redis_values_perms_combs(request, session_id):
     redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
 
 def _initialize_redis_values_gathering_games(session_id):
+    redis_buffer_instance.redis_1.set(f'arrangement_{session_id}', '8')
     redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
     redis_buffer_instance.redis_1.set(f'choice_{session_id}', '4')
     redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '10912')
+    redis_buffer_instance.redis_1.set(f'when_one_pair_{session_id}', '1')
     redis_buffer_instance.redis_1.set(f'prog_when_fast_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'min_{session_id}', '-1')
+    redis_buffer_instance.redis_1.set(f'max_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
     redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
 

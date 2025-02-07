@@ -11,7 +11,7 @@ class GatheringGamesConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session_id = None
-        self.name = "thread_perms_combs"
+        self.name = "gathering_games"
         self.stop_event_var = False
 
     async def connect(self):

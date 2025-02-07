@@ -109,13 +109,13 @@ class Game(object):
             game_si_human = redis_buffer_instance.redis_1.get('game_si_human').decode('utf-8')
             if game_si_human == '1':
                 croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True,
-                                    tree_visible=False, session_id=self.session_id)
+                                    tree_visible=False, session_id=self.session_id, thread_name="one_pair_game")
             if game_si_human == '2':
                 croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=False,
-                                    tree_visible=False, session_id=self.session_id)
+                                    tree_visible=False, session_id=self.session_id, thread_name="one_pair_game")
             if game_si_human == '3':
                 croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True,
-                                    tree_visible=False, session_id=self.session_id)
+                                    tree_visible=False, session_id=self.session_id, thread_name="one_pair_game")
                 
             croupier.play()
             return 0
@@ -125,8 +125,9 @@ class Game(object):
             croupier.play()
         
         if choice == '4':
-            n = redis_buffer_instance.redis_1.get(f'entered_number_{self.session_id}').decode('utf-8')
-            croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=False, tree_visible=False, prediction_mode=False, n=n)
+            n = 1000
+            croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=False, tree_visible=False, prediction_mode=False,
+                                n=n, session_id=self.session_id, thread_name="gathering_games")
             croupier.gather_data()
             
             # for i in range(0, n):

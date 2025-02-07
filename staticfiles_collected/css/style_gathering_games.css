@@ -229,34 +229,6 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.high-card-button, .one-pair-button, .two-pairs-button, .three-of-a-kind-button, .straight-button, .color-button, 
-.full-button, .carriage-button, .straight-flush-button, .straight-royal-flush-button {
-  /* background-color: #00426e; Blue background */
-  background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
-  color: #e8f8ff; /* White text color */
-  border: 1px solid #001d29; /* No border */
-  margin-top: 10px;
-  margin-bottom: 10px;
-  border-radius: 10px; /* Rounded corners */
-  padding: 10px 15px; /* Padding around the text */
-  font-size: 20px; /* Font size */
-  cursor: pointer; /* Pointer cursor on hover */
-  transition: background-color 0.3s; /* Smooth background color transition */
-  font-family: 'Cambria Math', sans-serif; /* Specify the font family */ 
-}
-
-.high-card-button:hover, .one-pair-button:hover, .two-pairs-button:hover, .three-of-a-kind-button:hover, .straight-button:hover, .color-button:hover, 
-.full-button:hover, .carriage-button:hover, .straight-flush-button:hover, .straight-royal-flush-button:hover {
-  background: linear-gradient(to top, #31c1ff, #5cceff);
-  color: #00101e;
-}
-
-#highcardButton:disabled:disabled, #onepairButton:disabled, #twopairsButton:disabled, #threeofakindButton:disabled, #straightButton:disabled, #colorButton:disabled, #fullButton:disabled, #carriageButton:disabled, #straightflushButton:disabled, #straightroyalflushButton:disabled {
-  background: linear-gradient(to top, #9be1ff, #d3f2ff);
-  color: #00101e; /* White text color */
-  cursor: not-allowed; /* Change cursor to indicate it's disabled */
-}
-
 .button-container {
   display: flex;
   gap: 10px; /* Space between buttons */
@@ -264,7 +236,7 @@ button:disabled {
   z-index: 0;
 }
 
-.start-button, .stop-button, .download-button, .perms-button, .combs-button {
+.start-button, .stop-button, .download-button {
   /* background-color: #00426e; Blue background */
   background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
   color: #e8f8ff; /* White text color */
@@ -280,12 +252,12 @@ button:disabled {
   
 }
 
-.start-button:hover, .stop-button:hover, .download-button:hover, .perms-button:hover, .combs-button:hover {
+.start-button:hover, .stop-button:hover, .download-button:hover {
   background: linear-gradient(to top, #31c1ff, #5cceff);
   color: #00101e;
 }
 
-#startTaskButton:disabled, #permsButton:disabled, #combsButton:disabled, #downloadButton:disabled {
+#startTaskButton:disabled, #permsButton:disabled {
   background: linear-gradient(to top, #9be1ff, #d3f2ff);
   color: #00101e; /* White text color */
   cursor: not-allowed; /* Change cursor to indicate it's disabled */

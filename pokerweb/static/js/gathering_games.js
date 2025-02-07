@@ -1,4 +1,4 @@
-class CardsPermutations {
+class GatheringGames {
     constructor() {
         this.lastProgress = 0;
         this.lastDataScript = "";
@@ -27,39 +27,18 @@ class CardsPermutations {
 
         this.initializeUI();
         this.setupEventListeners();
-        // this.connectWebSocket();
+        this.connectWebSocket();
     }
 
     initializeUI() {
         this.elements.startTaskButton.disabled = false;
         this.resetProgressBar();
-
-        // Automatically call view for any initially disabled task button
-        Object.entries(this.taskButtons).forEach(([buttonKey, url]) => {
-            const buttonElement = this.elements[buttonKey];
-            if (buttonElement && buttonElement.disabled) {
-                this.initiateTask(url);
-            }
-        });
     }
 
     setupEventListeners() {
-        // Set up click event listeners for task buttons
-        Object.entries(this.taskButtons).forEach(([buttonKey, url]) => {
-            const buttonElement = this.elements[buttonKey];
-            if (buttonElement) {
-                buttonElement.addEventListener("click", () => this.handleTaskSelection(buttonElement, url));
-            }
-        });
-
-        this.elements.carriageButton.disabled = true;
         this.lastClickedArr = this.elements.carriageButton;
 
-        this.elements.combsButton.disabled = true;
-        this.elements.permsButton.disabled = false;
         this.lastClickedPermsCombs = true;
-
-        this.updateMaxAllowedValue();
 
         this.elements.startTaskButton.addEventListener("click", () => this.showNumberPopup());
         // Start and stop task buttons
@@ -125,27 +104,23 @@ class CardsPermutations {
         console.log(window.env.IS_DEV)
         
         try {
-            if (this.enableStartTask) {
-                // Fetch the session ID
-                const response = await fetch('/get_session_id/');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                this.sessionId = await this.fetchSessionId(); 
-                console.log("Session ID in connectWebSocket:", this.sessionId);
-                // Construct the WebSocket URL
-                const webSocketUrl = window.env.IS_DEV.includes("yes")
-                    ? `wss://127.0.0.1:8000/ws/gathering_games/?session_id=${this.sessionId}`
-                    : `wss://pokersimulation.onrender.com/ws/gathering_games/?session_id=${this.sessionId}`;
-        
-                console.log("Connecting to WebSocket:", webSocketUrl);
-        
-                // Create and return the WebSocket instance
-                this.socket = new WebSocket(webSocketUrl);
-            } else {
-                console.log("Click Start button!");
-                return;
+            // Fetch the session ID
+            const response = await fetch('/get_session_id/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            this.sessionId = await this.fetchSessionId(); 
+            console.log("Session ID in connectWebSocket:", this.sessionId);
+            // Construct the WebSocket URL
+            const webSocketUrl = window.env.IS_DEV.includes("yes")
+                ? `wss://127.0.0.1:8000/ws/gathering_games/?session_id=${this.sessionId}`
+                : `wss://pokersimulation.onrender.com/ws/gathering_games/?session_id=${this.sessionId}`;
+    
+            console.log("Connecting to WebSocket:", webSocketUrl);
+    
+            // Create and return the WebSocket instance
+            this.socket = new WebSocket(webSocketUrl);
+
         } catch (error) {
             console.error("Error creating WebSocket:", error);
             throw error; // Propagate the error for further handling
@@ -164,102 +139,12 @@ class CardsPermutations {
         
         // Update progress
         const key_progress = `progress_${this.sessionId}`;
-        const key_data_script = `data_script_${this.sessionId}`
         if (key_progress in data) {
             this.updateProgress(data[key_progress]);
-            // this.lastProgressUpdateTime = Date.now(); // Update the last progress time
-
-            // //Clear any existing timeout since we have new progress
-            // clearTimeout(this.progressTimeout);
-            
-            // // Set a new timeout to check for hanging progress
-            // this.progressTimeout = setTimeout(() => {
-            //     this.requestLatestDataScript(); // Function to request latest data_script
-            // }, this.progressUpdateThreshold);
-            if (data.action == key_data_script) {
-                this.updateDataScript(data[key_data_script]);
-            }
         }
-        if (key_data_script in data) {
-            console.log(data[key_data_script])
-            this.updateDataScript(data[key_data_script]);
-        }
-
         if (data[key_progress] == 100) {
             this.finalizeProgress();
-            if (key_data_script in data) {
-                this.updateDataScript(data[key_data_script])
-            }
         }
-    }
-
-    updateMaxAllowedValue() {
-        // Check which button is disabled to determine the source of maxAllowedValue
-        const isPermsDisabled = this.elements.permsButton.disabled;
-        const isCombsDisabled = this.elements.combsButton.disabled;
-
-        // Loop through arrangement buttons to set maxAllowedValue
-        for (const [buttonKey, limits] of Object.entries(this.arrangementLimits)) {
-            const buttonElement = this.elements[buttonKey];
-
-            // Check if the button is the last clicked arrangement button
-            if (buttonElement === this.lastClickedArr) {
-                // If permsButton is disabled, assign max_perms; if combsButton is disabled, assign max_combs
-                this.maxAllowedValue = isPermsDisabled ? limits.max_perms : isCombsDisabled ? limits.max_combs : Infinity;
-                break;
-            }
-        }
-    }
-
-    handleTaskSelection(selectedButton, url) {
-        // Enable all arrangement task buttons initially
-        for (const [buttonKey] of Object.entries(this.taskButtons)) {
-            const buttonElement = this.elements[buttonKey];
-            if (buttonElement !== this.elements.permsButton && buttonElement !== this.elements.combsButton) {
-                buttonElement.disabled = false;
-            }
-        }
-        
-        // Toggle between `permsButton` and `combsButton` clicks
-        if (selectedButton === this.elements.permsButton || selectedButton === this.elements.combsButton) {
-            // Disable the last clicked arrangement button if it exists
-            if (this.lastClickedArr) {
-                this.lastClickedArr.disabled = true;
-            }
-        } else {
-            // For an arrangement button click, disable the previously clicked arrangement button if it exists
-            if (this.lastClickedArr && this.lastClickedArr !== selectedButton) {
-                this.lastClickedArr.disabled = false;
-            }
-            // Set the newly clicked arrangement button as the last clicked arrangement
-            this.lastClickedArr = selectedButton;
-        }
-
-        // Toggle between enabling `permsButton` and `combsButton`
-        if (selectedButton === this.elements.permsButton) {
-            this.elements.permsButton.disabled = true;
-            this.elements.combsButton.disabled = false;
-            // Set maxAllowedValue based on lastClickedArr's max_perms
-            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_perms : Infinity;
-            this.lastClickedPermsCombs = false;
-        } else if (selectedButton === this.elements.combsButton) {
-            this.elements.combsButton.disabled = true;
-            this.elements.permsButton.disabled = false;
-            // Set maxAllowedValue based on lastClickedArr's max_combs
-            this.maxAllowedValue = this.lastClickedArr ? this.arrangementLimits[this.lastClickedArr.id]?.max_combs : Infinity;
-            this.lastClickedPermsCombs = true;
-        } else {
-            // If an arrangement button is clicked, set maxAllowedValue based on perms/combs status
-            this.maxAllowedValue = this.lastClickedPermsCombs
-                ? this.arrangementLimits[selectedButton.id]?.max_perms
-                : this.arrangementLimits[selectedButton.id]?.max_combs;
-        }
-        
-
-        selectedButton.disabled = true;
-
-        // Trigger task for selected button's view
-        this.initiateTask(url);
     }
 
     updateProgress(newProgress) {
@@ -275,40 +160,10 @@ class CardsPermutations {
         this.elements.progressBar.innerHTML = this.progress + '%';
     }
 
-    updateDataScript(dataScript) {
-        this.lastDataScript = dataScript;
-
-        if (this.elements.dataScriptDiv.style.display === "none") {
-            this.elements.dataScriptDiv.style.display = "block";
-        }
-
-        const lines = this.elements.dataScriptDiv.innerHTML.trim().split('<br>');
-        const lastEntry = lines[lines.length - 1];
-
-        if (lastEntry !== this.lastDataScript) {
-            this.elements.dataScriptDiv.innerHTML += this.lastDataScript + '<br>';
-        }
-    }
-
-    // Function to request the latest data_script
-    requestLatestDataScript() {
-        // Your logic to request the latest data_script from the server
-        // This could involve sending a message through the WebSocket or making an AJAX call
-        console.log("Requesting latest data_script due to hanging progress");
-        this.socket.send(JSON.stringify({ action: "request_latest_data_script" }));
-    }
-
     finalizeProgress() {
         this.isTaskStopped = false;
         this.elements.downloadButton.disabled = false;
 
-        // Enable all task buttons except the last clicked button
-        for (const buttonKey of Object.keys(this.taskButtons)) {
-            const buttonElement = this.elements[buttonKey];
-            if (buttonElement !== this.lastClickedArr) {
-                buttonElement.disabled = false;
-            }
-        }
         // Ensure the last clicked button remains disabled
         if (this.lastClickedArr) {
             this.lastClickedArr.disabled = true;
@@ -316,15 +171,6 @@ class CardsPermutations {
 
         this.elements.startTaskButton.disabled = false;
         this.elements.downloadButton.disabled = false;
-
-        // Restore state for perms/combs button based on last selection
-        if (!this.lastClickedPermsCombs) {
-            this.elements.permsButton.disabled = true;
-            this.elements.combsButton.disabled = false;
-        } else {
-            this.elements.combsButton.disabled = true;
-            this.elements.permsButton.disabled = false;
-        }
     }
 
     resetProgressBar() {
@@ -527,7 +373,7 @@ class CardsPermutations {
     }
 }
 
-// Initialize the CardsPermutations class once the DOM is fully loaded
+// Initialize the GatheringGames class once the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
-    const cardsPermutations = new CardsPermutations();
+    const gatheringGames = new GatheringGames();
 });

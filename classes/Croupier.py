@@ -21,13 +21,15 @@ import tensorflow as tf
 import re
 import logging
 import time
+import secrets
+
 
 redis_client = redis_buffer_instance_one_pair_game.redis_1
 
 class Croupier(object):
 
     def __init__(self, game_si_human = 1, all_comb_perm = [], rand_int = 0, game_visible = True, tree_visible = True, 
-    prediction_mode = True, n = 1, session_id = None):
+    prediction_mode = True, n = 1, session_id = None, thread_name = None):
         #self.deck:Deck = Deck()
         self.cards:list = []
         self.players:list = []
@@ -59,8 +61,8 @@ class Croupier(object):
 
         self.session_id = session_id
         
-        self.stop_event_croupier = task_manager.session_threads[self.session_id]["thread_one_pair_game"].event["stop_event_croupier"]
-        self.stop_event_next = task_manager.session_threads[self.session_id]["thread_one_pair_game"].event["stop_event_next"]
+        self.stop_event_croupier = task_manager.session_threads[self.session_id][thread_name].event["stop_event_croupier"]
+        self.stop_event_next = task_manager.session_threads[self.session_id][thread_name].event["stop_event_next"]
         pd.set_option('display.max_columns', 100)
         
     def clear_data(self):
@@ -77,39 +79,54 @@ class Croupier(object):
     def gather_data(self):
         i = 1
         j = 0
-        self.rand_int = random.sample(range(0, len(self.all_comb_perm) - 1), self.n * 2)
+        random.shuffle(self.all_comb_perm)
+        # self.rand_int = random.sample(range(0, len(self.all_comb_perm) - 1), self.n * 2)
+        # for cards in self.all_comb_perm:
+        #     for i in range(0, len(cards)):
+        #         with open("permutations_data/one_pair.txt", "a") as file:
+        #             file.write(cards[i].print_str())
+        #     with open("permutations_data/one_pair.txt", "a") as file:
+        #         file.write("\n")
+        # self.test_distribution(1098240, 10000)
+        indices = self.get_random_combinations(self.all_comb_perm)
+
         for game in range(0, self.n):
-            if game == 0:
-                self.rand_i = self.rand_int[game]
-                self.rand_j = self.rand_int[game + 1]
-            else:
-                self.rand_i = self.rand_int[game + j]
-                self.rand_j = self.rand_int[game + i]
-            
+            self.rand_i = indices[game + j]
+            self.rand_j = indices[game + i]
+            print(self.rand_i, self.rand_j)
             i += 1
             j += 1
+        #     # print(self.rand_int)
+        #     # print(self.rand_i, self.rand_j)
             
-            # print(self.rand_int)
-            # print(self.rand_i, self.rand_j)
-            
-            self.random_arrangement()
+            self.randomize_cards()
             self.play()
             self.clear_data()
 
-    def random_with_key_numpy(self):
-        # Convert the key to an integer seed
-        seed = hash(self.session_id) & 0xFFFFFFFF  # Ensure seed fits into 32-bit range
-        rng = np.random.default_rng(seed)
-
-        return rng.integers(0, len(self.all_comb_perm) - 1, size=2)  # Generate 5 integers in [0, max_value)
+    def get_random_combinations(self, combinations):
+        indices = list(range(len(combinations)))
+        secrets.SystemRandom().shuffle(indices)  # Cryptographically secure shuffle
+        return indices
     
+    def test_distribution(self, size, trials=10000):
+        counts = [0] * size
+        for _ in range(trials):
+            index = secrets.randbelow(size)
+            counts[index] += 1
+
+        plt.bar(range(size), counts)
+        plt.show()
+
+        # Example usage
     def randomize_cards(self):
         try:
-            if self.session_id:
-                self.rand_int_cards = self.random_with_key_numpy()
-                print(self.rand_int_cards)
-                self.cards = [self.all_comb_perm[self.rand_int_cards[0]],  
-                        self.all_comb_perm[self.rand_int_cards[1]]]
+            self.cards = [self.all_comb_perm[self.rand_i], self.all_comb_perm[self.rand_j]]
+            # self.rand_int_cards = [secrets.randbelow(len(self.all_comb_perm)) for _ in range(2)]
+            # # print(self.rand_int_cards)
+            # self.cards = [self.all_comb_perm[self.rand_int_cards[0]],  
+            #         self.all_comb_perm[self.rand_int_cards[1]]]
+            # print(self.cards[4])
+            # print(self.cards[3])
         except IndexError:
             print("Index error in randomize_cards (Croupier.py): ", self.rand_int[0], self.rand_int[1], len(self.weight_gen), len(self.cards_all_permutations))
     

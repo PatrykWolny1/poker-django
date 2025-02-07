@@ -160,7 +160,7 @@ class Player(object):
                     straight_royal_flush = False
                 elif straight_royal_flush == '1':
                     straight_royal_flush = True
-            if choice == '2':
+            if choice == '2' or choice == '4':
                 arrangement = '8'
                     
             # Gra jednym ukladem kart
@@ -215,6 +215,10 @@ class Player(object):
             if choice == '2':
                 print("EXIT")
                 exit()
+            if choice == '4':
+                print("EXIT")
+                exit()
+
                 
             return self.cards, self.rand_int, self.all_comb_perm
 

@@ -236,7 +236,7 @@ button:disabled {
   z-index: 0;
 }
 
-.start-button, .stop-button, .download-button {
+.start-button, .stop-button, .download-button, .download-button-all {
   /* background-color: #00426e; Blue background */
   background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
   color: #e8f8ff; /* White text color */
@@ -252,7 +252,7 @@ button:disabled {
   
 }
 
-.start-button:hover, .stop-button:hover, .download-button:hover {
+.start-button:hover, .stop-button:hover, .download-button:hover, .download-button-all:hover {
   background: linear-gradient(to top, #31c1ff, #5cceff);
   color: #00101e;
 }

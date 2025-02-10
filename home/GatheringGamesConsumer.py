@@ -8,6 +8,8 @@ from urllib.parse import parse_qs
 from asgiref.sync import sync_to_async, async_to_sync
 
 class GatheringGamesConsumer(AsyncWebsocketConsumer):
+    iteration = 0
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session_id = None
@@ -15,6 +17,8 @@ class GatheringGamesConsumer(AsyncWebsocketConsumer):
         self.stop_event_var = False
 
     async def connect(self):
+        GatheringGamesConsumer.iteration += 1
+
         """Handle WebSocket connection."""
         # Generate a session if it doesn't exist
         session = self.scope["session"]
@@ -52,7 +56,11 @@ class GatheringGamesConsumer(AsyncWebsocketConsumer):
         redis_buffer_instance.redis_1.set(f'connection_accepted_{self.session_id}', 'yes')
         
         # Start sending updates until task_manager.stop_event is triggered
-        await self._send_updates()
+        if GatheringGamesConsumer.iteration == 1:
+            await self._send_updates()
+            await self._send_updates_gathering()
+        else:
+            await self._send_updates_gathering()
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
@@ -68,9 +76,20 @@ class GatheringGamesConsumer(AsyncWebsocketConsumer):
         print(f"WebSocket connection closed for session {self.session_id}", flush=True)
 
     async def receive(self, text_data):
-        """Handle messages received from WebSocket (currently not used)."""
-        pass
+        """Handle messages received from WebSocket."""
+        print("Receive method triggered")
         
+        # try:
+        data = json.loads(text_data)
+        action = data.get('action')
+        reason = data.get('reason')
+        session_id = data.get('session_id')
+
+        if action == 'close':
+            if reason == 'on_refresh':
+                GatheringGamesConsumer.iteration = 0
+                print(GatheringGamesConsumer.iteration)
+
     async def _send_updates(self):        
         """Continuously send updates on progress and data script until stop_event_var is set."""
         if (int(redis_buffer_instance.redis_1.get(f'min_{self.session_id}').decode('utf-8')) != -1) and int(redis_buffer_instance.redis_1.get(f'max_{self.session_id}').decode('utf-8')) != -1:
@@ -84,12 +103,37 @@ class GatheringGamesConsumer(AsyncWebsocketConsumer):
             if from_min is not None and from_max is not None:
                 await self._send_progress_update(from_min, from_max)
 
-            if self._should_stop():
-                await self.close(code=4001)
-                return
-            
             print("In _send_updates...")
+
+            if self._should_stop():
+                await asyncio.sleep(0.2)
+                break
+
+            await asyncio.sleep(0.1)  # Adjust interval as needed
+       
+    async def _send_updates_gathering(self):     
+        task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].clear()   
+        redis_buffer_instance.redis_1.set(f'shared_progress_gathering_{self.session_id}', '-1')
+        self.stop_event_var = False
+
+        while True:
+            progress = int(float(redis_buffer_instance.redis_1.get(f'shared_progress_gathering_{self.session_id}').decode('utf-8')))
             
+            if progress is not None:
+                if progress >= 100:
+                    progress = 100
+                if progress >= 0:
+                    progress_data = {f'progress_gathering_games_{self.session_id}': str(progress)}
+                    print(f"Progress data to send: {progress_data}")
+                    progress_to_send = f'progress_gathering_games_{self.session_id}'
+                    await self.send(text_data=json.dumps({str(progress_to_send) : str(progress)}))
+            
+            print("In _send_updates_gathering...")
+
+            if self._should_stop():
+                await asyncio.sleep(0.2)
+                break
+
             await asyncio.sleep(0.2)  # Adjust interval as needed
 
     async def _send_progress_update(self, from_min, from_max):

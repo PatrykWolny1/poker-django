@@ -125,10 +125,17 @@ class Game(object):
             croupier.play()
         
         if choice == '4':
-            n = 1000
+            n = int(redis_buffer_instance.redis_1.get(f"number_{self.session_id}"))
+            print(n, self.session_id)
+            while(n < 0):
+                n = int(redis_buffer_instance.redis_1.get(f"number_{self.session_id}"))
+            print(n)
+
             croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=False, tree_visible=False, prediction_mode=False,
                                 n=n, session_id=self.session_id, thread_name="gathering_games")
             croupier.gather_data()
+            # redis_buffer_instance.redis_1.set(f"gathering_games_exit_{self.session_id}", "1")
+
             
             # for i in range(0, n):
             #     # print(i)

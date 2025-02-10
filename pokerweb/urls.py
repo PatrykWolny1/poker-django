@@ -47,13 +47,15 @@ urlpatterns = [
     path('straight_flush_view/', views.straight_flush, name='straight_flush_view'),
     path('straight_royal_flush_view/', views.straight_royal_flush, name='straight_royal_flush_view'),
     path('download_saved_file/', views.download_saved_file, name='download_saved_file'),
+    path('download_all_games_saved_file/', views.download_all_games_saved_file, name='download_all_games_saved_file'),
     path('submit_number/', views.submit_number, name='submit_number'),
     path('api/fetch_session_id/', views.fetch_session_id, name='fetch_session_id'),
     path('get_session_id/', views.get_session_id, name='get_session_id'),
     # path('process_channel_name/', views.process_channel_name, name='process_channel_name'),
-    
     path('get_redis_value/', views.get_redis_value, name='get_redis_value'),
-    path('start_game_view/', views.start_game, name='start_game_view'),   
+    path('start_game_view/', views.start_game, name='start_game_view'),
+    path('start_task_gathering_games/', views.start_task_gathering_games, name='start_task_gathering_games'),
+    path('stop_task_gathering_games/', views.stop_task_gathering_games, name='stop_task_gathering_games'),
 ]
 
 if settings.DEBUG:

@@ -14,14 +14,14 @@
     </script>
     <script src="{% static 'js/gathering_games.js' %}" defer></script>
     <!-- <meta name="csrf-token" content="{{ csrf_token }}"> -->
-    <title>Permutacje - kombinacje</title>
+    <title>Generowanie rozgrywek - SI</title>
 </head>
 <body data-page-type="initial">
     <div id="perms_combsPage">
         <div class="container-perms-combs desktop-only">
             <h1><a href="{% url 'home.index' %}">Poker Simulation</a></h1>
         </div>
-        <h2 class="desktop-only">Obliczanie kombinacji lub permutacji układów kart</h2>
+        <h2 class="desktop-only">Generowanie rozgrywek dla uczenia SI</h2>
         <div class="container desktop-only">
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>
@@ -29,7 +29,8 @@
             <div class="button-container-top desktop-only">
                 <button class="start-button" type="button" id="startTaskButton" disabled>Start</button>
                 <button class="stop-button" type="button" id="stopTaskButton" disabled>Stop</button>
-                <button class="download-button" type="button" id="downloadButton" disabled>Pobierz rozgrywki do pliku</button>
+                <button class="download-button" type="button" id="downloadButton" disabled>Pobierz wygenerowane rozgrywki do pliku</button>
+                <button class="download-button-all" type="button" id="downloadButtonAll" disabled>Pobierz wszystkie rozgrywki do pliku</button>
             </div>
         </div>
     <!-- Mobile Only Section -->
@@ -38,13 +39,15 @@
                 <h1><a href="{% url 'home.index' %}">Poker Simulation</a></h1>
             </div>
             <div class="container-mobile">
-                <h2 class="mobile">Obliczanie kombinacji lub permutacji układów kart</h2>
+                <h2 class="mobile">Generowanie rozgrywek dla uczenia SI</h2>
                 <div class="progress-container">
                     <div class="progress-bar" id="mobileProgressBar"></div>
                 </div>
                 <div class="button-container-top">
-                    <button class="start-button" type="button" id="mobileStartTaskButton">Start</button>
-                    <button class="download-button" type="button" id="mobileDownloadButton">Pobierz układy kart do pliku</button>
+                    <button class="start-button" type="button" id="mobileStartTaskButton" disabled>Start</button>
+                    <button class="stop-button" type="button" id="mobileStopTaskButton" disabled>Stop</button>
+                    <button class="download-button" type="button" id="mobileDownloadButton" disabled>Pobierz wygenerowane rozgrywki do pliku</button>
+                    <button class="download-button-all" type="button" id="mobileDownloadButtonAll" disabled>Pobierz wszystkie rozgrywki do pliku</button>
                 </div>
             </div>
         </div>

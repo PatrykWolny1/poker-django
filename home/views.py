@@ -151,7 +151,76 @@ def get_session_id(request):
         start_thread_gathering_games(request, unique_session_id, name)
 
     return JsonResponse({"status" : f"Started thread combs_perms. ID: {unique_session_id}"})
+
+def start_task_gathering_games(request):
+    if request.method == "POST":
+        session_key = request.session.session_key  # Retrieve the session key
+
+        unique_session_id = redis_buffer_instance.redis_1.get(f'{session_key}').decode('utf-8')
+        print("In start_game: ", unique_session_id)
+        # redis_buffer_instance.redis_1.set(f'retreive_session_key_{unique_session_id}', session_key)
+
+        name = "gathering_games"
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].set()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].set()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].set()
+        task_manager.session_threads[unique_session_id][name].thread[unique_session_id].join()
+
+        unique_session_id = generate_unique_session_id(session_key)
+
+        _initialize_redis_values_gathering_games(unique_session_id)
+        redis_buffer_instance.redis_1.set(f'when_first_{unique_session_id}', 1)
+        redis_buffer_instance.redis_1.set(f'when_start_game_{unique_session_id}', '1')
+        redis_buffer_instance.redis_1.set(f'get_start_game_key_{session_key}', unique_session_id)
+        redis_buffer_instance.redis_1.set(f'{session_key}', unique_session_id)
+        redis_buffer_instance.redis_1.set(f'retreive_session_key_{unique_session_id}', session_key)
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+
+        task_manager.add_session(unique_session_id, name)
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_croupier")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_next")
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_immediately")
+
+        # Store thread details using the unique session ID
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_croupier"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_next"].clear()
+        task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
+
+        my_thread = MyThread(
+            target=main,
+            session_id=unique_session_id,
+            name = name,
+        )
+
+        # Store thread details using the unique session ID
+        task_manager.session_threads[unique_session_id][name].set_thread(unique_session_id, my_thread)
+        task_manager.session_threads[unique_session_id][name].thread[unique_session_id].daemon = True
+        task_manager.session_threads[unique_session_id][name].thread[unique_session_id].start()
+
+        return JsonResponse({"status": "success", "message": "Game started"})
     
+    return JsonResponse({"status": "success", "message": "WRONG"})
+
+def stop_task_gathering_games(request):
+    """Handle task stopping from POST request."""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        session_id = data.get('session_id', None)
+
+        print("Session ID in stop_task_gathering_games: ", session_id)
+
+        if session_id in task_manager.session_threads:
+            task_manager.session_threads[session_id]["gathering_games"].event["stop_event_progress"].set()
+            task_manager.session_threads[session_id]["gathering_games"].event["stop_event_immediately"].set()
+            task_manager.session_threads[session_id]["gathering_games"].event["stop_event_croupier"].set()
+
+        if session_id in task_manager.session_threads:
+            _stop_thread(request, session_id, "gathering_games")
+        return JsonResponse({"message": f"Task stopped for session {session_id}"})
+    return JsonResponse({"error": "No active session."}, status=400)
+
 def start_task_combs_perms(request):
     return JsonResponse({"status" : "Starting thread for combs_perms..."})
 
@@ -205,19 +274,69 @@ def download_saved_file(request):
     """Serve a saved file as an attachment download."""
     unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
     print(unique_session_id)
-    file_path = f'permutations_data/data_perms_combs_ID_{unique_session_id}.txt'
+    thread_name = redis_buffer_instance.redis_1.get(f'{unique_session_id}_thread_name').decode('utf-8')
+
+    if thread_name == 'perms_combs':
+        file_path = f'permutations_data/data_perms_combs_ID_{unique_session_id}.txt'
+    elif thread_name == 'gathering_games':
+        file_path = f'ml_data/poker_game_one_pair_combs_all_to_update_duplicates_{unique_session_id}.csv'
+
     if not os.path.exists(file_path):
         raise Http404("File not found")
+    
     response = FileResponse(open(file_path, 'rb'), as_attachment=True)
-    response['Content-Disposition'] = f'attachment; filename="collected_data_perms_combs_{unique_session_id}.txt"'
+    if thread_name == 'perms_combs':
+        response['Content-Disposition'] = f'attachment; filename="collected_data_perms_combs_{unique_session_id}.txt"'
+    elif thread_name == 'gathering_games':
+        response['Content-Disposition'] = f'attachment; filename="gathered_games{unique_session_id}.csv"'
+
     return response
 
+def download_all_games_saved_file(request):
+    """Serve a saved file as an attachment download."""
+    unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
+    print(unique_session_id)
+    thread_name = redis_buffer_instance.redis_1.get(f'{unique_session_id}_thread_name').decode('utf-8')
+    
+    if thread_name == 'gathering_games':
+        file_path = f'ml_data/poker_game_one_pair_combs_all.csv'
+
+    copy_games_to_all(f"ml_data/poker_game_one_pair_combs_all_to_update_duplicates_{unique_session_id}.csv",
+                      "ml_data/poker_game_one_pair_combs_all.csv")
+    
+    if not os.path.exists(file_path):
+        raise Http404("File not found")
+    
+    response = FileResponse(open(file_path, 'rb'), as_attachment=True)
+    if thread_name == 'gathering_games':
+        response['Content-Disposition'] = f'attachment; filename="all_gathered_games{unique_session_id}.csv"'
+
+    return response  
+
+def copy_games_to_all(all_combs_with_duplicates, file_one_pair_combs_all):
+    header = "Player ID,Exchange,Exchange Amount,Cards Before 1,Cards Before 2,Cards Before 3,Cards Before 4,Cards Before 5,Card Exchanged 1,Card Exchanged 2,Card Exchanged 3,Win"
+                
+    with open(all_combs_with_duplicates, 'r') as source:
+        with open(file_one_pair_combs_all, 'a') as destination:
+            lines = source.readlines()
+            if os.path.getsize(file_one_pair_combs_all) == 0:
+                destination.writelines(header + "\n")
+            destination.writelines(lines)
+
+                    
+    print("Plik ", all_combs_with_duplicates, " i jego wartosci zostaly skopiowane do pliku ",
+            file_one_pair_combs_all)                    
+                
 def submit_number(request):
     """Submit a number from JSON data in POST request to Redis."""
+    print(request.session.session_key)
     if request.method == "POST":
         data = json.loads(request.body)
         number = data.get("value")
-        redis_buffer_instance.redis_1.set(f"number_{request.session.session_key}", str(number))
+        print(request.session.session_key)
+        unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
+        print(unique_session_id, number)
+        redis_buffer_instance.redis_1.set(f"number_{unique_session_id}", str(number))
         return JsonResponse({"message": "Number received successfully", "value": number})
     return JsonResponse({"error": "Invalid request"}, status=400)
 
@@ -293,6 +412,7 @@ def _initialize_redis_values_gathering_games(session_id):
     redis_buffer_instance.redis_1.set(f'arrangement_{session_id}', '8')
     redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
     redis_buffer_instance.redis_1.set(f'choice_{session_id}', '4')
+    redis_buffer_instance.redis_1.set(f"number_{session_id}", '-1')
     redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '10912')
     redis_buffer_instance.redis_1.set(f'when_one_pair_{session_id}', '1')
     redis_buffer_instance.redis_1.set(f'prog_when_fast_{session_id}', '-1')
@@ -300,6 +420,7 @@ def _initialize_redis_values_gathering_games(session_id):
     redis_buffer_instance.redis_1.set(f'max_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
     redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
+    redis_buffer_instance.redis_1.set(f"gathering_games_exit_{session_id}", "-1")
 
 def generate_unique_session_id(session_id):
     """Generate a unique identifier by combining session ID and UUID."""

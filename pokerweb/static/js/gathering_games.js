@@ -1,19 +1,15 @@
 class GatheringGames {
+    static iteration = 0;
     constructor() {
-        this.lastProgress = 0;
-        this.lastDataScript = "";
-        this.lastClickedPermsCombs = true;
-        this.lastClickedArr = null;
-        this.progressTimeout = 0;
         this.progress = 0;
-        this.progressUpdateThreshold = 500; // milliseconds
-        this.lastProgressUpdateTime = Date.now(); // To track the last progress update
-        this.maxAllowedValue = undefined;
+        this.lastProgress = 0; // Last recorded progress for comparison
+        this.progressTimer = null; // Store reference to timeout
+        this.maxAllowedValue = 1000000;
         this.isMobile = window.innerWidth <= 768; // Determine if the view is mobile or desktop
         this.handleResize = this.handleResize.bind(this);
         this.socket = null;
         this.sessionId = null;
-        this.enableStartTask = false;
+        this.enteredValue = null;
 
         // UI Elements
         this.elements = {
@@ -21,7 +17,10 @@ class GatheringGames {
             stopTaskButton: document.getElementById(this.isMobile ? "mobileStopTaskButton" : "stopTaskButton"),
             progressBar: document.getElementById(this.isMobile ? "mobileProgressBar" : "progressBar"),
             downloadButton: document.getElementById(this.isMobile ? "mobileDownloadButton" : "downloadButton"),
+            downloadButtonAll: document.getElementById(this.isMobile ? "mobileDownloadButtonAll" : "downloadButtonAll"),
         };
+
+        this.boundHandleBeforeUnload = this.handleBeforeUnload.bind(this);
 
         window.addEventListener("resize", this.handleResize);
 
@@ -31,15 +30,14 @@ class GatheringGames {
     }
 
     initializeUI() {
-        this.elements.startTaskButton.disabled = false;
+        this.elements.startTaskButton.disabled = true;
+        this.elements.downloadButton.disabled = true;
+        this.elements.downloadButtonAll.disabled = true;
+        this.elements.stopTaskButton.disabled = true;
         this.resetProgressBar();
     }
 
     setupEventListeners() {
-        this.lastClickedArr = this.elements.carriageButton;
-
-        this.lastClickedPermsCombs = true;
-
         this.elements.startTaskButton.addEventListener("click", () => this.showNumberPopup());
         // Start and stop task buttons
 
@@ -48,11 +46,10 @@ class GatheringGames {
         // Download button with confirmation
         this.elements.downloadButton.onclick = () => this.confirmDownload();
 
-        window.addEventListener("visibilitychange", () => {
-            if (window.hidden) {
-                this.handleBeforeUnload();
-            }
-        });
+        this.elements.downloadButtonAll.onclick = () => this.confirmDownloadAll();
+
+        window.addEventListener("beforeunload", this.handleBeforeUnload);
+
 
     }
 
@@ -80,6 +77,7 @@ class GatheringGames {
             stopTaskButton: document.getElementById(this.isMobile ? "mobileStopTaskButton" : "stopTaskButton"),
             progressBar: document.getElementById(this.isMobile ? "mobileProgressBar" : "progressBar"),
             downloadButton: document.getElementById(this.isMobile ? "mobileDownloadButton" : "downloadButton"),
+            downloadButtonAll: document.getElementById(this.isMobile ? "mobileDownloadButtonAll" : "downloadButtonAll"),
         };
     
         // You can also perform additional updates if necessary, like:
@@ -105,11 +103,13 @@ class GatheringGames {
         
         try {
             // Fetch the session ID
-            const response = await fetch('/get_session_id/');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (GatheringGames.iteration == 0) {
+                const response = await fetch('/get_session_id/');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                this.sessionId = await this.fetchSessionId(); 
             }
-            this.sessionId = await this.fetchSessionId(); 
             console.log("Session ID in connectWebSocket:", this.sessionId);
             // Construct the WebSocket URL
             const webSocketUrl = window.env.IS_DEV.includes("yes")
@@ -136,46 +136,68 @@ class GatheringGames {
 
     handleSocketMessage(event) {
         const data = JSON.parse(event.data);
-        
         // Update progress
         const key_progress = `progress_${this.sessionId}`;
+        const key_progress_gg = `progress_gathering_games_${this.sessionId}`;
+
         if (key_progress in data) {
-            this.updateProgress(data[key_progress]);
+            this.updateProgress(data, key_progress);
         }
-        if (data[key_progress] == 100) {
-            this.finalizeProgress();
+
+        if (key_progress_gg in data) {
+            this.updateProgress(data, key_progress_gg);
+        }
+        if (key_progress_gg in data) {
+            this.resetProgressTimer();
         }
     }
+    
+    resetProgressTimer() {
+        // Clear any existing timer
+        clearTimeout(this.progressTimer);
 
-    updateProgress(newProgress) {
-        this.progress = newProgress;
+        // Store last known progress
         this.lastProgress = this.progress;
 
-        // Only disable the start button if the task has not been stopped
-        if (!this.isTaskStopped) {
-            this.elements.startTaskButton.disabled = (this.progress > 0 && this.progress < 100);
-        }
-
-        this.elements.progressBar.style.width = this.progress + '%';
-        this.elements.progressBar.innerHTML = this.progress + '%';
+        // Start a new timer
+        this.progressTimer = setTimeout(() => {
+            // Check if progress has not changed
+            if (this.progress === this.lastProgress && this.progress >= 0 && this.progress < 100) {
+                this.elements.startTaskButton.disabled = false;
+                this.elements.stopTaskButton.disabled = true;
+            }
+        }, 2000); // 2000 milliseconds = 2 seconds
     }
 
-    finalizeProgress() {
-        this.isTaskStopped = false;
-        this.elements.downloadButton.disabled = false;
+    updateProgress(data, key_progress) {
+        this.progress = data[key_progress];
 
-        // Ensure the last clicked button remains disabled
-        if (this.lastClickedArr) {
-            this.lastClickedArr.disabled = true;
+        // Only disable the start button if the task has not been stopped
+        this.elements.startTaskButton.disabled = (this.progress >= 0 && this.progress < 100);
+        this.elements.stopTaskButton.disabled = !(this.progress >= 0 && this.progress < 100);
+        
+        this.elements.progressBar.style.width = this.progress + '%';
+        this.elements.progressBar.innerHTML = this.progress + '%';
+
+        if (this.progress == 100) {
+            if (key_progress == `progress_${this.sessionId}`) {
+                this.elements.downloadButton.disabled = true;
+                this.elements.downloadButtonAll.disabled = true;
+                this.elements.startTaskButton.disabled = false;
+                this.elements.stopTaskButton.disabled = true;
+            } else if (key_progress == `progress_gathering_games_${this.sessionId}`) {
+                this.elements.downloadButton.disabled = false;
+                this.elements.downloadButtonAll.disabled = false;
+                this.elements.startTaskButton.disabled = false;
+                this.elements.stopTaskButton.disabled = true;
+            }
         }
-
-        this.elements.startTaskButton.disabled = false;
-        this.elements.downloadButton.disabled = false;
     }
 
     resetProgressBar() {
         this.elements.progressBar.style.width = "0";
         this.elements.progressBar.innerHTML = "";
+        this.progress = 0;
     }
 
     getCSRFToken() {
@@ -183,9 +205,8 @@ class GatheringGames {
         return token ? token.split('=')[1] : '';
     }
 
-    showNumberPopup() {
-        this.updateMaxAllowedValue();
-    
+    showNumberPopup() {  
+        GatheringGames.iteration += 1;  
         // Create the overlay
         const overlay = document.createElement("div");
         overlay.className = "popup-overlay";
@@ -207,30 +228,33 @@ class GatheringGames {
         confirmButton.innerText = "OK";
         confirmButton.className = "popup-button";
         confirmButton.onclick = () => {
-            const enteredValue = parseInt(inputField.value, 10);
-            if (enteredValue && !isNaN(enteredValue) && enteredValue > 0 && enteredValue <= this.maxAllowedValue) {
-                document.body.removeChild(overlay);
-    
-                // Send the entered value to Django
+            this.enteredValue = parseInt(inputField.value, 10);
+            if (this.enteredValue && !isNaN(this.enteredValue) && this.enteredValue > 0 && this.enteredValue <= this.maxAllowedValue) {
                 fetch('/submit_number/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': this.getCSRFToken(),
+                        'X-CSRFToken': this.getCSRFToken(),  // Ensure this method correctly retrieves the token
                     },
-                    body: JSON.stringify({ value: enteredValue })
+                    body: JSON.stringify({ value: this.enteredValue })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {  // Check if the response status code is not in the success range (200-299)
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();  // Parse JSON data from the response
+                })
                 .then(data => {
                     console.log("Response from server:", data);
-                    if (data.message) {
-                        alert(data.message);  // Optionally display server response in an alert
+                    if (GatheringGames.iteration > 1) {
+                        console.log(GatheringGames.iteration)
+                        this.startTask();
                     }
-                    this.startTask();  // Start the task with the entered value
+                    document.body.removeChild(overlay);  // Remove the popup once data is successfully sent and processed
                 })
                 .catch(error => {
                     console.error("Error sending number:", error);
-                    alert("Błąd przy wysyłaniu danych. Spróbuj ponownie.");
+                    alert("Failed to send data. Please try again.");  // Inform the user about the error
                 });
             } else {
                 alert(`Wpisz właściwą wartość lub mniejszą od: ${this.maxAllowedValue}.`);
@@ -260,6 +284,7 @@ class GatheringGames {
 
 
     confirmDownload() {
+        window.removeEventListener('beforeunload', this.handleBeforeUnload);
         const userConfirmed = confirm("Pobrać plik?");
         if (userConfirmed) {
             window.location.href = `/download_saved_file/?session_id=${this.sessionId}`;
@@ -267,23 +292,30 @@ class GatheringGames {
         } else {
             console.log("Download canceled by user.");
         }
+        window.addEventListener("beforeunload", this.handleBeforeUnload);
+    }
+
+    confirmDownloadAll() {
+        window.removeEventListener('beforeunload', this.handleBeforeUnload);
+        const userConfirmed = confirm("Pobrać plik?");
+        if (userConfirmed) {
+            window.location.href = `/download_all_games_saved_file/?session_id=${this.sessionId}`;
+            this.resetProgressBar();
+        } else {
+            console.log("Download canceled by user.");
+        }
+        window.addEventListener("beforeunload", this.handleBeforeUnload);
     }
     
-    handleBeforeUnload() {
-        const url = '/stop_task_view/';
-        // Use fetch instead of sendBeacon to allow custom headers
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',  // Ensure it's JSON
-                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token in the headers
-            },
-            body: JSON.stringify(),  // Send any data you need in the body
-        })
-        .then(() => console.log('Task stopped on refresh.'))
-        .catch(error => console.error('Error stopping task:', error));
-        this.finalizeProgress();
+    async handleBeforeUnload() {
+        console.log('Task stopped on refresh.');
         this.resetProgressBar();
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({ action: "close", reason: "on_refresh" }));
+            this.socket.close();
+        }
+        GatheringGames.iteration = 0;
+        this.stopTask();
     }
 
     initiateTask(url) {
@@ -308,43 +340,56 @@ class GatheringGames {
     }
 
     startTask() {
-        fetch('/start_task_combs_perms/', { 
+        fetch('/start_task_gathering_games/', { 
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json', // Ensure it's JSON
-                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.getCSRFToken(),  // Retrieve CSRF token correctly
             },
-            body: JSON.stringify({ /* add any request data here */ })
+            body: JSON.stringify({ /* add any necessary request data here */ })
         })
-        .then(response => response.json())
-        .then(async () => {
-            this.elements.startTaskButton.disabled = true;
-            this.elements.downloadButton.disabled = true;
-            
-            // Maintain perms/combs button state as per previous functionality
-            if (this.elements.combsButton.disabled) {
-                this.elements.permsButton.disabled = true;
-                this.lastClickedPermsCombs = true;
-            } else if (this.elements.permsButton.disabled) {
-                this.elements.combsButton.disabled = true;
-                this.lastClickedPermsCombs = false;
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error, status = ${response.status}`);
             }
-
-            // Disable all task buttons when starting
-            Object.keys(this.taskButtons).forEach(buttonKey => {
-                this.elements[buttonKey].disabled = true;
-            });
-            this.enableStartTask = true;
-            this.connectWebSocket();
-            this.resetProgressBar();
-
-
+            return response.json();
         })
-        .catch(error => console.error('Error starting task:', error));
+        .then(async () => {
+            this.connectWebSocket(); // Connect to WebSocket (ensure this is synchronous or handle accordingly)
+            this.resetProgressBar(); // Reset the progress bar UI
+            this.sessionId = await this.fetchSessionId(); 
+            // Ensure `enteredValue` is defined and accessible here
+            return fetch('/submit_number/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken(),
+                },
+                body: JSON.stringify({ value: this.enteredValue }) // Assuming enteredValue is a property of the class
+            });
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error, status = ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Number submitted successfully:', data);
+        })
+        .catch(error => {
+            console.error('Error during task sequence:', error);
+            alert('An error occurred while starting the task. Please try again.');
+        });
     }
 
     stopTask() { 
-        fetch('/stop_task_combs_perms/', {
+        this.elements.downloadButton.disabled = false;
+        this.elements.downloadButtonAll.disabled = false;
+        this.elements.startTaskButton.disabled = false;
+        this.elements.stopTaskButton.disabled = true;
+
+        fetch('/stop_task_gathering_games/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -356,13 +401,8 @@ class GatheringGames {
         .then(response => response.json())  // Read the JSON data once
         .then(data => {
             console.log(data)
-
             if (data.message === `Task stopped for session ${this.sessionId}`) {
                 console.log('Task stopped successfully');
-                this.finalizeProgress();
-                this.resetProgressBar();
-                this.isTaskStopped = true;
-                this.elements.startTaskButton.disabled = false
             }
         })
         .catch(error => {

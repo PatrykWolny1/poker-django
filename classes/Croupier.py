@@ -67,6 +67,7 @@ class Croupier(object):
 
         self.thread_name = thread_name
         self.gathering_games = gathering_games
+
         pd.set_option('display.max_columns', 100)
         
     def clear_data(self):
@@ -106,7 +107,6 @@ class Croupier(object):
             print(self.rand_i, self.rand_j)
             i += 1
             j += 1
-
             # print(game)
             self.randomize_cards()
             self.play()
@@ -133,13 +133,9 @@ class Croupier(object):
         # Example usage
     def randomize_cards(self):
         try:
-            self.cards = [self.all_comb_perm[self.rand_i], self.all_comb_perm[self.rand_j]]
-            # self.rand_int_cards = [secrets.randbelow(len(self.all_comb_perm)) for _ in range(2)]
-            # # print(self.rand_int_cards)
-            # self.cards = [self.all_comb_perm[self.rand_int_cards[0]],  
-            #         self.all_comb_perm[self.rand_int_cards[1]]]
-            # print(self.cards[4])
-            # print(self.cards[3])
+            self.rand_int_cards = [secrets.randbelow(len(self.all_comb_perm)) for _ in range(2)]
+            self.cards = [self.all_comb_perm[self.rand_int_cards[0]],  
+                    self.all_comb_perm[self.rand_int_cards[1]]]
         except IndexError:
             print("Index error in randomize_cards (Croupier.py): ", self.rand_int[0], self.rand_int[1], len(self.weight_gen), len(self.cards_all_permutations))
     
@@ -412,8 +408,10 @@ class Croupier(object):
         
         # if len(self.all_comb_perm) != 0:
         #     self.cards = self.random_arrangement()
-        if self.session_id:
+        if not self.gathering_games:
             self.randomize_cards()
+        else:
+            self.cards = [self.all_comb_perm[self.rand_i], self.all_comb_perm[self.rand_j]]
 
         for idx in range(int(self.idx_players)):
             if idx == 0:

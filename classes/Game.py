@@ -109,13 +109,13 @@ class Game(object):
             game_si_human = redis_buffer_instance.redis_1.get('game_si_human').decode('utf-8')
             if game_si_human == '1':
                 croupier = Croupier(game_si_human=1, all_comb_perm=self.all_comb_perm, game_visible=True,
-                                    tree_visible=False, session_id=self.session_id, thread_name="one_pair_game")
+                                    tree_visible=False, session_id=self.session_id, thread_name="thread_one_pair_game")
             if game_si_human == '2':
                 croupier = Croupier(game_si_human=2, all_comb_perm=self.all_comb_perm, game_visible=False,
-                                    tree_visible=False, session_id=self.session_id, thread_name="one_pair_game")
+                                    tree_visible=False, session_id=self.session_id, thread_name="thread_one_pair_game")
             if game_si_human == '3':
                 croupier = Croupier(game_si_human=3, all_comb_perm=self.all_comb_perm, game_visible=True,
-                                    tree_visible=False, session_id=self.session_id, thread_name="one_pair_game")
+                                    tree_visible=False, session_id=self.session_id, thread_name="thread_one_pair_game")
                 
             croupier.play()
             return 0

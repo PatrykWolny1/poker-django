@@ -29,6 +29,7 @@ urlpatterns = [
     path('cards_permutations/', views.cards_permutations, name='home.cards_permutations'),
     path('one_pair_game/', views.one_pair_game, name='home.one_pair_game'),
     path('gathering_games/', views.gathering_games, name='home.gathering_games'),
+    path('deep_neural_network/', views.deep_neural_network, name='home.deep_neural_network'),
     path('goodbye/', views.goodbye, name='home.goodbye'),
     
     path('start_task_combs_perms/', views.start_task_combs_perms, name='start_task_combs_perms'),
@@ -51,7 +52,7 @@ urlpatterns = [
     path('submit_number/', views.submit_number, name='submit_number'),
     path('api/fetch_session_id/', views.fetch_session_id, name='fetch_session_id'),
     path('get_session_id/', views.get_session_id, name='get_session_id'),
-    # path('process_channel_name/', views.process_channel_name, name='process_channel_name'),
+
     path('get_redis_value/', views.get_redis_value, name='get_redis_value'),
     path('start_game_view/', views.start_game, name='start_game_view'),
     path('start_task_gathering_games/', views.start_task_gathering_games, name='start_task_gathering_games'),

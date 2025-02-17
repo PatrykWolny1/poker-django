@@ -1,0 +1,3 @@
+Player ID,Exchange,Exchange Amount,Cards Before 1,Cards Before 2,Cards Before 3,Cards Before 4,Cards Before 5,Card Exchanged 1,Card Exchanged 2,Card Exchanged 3,Win
+Nick,['t'],2,1,1,2,3,4,2,3,,True
+Adam,['n'],0,1,1,2,3,6,0,0,0,False

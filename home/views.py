@@ -57,6 +57,19 @@ def gathering_games(request):
     if request.method == 'GET':
         return render(request, 'home/gathering_games.html', {'is_dev': is_dev})
 
+def deep_neural_network(request):
+    is_dev = os.getenv('IS_DEV', 'yes')
+
+    # Force session creation
+    if not request.session.session_key:
+        request.session.save()  # This ensures a session key is generated
+    
+    redis_buffer_instance.redis_1.set(f'{request.session.session_key}_which_app', "gathering_games")
+
+    if request.method == 'GET':
+        return render(request, 'home/deep_neural_network.html', {'is_dev': is_dev})
+
+
 def get_session_id(request):
     """Ensure a session exists and return its ID."""
     # Accessing request.session ensures the session exists
@@ -413,7 +426,7 @@ def _initialize_redis_values_gathering_games(session_id):
     redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
     redis_buffer_instance.redis_1.set(f'choice_{session_id}', '4')
     redis_buffer_instance.redis_1.set(f"number_{session_id}", '-1')
-    redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '10912')
+    redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '1098240')
     redis_buffer_instance.redis_1.set(f'when_one_pair_{session_id}', '1')
     redis_buffer_instance.redis_1.set(f'prog_when_fast_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'min_{session_id}', '-1')

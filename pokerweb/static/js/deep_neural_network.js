@@ -4,7 +4,7 @@ class DeepNeuralNetwork {
         this.progress = 0;
         this.lastProgress = 0; // Last recorded progress for comparison
         this.progressTimer = null; // Store reference to timeout
-        this.maxAllowedValue = 1000000;
+        this.maxAllowedValue = 10000;
         this.isMobile = window.innerWidth <= 768; // Determine if the view is mobile or desktop
         this.handleResize = this.handleResize.bind(this);
         this.socket = null;
@@ -14,11 +14,16 @@ class DeepNeuralNetwork {
         // UI Elements
         this.elements = {
             startTaskButton: document.getElementById(this.isMobile ? "mobileStartTaskButton" : "startTaskButton"),
-            stopTaskButton: document.getElementById(this.isMobile ? "mobileStopTaskButton" : "stopTaskButton"),
             progressBar: document.getElementById(this.isMobile ? "mobileProgressBar" : "progressBar"),
             downloadButton: document.getElementById(this.isMobile ? "mobileDownloadButton" : "downloadButton"),
-            downloadButtonAll: document.getElementById(this.isMobile ? "mobileDownloadButtonAll" : "downloadButtonAll"),
+            winsButton: document.getElementById(this.isMobile ? "mobileWinsButton" : "winsButton"),
+            exchangeButton: document.getElementById(this.isMobile ? "mobileExchangeButton" : "exchangeButton"),
         };
+
+        this.taskButtons = {
+            winsButton: "/wins_view/",
+            exchangeButton: "/exchange_view/",
+        }
 
         this.boundHandleBeforeUnload = this.handleBeforeUnload.bind(this);
 
@@ -32,25 +37,23 @@ class DeepNeuralNetwork {
     initializeUI() {
         this.elements.startTaskButton.disabled = true;
         this.elements.downloadButton.disabled = true;
-        this.elements.downloadButtonAll.disabled = true;
-        this.elements.stopTaskButton.disabled = true;
         this.resetProgressBar();
     }
 
     setupEventListeners() {
+        // Set up click event listeners for task buttons
+        Object.entries(this.taskButtons).forEach(([buttonKey, url]) => {
+            const buttonElement = this.elements[buttonKey];
+            if (buttonElement) {
+                buttonElement.addEventListener("click", () => this.handleTaskSelection(buttonElement, url));
+            }
+        });
+
         this.elements.startTaskButton.addEventListener("click", () => this.showNumberPopup());
-        // Start and stop task buttons
-
-        this.elements.stopTaskButton.onclick = () => this.stopTask();
-
-        // Download button with confirmation
-        this.elements.downloadButton.onclick = () => this.confirmDownload();
-
-        this.elements.downloadButtonAll.onclick = () => this.confirmDownloadAll();
-
+        
+        this.elements.downloadButton.addEventListener("click", () => this.showNumberPopup());
+        
         window.addEventListener("beforeunload", this.handleBeforeUnload);
-
-
     }
 
     handleResize() {
@@ -74,12 +77,12 @@ class DeepNeuralNetwork {
 
         this.elements = {
             startTaskButton: document.getElementById(this.isMobile ? "mobileStartTaskButton" : "startTaskButton"),
-            stopTaskButton: document.getElementById(this.isMobile ? "mobileStopTaskButton" : "stopTaskButton"),
             progressBar: document.getElementById(this.isMobile ? "mobileProgressBar" : "progressBar"),
             downloadButton: document.getElementById(this.isMobile ? "mobileDownloadButton" : "downloadButton"),
-            downloadButtonAll: document.getElementById(this.isMobile ? "mobileDownloadButtonAll" : "downloadButtonAll"),
+            winsButton: document.getElementById(this.isMobile ? "mobileWinsButton" : "winsButton"),
+            exchangeButton: document.getElementById(this.isMobile ? "mobileExchangeButton" : "exchangeButton"),
         };
-    
+
         // You can also perform additional updates if necessary, like:
         this.initializeUI(); // Reset UI settings if needed.
         this.setupEventListeners();
@@ -137,21 +140,40 @@ class DeepNeuralNetwork {
     handleSocketMessage(event) {
         const data = JSON.parse(event.data);
         // Update progress
-        const key_progress = `progress_${this.sessionId}`;
-        const key_progress_gg = `progress_deep_neural_network_${this.sessionId}`;
+        const key_progress = `epoch_percent_${this.sessionId}`;
 
         if (key_progress in data) {
             this.updateProgress(data, key_progress);
         }
 
-        if (key_progress_gg in data) {
-            this.updateProgress(data, key_progress_gg);
-        }
-        if (key_progress_gg in data) {
-            this.resetProgressTimer();
+        // if (key_data_script in data) {
+        //     console.log(data[key_data_script])
+        //     this.updateDataScript(data[key_data_script]);
+        // }
+
+        if (data[key_progress] == 100) {
+            this.finalizeProgress();
+            // if (key_data_script in data) {
+            //     this.updateDataScript(data[key_data_script])
+            // }
         }
     }
     
+    updateDataScript(dataScript) {
+        this.lastDataScript = dataScript;
+
+        if (this.elements.dataScriptDiv.style.display === "none") {
+            this.elements.dataScriptDiv.style.display = "block";
+        }
+
+        const lines = this.elements.dataScriptDiv.innerHTML.trim().split('<br>');
+        const lastEntry = lines[lines.length - 1];
+
+        if (lastEntry !== this.lastDataScript) {
+            this.elements.dataScriptDiv.innerHTML += this.lastDataScript + '<br>';
+        }
+    }
+
     resetProgressTimer() {
         // Clear any existing timer
         clearTimeout(this.progressTimer);
@@ -164,7 +186,6 @@ class DeepNeuralNetwork {
             // Check if progress has not changed
             if (this.progress === this.lastProgress && this.progress >= 0 && this.progress < 100) {
                 this.elements.startTaskButton.disabled = false;
-                this.elements.stopTaskButton.disabled = true;
             }
         }, 2000); // 2000 milliseconds = 2 seconds
     }
@@ -174,22 +195,17 @@ class DeepNeuralNetwork {
 
         // Only disable the start button if the task has not been stopped
         this.elements.startTaskButton.disabled = (this.progress >= 0 && this.progress < 100);
-        this.elements.stopTaskButton.disabled = !(this.progress >= 0 && this.progress < 100);
         
         this.elements.progressBar.style.width = this.progress + '%';
         this.elements.progressBar.innerHTML = this.progress + '%';
 
         if (this.progress == 100) {
-            if (key_progress == `progress_${this.sessionId}`) {
+            if (key_progress == `epoch_percent_${this.sessionId}`) {
                 this.elements.downloadButton.disabled = true;
-                this.elements.downloadButtonAll.disabled = true;
                 this.elements.startTaskButton.disabled = false;
-                this.elements.stopTaskButton.disabled = true;
-            } else if (key_progress == `progress_deep_neural_network_${this.sessionId}`) {
+            } else if (key_progress == `epoch_percent_${this.sessionId}`) {
                 this.elements.downloadButton.disabled = false;
-                this.elements.downloadButtonAll.disabled = false;
                 this.elements.startTaskButton.disabled = false;
-                this.elements.stopTaskButton.disabled = true;
             }
         }
     }
@@ -294,18 +310,6 @@ class DeepNeuralNetwork {
         }
         window.addEventListener("beforeunload", this.handleBeforeUnload);
     }
-
-    confirmDownloadAll() {
-        window.removeEventListener('beforeunload', this.handleBeforeUnload);
-        const userConfirmed = confirm("Pobrać plik?");
-        if (userConfirmed) {
-            window.location.href = `/download_all_games_saved_file/?session_id=${this.sessionId}`;
-            this.resetProgressBar();
-        } else {
-            console.log("Download canceled by user.");
-        }
-        window.addEventListener("beforeunload", this.handleBeforeUnload);
-    }
     
     async handleBeforeUnload() {
         console.log('Task stopped on refresh.');
@@ -385,9 +389,7 @@ class DeepNeuralNetwork {
 
     stopTask() { 
         this.elements.downloadButton.disabled = false;
-        this.elements.downloadButtonAll.disabled = false;
         this.elements.startTaskButton.disabled = false;
-        this.elements.stopTaskButton.disabled = true;
 
         fetch('/stop_task_deep_neural_network/', {
             method: 'POST',
@@ -415,5 +417,5 @@ class DeepNeuralNetwork {
 
 // Initialize the DeepNeuralNetwork class once the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
-    const DeepNeuralNetwork = new DeepNeuralNetwork();
+    const deepNeuralNetwork = new DeepNeuralNetwork();
 });

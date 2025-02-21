@@ -64,7 +64,7 @@ def deep_neural_network(request):
     if not request.session.session_key:
         request.session.save()  # This ensures a session key is generated
     
-    redis_buffer_instance.redis_1.set(f'{request.session.session_key}_which_app', "gathering_games")
+    redis_buffer_instance.redis_1.set(f'{request.session.session_key}_which_app', "deep_neural_network")
 
     if request.method == 'GET':
         return render(request, 'home/deep_neural_network.html', {'is_dev': is_dev})
@@ -101,6 +101,9 @@ def get_session_id(request):
         _initialize_redis_values_gra_jedna_para(unique_session_id)
     elif which_app == "gathering_games":
         _initialize_redis_values_gathering_games(unique_session_id)
+    elif which_app == "deep_neural_network":
+        _initialize_redis_values_deep_neural_network(unique_session_id)
+
 
     choice = redis_buffer_instance.redis_1.get(f'choice_{unique_session_id}').decode('utf-8')
 
@@ -162,6 +165,21 @@ def get_session_id(request):
         print(task_manager.session_threads[unique_session_id][name].event)
 
         start_thread_gathering_games(request, unique_session_id, name)
+  
+    elif choice == '5':
+        name = "deep_neural_network"
+
+        task_manager.add_session(unique_session_id, name)
+
+        task_manager.session_threads[unique_session_id][name].add_event("stop_event_progress")
+        task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+        redis_buffer_instance.redis_1.set(f'when_start_game_{unique_session_id}', '1')
+
+        print(task_manager.session_threads)
+        print(task_manager.session_threads[unique_session_id][name].event)
+
+        start_thread_deep_neural_network(request, unique_session_id, name)
 
     return JsonResponse({"status" : f"Started thread combs_perms. ID: {unique_session_id}"})
 
@@ -435,6 +453,13 @@ def _initialize_redis_values_gathering_games(session_id):
     redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
     redis_buffer_instance.redis_1.set(f"gathering_games_exit_{session_id}", "-1")
 
+def _initialize_redis_values_deep_neural_network(session_id):
+    redis_buffer_instance.redis_1.set(f'choice_2_{session_id}', '1')
+    redis_buffer_instance.redis_1.set(f'choice_{session_id}', '5')
+    redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '1098240')
+    redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
+    redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
+
 def generate_unique_session_id(session_id):
     """Generate a unique identifier by combining session ID and UUID."""
     return f"{session_id}_{uuid.uuid4().hex}"
@@ -497,6 +522,26 @@ def start_thread_gathering_games(request, unique_session_id, name):
     # print(task_manager.session_threads)
 
     return JsonResponse({'task_status': 'Thread started', 'thread_id': unique_session_id})
+
+def start_thread_deep_neural_network(request, unique_session_id, name):
+    print("Session ID in start_thread: ", unique_session_id)
+    
+    redis_buffer_instance.redis_1.set(f'when_first_{unique_session_id}', 1)
+
+    my_thread = MyThread(
+        target=main,
+        session_id=unique_session_id,
+        name = name,
+    )
+
+    # Store thread details using the unique session ID
+    task_manager.session_threads[unique_session_id][name].set_thread(unique_session_id, my_thread)
+    task_manager.session_threads[unique_session_id][name].thread[unique_session_id].daemon = True
+    task_manager.session_threads[unique_session_id][name].thread[unique_session_id].start()
+    # print(task_manager.session_threads)
+
+    return JsonResponse({'task_status': 'Thread started', 'thread_id': unique_session_id})
+
 
 def _stop_thread(request, session_id, name):
     """Stop the thread based on the unique session ID."""
@@ -578,6 +623,18 @@ def straight_royal_flush(request):
     redis_buffer_instance.redis_1.set(f'arrangement_{session_id}', '1')
     redis_buffer_instance.redis_1.set(f'straight_royal_flush_{session_id}', '1')
     return JsonResponse({'status': 'Straight Royal Flush is ON'})
+
+def wins(request):
+    session_id = request.session.session_key
+    print("Session ID in Wins/Loses: ", session_id)
+    redis_buffer_instance.redis_1.set(f'choice_2_{session_id}', '1')
+    return JsonResponse({'status': 'Wins/Loses is ON'})
+
+def exchange(request):
+    session_id = request.session.session_key
+    print("Session ID in Exchange: ", session_id)
+    redis_buffer_instance.redis_1.set(f'choice_2_{session_id}', '2')
+    return JsonResponse({'status': 'Exchange Amount is ON'})
 
 # Utility function to toggle Redis values
 def _toggle_redis_value(request, key, value, status_message):

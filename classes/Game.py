@@ -67,7 +67,7 @@ class Game(object):
         #         "- Aktualizacja modelu ML" +
         #         "- Uczenie maszynowe")
         # choice_1 = '2'
-        choice_1 = redis_buffer_instance.redis_1.get(f'choice_1_{self.session_id}').decode('utf-8')
+        choice_2 = redis_buffer_instance.redis_1.get(f'choice_2_{self.session_id}').decode('utf-8')
         
         # if choice_1 == '1':
         #     # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far
@@ -151,23 +151,15 @@ class Game(object):
             #         break   
 
         if choice == '5':
-            while(choice_2 := input("\n(1) - Wygrane/Przegrane\n" + 
-                                    "(2) - Ilosc kart do wymiany zeby zwiekszyc szanse na wygrana\n" +
-                                    "(3) - Wroc:\n")):
-                if choice_2 == '1':
-                    model_ml = M_learning(win_or_not=True, exchange_or_not=False, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv')
-                    model_ml.pre_processing()
-                    model_ml.ml_learning_and_prediction()
-                
-                if choice_2 == '2':
-                    model_ml = M_learning(win_or_not=False, exchange_or_not=True, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv')            
-                    model_ml.pre_processing()
-                    model_ml.ml_learning_and_prediction()
-                
-                if choice_2 == '3':
-                    break
-                
-
+            if choice_2 == '1':
+                model_ml = M_learning(win_or_not=True, exchange_or_not=False, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv', session_id=self.session_id, n_epochs=1000)
+                model_ml.pre_processing()
+                model_ml.ml_learning_and_prediction()
+            
+            if choice_2 == '2':
+                model_ml = M_learning(win_or_not=False, exchange_or_not=True, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv', session_id=self.session_id, n_epochs=1000)            
+                model_ml.pre_processing()
+                model_ml.ml_learning_and_prediction()
 
         if choice == '6':
             while(choice_3 := input("\n(1) - Wygrane/Przegrane\n" + 

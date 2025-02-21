@@ -15,16 +15,36 @@ from keras.models import Model, load_model
 from keras.utils import to_categorical
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
+from tensorflow.keras.callbacks import Callback
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from home.ThreadVarManagerSingleton import task_manager
 import seaborn as sns
 from datetime import datetime
 import os
 import re
+import sys
+from io import StringIO
+from home.redis_buffer_singleton import redis_buffer_instance
+
+class RealTimePrint(Callback):
+    def __init__(self, session_id = None, n_epochs = None):
+        # Initialize with a custom frequency for updates
+        super(RealTimePrint, self).__init__()
+        self.session_id = session_id
+        self.n_epochs = n_epochs
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        # fit_output = f"After epoch {epoch + 1}, loss = {logs.get('loss')}, accuracy = {logs.get('accuracy')}"
+
+        epoch_percent = epoch*100/self.n_epochs
+
+        redis_buffer_instance.redis_1.set(f'epoch_percent_{self.session_id}', epoch_percent)
 
 class M_learning(object):
     
-    def __init__(self, win_or_not = None, exchange_or_not = None, file_path_csv = ''):
+    def __init__(self, win_or_not = None, exchange_or_not = None, file_path_csv = '', session_id = None, n_epochs = None):
         self.df = pd.read_csv(file_path_csv, on_bad_lines='skip', engine='python')
                     
         pd.set_option('display.max_columns', 100)
@@ -38,6 +58,7 @@ class M_learning(object):
         self.y_test = None
         self.y_preds = None
         
+        self.n_epochs = n_epochs
         self.opt = 'Adam'
         self.l_r = '00001'
         self.filename_updated = ''
@@ -45,6 +66,9 @@ class M_learning(object):
         
         self.win_or_not = win_or_not
         self.exchange_or_not = exchange_or_not
+
+        self.session_id = session_id
+        self.name = "deep_neural_network"
     
     def pre_processing(self):        
         self.df.loc[self.df['Exchange'] == '[\'t\']', 'Exchange'] = True
@@ -53,26 +77,26 @@ class M_learning(object):
         self.df.loc[self.df['Win'] == True, 'Win'] = 1
         self.df.loc[self.df['Win'] == False, 'Win'] = 0
         
-        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-        axs[0].hist(self.df.where(self.df['Player ID'] == 'Nick')['Win'])
-        axs[0].set_title('Distribution of wins for Nick')
-        axs[1].hist(self.df.where(self.df['Player ID'] == 'Adam')['Win'])
-        axs[1].set_title('Distribution of wins for Adam')
-        plt.show()
+        # fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+        # axs[0].hist(self.df.where(self.df['Player ID'] == 'Nick')['Win'])
+        # axs[0].set_title('Distribution of wins for Nick')
+        # axs[1].hist(self.df.where(self.df['Player ID'] == 'Adam')['Win'])
+        # axs[1].set_title('Distribution of wins for Adam')
+        # plt.show()
         
-        fig, axs = plt.subplots(3, 2, figsize=(17, 5))
-        axs[0,0].hist(self.df['Cards Before 1'], bins='auto', label='Cards Before 1')
-        axs[0,0].set_title('Card Before 1 distribution')
-        axs[0,1].hist(self.df['Cards Before 2'], bins='auto', label='Cards Before 2')
-        axs[0,1].set_title('Card Before 2 distribution')
-        axs[1,0].hist(self.df['Cards Before 3'], bins='auto', label='Cards Before 3')
-        axs[1,0].set_title('Card Before 3 distribution')
-        axs[1,1].hist(self.df['Cards Before 4'], bins='auto', label='Cards Before 4')
-        axs[1,1].set_title('Card Before 4 distribution')
-        axs[2,0].hist(self.df['Cards Before 5'], bins='auto', label='Cards Before 5')
-        axs[2,0].set_title('Card Before 5 distribution')
-        axs[2,1].axis('off')
-        plt.show()
+        # fig, axs = plt.subplots(3, 2, figsize=(17, 5))
+        # axs[0,0].hist(self.df['Cards Before 1'], bins='auto', label='Cards Before 1')
+        # axs[0,0].set_title('Card Before 1 distribution')
+        # axs[0,1].hist(self.df['Cards Before 2'], bins='auto', label='Cards Before 2')
+        # axs[0,1].set_title('Card Before 2 distribution')
+        # axs[1,0].hist(self.df['Cards Before 3'], bins='auto', label='Cards Before 3')
+        # axs[1,0].set_title('Card Before 3 distribution')
+        # axs[1,1].hist(self.df['Cards Before 4'], bins='auto', label='Cards Before 4')
+        # axs[1,1].set_title('Card Before 4 distribution')
+        # axs[2,0].hist(self.df['Cards Before 5'], bins='auto', label='Cards Before 5')
+        # axs[2,0].set_title('Card Before 5 distribution')
+        # axs[2,1].axis('off')
+        # plt.show()
         
         # self.df.drop(columns=['Card Before 1', 'Card Before 2'], 
         #             axis=1, inplace=True)
@@ -230,10 +254,11 @@ class M_learning(object):
         
         model.summary()
 
-        callbacks = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10)
-                
-        history = model.fit(X_train, y_train, batch_size=256, epochs = 1000, callbacks=[callbacks], validation_split = 0.2)
+        # callbacks = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50)
+        history = model.fit(X_train, y_train, batch_size=256, epochs = self.n_epochs, callbacks=[RealTimePrint(self.session_id, self.n_epochs)], validation_split = 0.2)
         
+        task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].set()
+
         test_loss, test_acc = model.evaluate(X_train, y_train)
 
         print('Test Accuracy: ', test_acc)
@@ -448,7 +473,7 @@ class M_learning(object):
         ax2.set_xlabel('Epoch')
         ax2.set_ylabel('Accuracy')
         ax2.legend()
-        plt.show()
+        # plt.show()
         
     def visualize_model(self, history, y_min = None, y_max = None):
         print(history.history.keys())
@@ -459,4 +484,4 @@ class M_learning(object):
         plt.ylabel('Loss')
         plt.ylim([y_min, y_max])
         plt.legend(['loss plot'], loc='upper right')
-        plt.show()
+        # plt.show()

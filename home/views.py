@@ -179,9 +179,37 @@ def get_session_id(request):
         print(task_manager.session_threads)
         print(task_manager.session_threads[unique_session_id][name].event)
 
+    return JsonResponse({"status" : f"Started thread combs_perms. ID: {unique_session_id}"})
+
+def start_task_deep_neural_network(request):
+    if request.method == "POST":
+        session_key = request.session.session_key
+
+        unique_session_id = redis_buffer_instance.redis_1.get(f'{session_key}').decode('utf-8')
+
+        print("In start DNN: ", unique_session_id)
+
+        name = "deep_neural_network"
+        
         start_thread_deep_neural_network(request, unique_session_id, name)
 
-    return JsonResponse({"status" : f"Started thread combs_perms. ID: {unique_session_id}"})
+        return JsonResponse({"status": "success", "message": "Creating DNN model started..."})
+
+def stop_task_deep_neural_network(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        session_id = data.get('session_id', None)
+
+        print("Session ID in stop_task_deep_neural_network: ", session_id)
+
+        if session_id in task_manager.session_threads:
+            task_manager.session_threads[session_id]["deep_neural_network"].event["stop_event_progress"].set()
+            # task_manager.session_threads[session_id]["deep_neural_network"].event["stop_event_dnn"].set()
+
+        if session_id in task_manager.session_threads:
+            _stop_thread(request, session_id, "deep_neural_network")
+        return JsonResponse({"message": f"Task stopped for session {session_id}"})
+    return JsonResponse({"error": "No active session."}, status=400)
 
 def start_task_gathering_games(request):
     if request.method == "POST":
@@ -550,7 +578,7 @@ def _stop_thread(request, session_id, name):
     print("Session ID in stop_thread: ", session_id)
     print("Keys in session_threads:", task_manager.session_threads.keys())
 
-    if session_id in task_manager.session_threads:
+    if session_id in task_manager.session_threads and name in task_manager.session_threads:
         task_manager.session_threads[session_id][name].thread[session_id].join()  # Wait for the thread to terminate
         # task_manager.session_threads[session_id]  # TODO if there are 2 session_ids then del first 
 
@@ -626,14 +654,16 @@ def straight_royal_flush(request):
 
 def wins(request):
     session_id = request.session.session_key
+    unique_session_id = redis_buffer_instance.redis_1.get(f"{session_id}").decode('utf-8')
     print("Session ID in Wins/Loses: ", session_id)
-    redis_buffer_instance.redis_1.set(f'choice_2_{session_id}', '1')
+    redis_buffer_instance.redis_1.set(f'choice_2_{unique_session_id}', '1')
     return JsonResponse({'status': 'Wins/Loses is ON'})
 
 def exchange(request):
     session_id = request.session.session_key
+    unique_session_id = redis_buffer_instance.redis_1.get(f"{session_id}").decode('utf-8')
     print("Session ID in Exchange: ", session_id)
-    redis_buffer_instance.redis_1.set(f'choice_2_{session_id}', '2')
+    redis_buffer_instance.redis_1.set(f'choice_2_{unique_session_id}', '2')
     return JsonResponse({'status': 'Exchange Amount is ON'})
 
 # Utility function to toggle Redis values

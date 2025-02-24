@@ -57,6 +57,12 @@ urlpatterns = [
     path('start_game_view/', views.start_game, name='start_game_view'),
     path('start_task_gathering_games/', views.start_task_gathering_games, name='start_task_gathering_games'),
     path('stop_task_gathering_games/', views.stop_task_gathering_games, name='stop_task_gathering_games'),
+    path('start_task_deep_neural_network/', views.start_task_deep_neural_network, name='start_task_deep_neural_network'),
+    path('stop_task_deep_neural_network/', views.stop_task_deep_neural_network, name='stop_task_deep_neural_network'),
+    path('wins_view/', views.wins, name='wins'),
+    path('exchange_view/', views.exchange, name='exchange'),
+
+    
 ]
 
 if settings.DEBUG:

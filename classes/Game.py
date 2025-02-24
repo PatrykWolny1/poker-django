@@ -151,13 +151,14 @@ class Game(object):
             #         break   
 
         if choice == '5':
+            num_epochs = int(redis_buffer_instance.redis_1.get(f"number_{self.session_id}").decode('utf-8'))
             if choice_2 == '1':
-                model_ml = M_learning(win_or_not=True, exchange_or_not=False, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv', session_id=self.session_id, n_epochs=1000)
+                model_ml = M_learning(win_or_not=True, exchange_or_not=False, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv', session_id=self.session_id, n_epochs=num_epochs)
                 model_ml.pre_processing()
                 model_ml.ml_learning_and_prediction()
             
             if choice_2 == '2':
-                model_ml = M_learning(win_or_not=False, exchange_or_not=True, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv', session_id=self.session_id, n_epochs=1000)            
+                model_ml = M_learning(win_or_not=False, exchange_or_not=True, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv', session_id=self.session_id, n_epochs=num_epochs)            
                 model_ml.pre_processing()
                 model_ml.ml_learning_and_prediction()
 

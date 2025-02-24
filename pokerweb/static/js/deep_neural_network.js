@@ -10,6 +10,7 @@ class DeepNeuralNetwork {
         this.socket = null;
         this.sessionId = null;
         this.enteredValue = null;
+        this.lastClickedChoice = null;
 
         // UI Elements
         this.elements = {
@@ -35,8 +36,19 @@ class DeepNeuralNetwork {
     }
 
     initializeUI() {
-        this.elements.startTaskButton.disabled = true;
+        // Automatically call view for any initially disabled task button
+        Object.entries(this.taskButtons).forEach(([buttonKey, url]) => {
+            const buttonElement = this.elements[buttonKey];
+            if (buttonElement && buttonElement.disabled) {
+                this.initiateTask(url);
+            }
+        });
+        this.elements.startTaskButton.disabled = false;
         this.elements.downloadButton.disabled = true;
+        this.elements.winsButton.disabled = true;
+        this.elements.exchangeButton.disabled = false;
+        this.lastClickedChoice = this.elements.winsButton;
+
         this.resetProgressBar();
     }
 
@@ -51,9 +63,45 @@ class DeepNeuralNetwork {
 
         this.elements.startTaskButton.addEventListener("click", () => this.showNumberPopup());
         
-        this.elements.downloadButton.addEventListener("click", () => this.showNumberPopup());
+        this.elements.downloadButton.addEventListener("click", () => this.confirmDownload());
         
-        window.addEventListener("beforeunload", this.handleBeforeUnload);
+        window.addEventListener("beforeunload", this.boundHandleBeforeUnload);
+    }
+
+    initiateTask(url) {
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', // Ensure it's JSON
+                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP error! status: ${response.status}, response: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => console.log('Task initiated:', data))
+        .catch(error => console.error('Error starting task:', error));
+    }
+
+    handleTaskSelection(selectedButton, url) {
+        // Toggle between `winsButtton` and `exchangeButton` clicks
+        if (selectedButton === this.elements.winsButton || selectedButton === this.elements.exchangeButton) {
+            // Disable the last clicked arrangement button if it exists
+            if (this.lastClickedChoice !== selectedButton) {
+                this.lastClickedChoice.disabled = false;
+                this.lastClickedChoice = selectedButton;
+                this.lastClickedChoice.disabled = true;
+            }
+        } 
+
+        // Trigger task for selected button's view
+        this.initiateTask(url);
     }
 
     handleResize() {
@@ -106,13 +154,12 @@ class DeepNeuralNetwork {
         
         try {
             // Fetch the session ID
-            if (DeepNeuralNetwork.iteration == 0) {
-                const response = await fetch('/get_session_id/');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                this.sessionId = await this.fetchSessionId(); 
+            const response = await fetch('/get_session_id/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            this.sessionId = await this.fetchSessionId(); 
+            
             console.log("Session ID in connectWebSocket:", this.sessionId);
             // Construct the WebSocket URL
             const webSocketUrl = window.env.IS_DEV.includes("yes")
@@ -145,18 +192,6 @@ class DeepNeuralNetwork {
         if (key_progress in data) {
             this.updateProgress(data, key_progress);
         }
-
-        // if (key_data_script in data) {
-        //     console.log(data[key_data_script])
-        //     this.updateDataScript(data[key_data_script]);
-        // }
-
-        if (data[key_progress] == 100) {
-            this.finalizeProgress();
-            // if (key_data_script in data) {
-            //     this.updateDataScript(data[key_data_script])
-            // }
-        }
     }
     
     updateDataScript(dataScript) {
@@ -174,38 +209,33 @@ class DeepNeuralNetwork {
         }
     }
 
-    resetProgressTimer() {
-        // Clear any existing timer
-        clearTimeout(this.progressTimer);
-
-        // Store last known progress
-        this.lastProgress = this.progress;
-
-        // Start a new timer
-        this.progressTimer = setTimeout(() => {
-            // Check if progress has not changed
-            if (this.progress === this.lastProgress && this.progress >= 0 && this.progress < 100) {
-                this.elements.startTaskButton.disabled = false;
-            }
-        }, 2000); // 2000 milliseconds = 2 seconds
-    }
-
     updateProgress(data, key_progress) {
         this.progress = data[key_progress];
 
         // Only disable the start button if the task has not been stopped
-        this.elements.startTaskButton.disabled = (this.progress >= 0 && this.progress < 100);
+        if (this.progress >= 0 && this.progress < 100) {
+            this.elements.downloadButton.disabled = true;
+            this.elements.startTaskButton.disabled = true;
+            this.elements.exchangeButton.disabled = true;
+            this.elements.winsButton.disabled = true;
+        }
         
         this.elements.progressBar.style.width = this.progress + '%';
         this.elements.progressBar.innerHTML = this.progress + '%';
 
         if (this.progress == 100) {
             if (key_progress == `epoch_percent_${this.sessionId}`) {
-                this.elements.downloadButton.disabled = true;
-                this.elements.startTaskButton.disabled = false;
-            } else if (key_progress == `epoch_percent_${this.sessionId}`) {
                 this.elements.downloadButton.disabled = false;
                 this.elements.startTaskButton.disabled = false;
+                if (this.lastClickedChoice === this.elements.winsButton) {
+                    this.elements.winsButton.disabled = true;
+                    this.elements.exchangeButton.disabled = false;
+                    this.lastClickedChoice = this.elements.exchangeButton;
+                } else {
+                    this.elements.winsButton.disabled = false;
+                    this.elements.exchangeButton.disabled = true;
+                    this.lastClickedChoice = this.elements.winsButton;
+                }
             }
         }
     }
@@ -262,10 +292,7 @@ class DeepNeuralNetwork {
                 })
                 .then(data => {
                     console.log("Response from server:", data);
-                    if (DeepNeuralNetwork.iteration > 1) {
-                        console.log(DeepNeuralNetwork.iteration)
-                        this.startTask();
-                    }
+                    this.startTask();
                     document.body.removeChild(overlay);  // Remove the popup once data is successfully sent and processed
                 })
                 .catch(error => {
@@ -318,8 +345,8 @@ class DeepNeuralNetwork {
             this.socket.send(JSON.stringify({ action: "close", reason: "on_refresh" }));
             this.socket.close();
         }
-        DeepNeuralNetwork.iteration = 0;
         this.stopTask();
+        // DeepNeuralNetwork.iteration = 0;
     }
 
     initiateTask(url) {
@@ -343,75 +370,61 @@ class DeepNeuralNetwork {
         .catch(error => console.error('Error starting task:', error));
     }
 
-    startTask() {
-        fetch('/start_task_deep_neural_network/', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': this.getCSRFToken(),  // Retrieve CSRF token correctly
-            },
-            body: JSON.stringify({ /* add any necessary request data here */ })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error, status = ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(async () => {
-            this.connectWebSocket(); // Connect to WebSocket (ensure this is synchronous or handle accordingly)
-            this.resetProgressBar(); // Reset the progress bar UI
-            this.sessionId = await this.fetchSessionId(); 
-            // Ensure `enteredValue` is defined and accessible here
-            return fetch('/submit_number/', {
+    async startTask() {
+        try {
+            const startResponse = await fetch('/start_task_deep_neural_network/', { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCSRFToken(),
                 },
-                body: JSON.stringify({ value: this.enteredValue }) // Assuming enteredValue is a property of the class
+                body: JSON.stringify({})
             });
-        })
-        .then(response => {
+    
+            if (!startResponse.ok) {
+                throw new Error(`HTTP error, status = ${startResponse.status}`);
+            }
+
+            const startData = await startResponse.json();
+            console.log('Task started successfully:', startData);
+        } catch (error) {
+            console.error('Error during task sequence:', error);
+            alert('An error occurred while starting the task. Please try again.');
+        }
+    }
+    
+    async stopTask() {
+        // Ensure buttons are only re-enabled after the fetch operation completes
+        try {
+            const response = await fetch('/stop_task_deep_neural_network/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken(),
+                },
+                body: JSON.stringify({ session_id: this.sessionId }),
+                credentials: 'same-origin'
+            });
+    
             if (!response.ok) {
                 throw new Error(`HTTP error, status = ${response.status}`);
             }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Number submitted successfully:', data);
-        })
-        .catch(error => {
-            console.error('Error during task sequence:', error);
-            alert('An error occurred while starting the task. Please try again.');
-        });
-    }
-
-    stopTask() { 
-        this.elements.downloadButton.disabled = false;
-        this.elements.startTaskButton.disabled = false;
-
-        fetch('/stop_task_deep_neural_network/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': this.getCSRFToken(),
-            },
-            body: JSON.stringify({session_id : this.sessionId}),
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())  // Read the JSON data once
-        .then(data => {
-            console.log(data)
-            if (data.message === `Task stopped for session ${this.sessionId}`) {
-                console.log('Task stopped successfully');
+    
+            const data = await response.json();
+            console.log('Task stopped successfully:', data);
+            
+            // Optionally handle data/message received from server
+            if (data.message) {
+                console.log(data.message);
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error stopping task:', error);
             alert('An error occurred while stopping the task. Please try again.');
-        });
- 
+        } finally {
+            // Re-enable buttons regardless of task success or failure
+            this.elements.downloadButton.disabled = false;
+            this.elements.startTaskButton.disabled = false;
+        }
     }
 }
 

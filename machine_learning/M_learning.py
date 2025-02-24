@@ -38,9 +38,11 @@ class RealTimePrint(Callback):
         logs = logs or {}
         # fit_output = f"After epoch {epoch + 1}, loss = {logs.get('loss')}, accuracy = {logs.get('accuracy')}"
 
-        epoch_percent = epoch*100/self.n_epochs
-
+        epoch_percent = epoch*100/(self.n_epochs-1)
         redis_buffer_instance.redis_1.set(f'epoch_percent_{self.session_id}', epoch_percent)
+        
+        if task_manager.session_threads[self.session_id]["deep_neural_network"].event["stop_event_progress"].is_set():
+            sys.exit()
 
 class M_learning(object):
     
@@ -255,7 +257,7 @@ class M_learning(object):
         model.summary()
 
         # callbacks = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50)
-        history = model.fit(X_train, y_train, batch_size=256, epochs = self.n_epochs, callbacks=[RealTimePrint(self.session_id, self.n_epochs)], validation_split = 0.2)
+        history = model.fit(X_train, y_train, batch_size=256, epochs = self.n_epochs, callbacks=[RealTimePrint(self.session_id, self.n_epochs)], validation_split = 0.2, verbose=0)
         
         task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].set()
 

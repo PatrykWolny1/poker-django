@@ -58,9 +58,10 @@ class DeepNeuralNetworkConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
-        task_manager.session_threads[self.session_id][self.name].thread[self.session_id].join()
+        if self.session_id in task_manager.session_threads and self.name in task_manager.session_threads:
+            task_manager.session_threads[self.session_id][self.name].thread[self.session_id].join()
         
-        del task_manager.session_threads[self.session_id]
+            del task_manager.session_threads[self.session_id]
 
         await self.channel_layer.group_discard (
             self.group_name,

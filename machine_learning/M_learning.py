@@ -25,6 +25,7 @@ import os
 import re
 import sys
 from io import StringIO
+import json
 from home.redis_buffer_singleton import redis_buffer_instance
 
 class RealTimePrint(Callback):
@@ -36,17 +37,27 @@ class RealTimePrint(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        # fit_output = f"After epoch {epoch + 1}, loss = {logs.get('loss')}, accuracy = {logs.get('accuracy')}"
+        fit_output = f"Epoch: {epoch + 1}, Loss = {logs.get('loss', 0):.4f}, Accuracy = {logs.get('accuracy', 0):.4f}"
+        redis_buffer_instance.redis_1.set(f'fit_output_{self.session_id}', fit_output)
 
         epoch_percent = epoch*100/(self.n_epochs-1)
         redis_buffer_instance.redis_1.set(f'epoch_percent_{self.session_id}', epoch_percent)
         
+        # Add the event to a Redis list
+        event = {
+            "progress_output": "data_ready"
+        }
+
+        redis_buffer_instance.redis_1.rpush(f"dnn_queue_{self.session_id}", json.dumps(event))  # Push to list
+
         if task_manager.session_threads[self.session_id]["deep_neural_network"].event["stop_event_progress"].is_set():
             sys.exit()
 
-class M_learning(object):
-    
-    def __init__(self, win_or_not = None, exchange_or_not = None, file_path_csv = '', session_id = None, n_epochs = None):
+class M_learning(object): 
+    def __init__(self, win_or_not = None, exchange_or_not = None, file_path_csv = '', session_id = None,
+                 optimizer = 'Adam', learning_rate = 0.0001, activation = 'relu', activation_output = 'sigmoid',
+                 loss = "BinaryFocalCrossentropy", layer1 = 256, layer2 = 512, layer3 = 64, binary_output = 1, batch_size = 256, n_epochs = 100):
+        
         self.df = pd.read_csv(file_path_csv, on_bad_lines='skip', engine='python')
                     
         pd.set_option('display.max_columns', 100)
@@ -61,8 +72,39 @@ class M_learning(object):
         self.y_preds = None
         
         self.n_epochs = n_epochs
-        self.opt = 'Adam'
-        self.l_r = '00001'
+        self.batch_size = batch_size
+
+        self.optimizers = [tf.keras.optimizers.Adam, tf.keras.optimizers.SGD, tf.keras.optimizers.RMSprop, tf.keras.optimizers.Adadelta,
+                      tf.keras.optimizers.AdamW, tf.keras.optimizers.Adamax, tf.keras.optimizers.Adafactor, tf.keras.optimizers.Adagrad,
+                      tf.keras.optimizers.Ftrl, tf.keras.optimizers.Lion, tf.keras.optimizers.LossScaleOptimizer, tf.keras.optimizers.Optimizer]
+
+        self.optimizer = self.find_in_list(optimizers=self.optimizers, keyword=optimizer)
+        
+        self.learning_rate = learning_rate
+
+        self.activations = ["relu", "sigmoid", "softmax", "tanh", "leaky_relu", "relu6", "log_softmax", "elu", "exponential", "selu"]
+
+        self.activation = self.activations[self.activations.index(activation)]
+        self.activation_output = activation_output
+
+        self.losses = ["BinaryCrossentropy", "BinaryFocalCrossentropy", "CTC", "CategoricalCrossentropy", "CategoricalFocalCrossentropy",
+                      "CategoricalHinge", "CosineSimilarity", "Dice", "Hinge", "Huber", "KLDivergence", "LogCosh", "Loss", "MeanAbsoluteError",
+                      "MeanAbsolutePercentageError", "MeanSquaredLogarithmicError", "MeanSquaredLogarithmic", "Poisson", "Reduction", "SparseCategoricalCrossentropy", "Squared", "Tversky"]
+        
+        self.loss = self.losses[self.losses.index(loss)]
+
+        self.layer1 = layer1
+        self.layer2 = layer2
+        self.layer3 = layer3
+        
+        self.win_or_not = win_or_not
+        self.exchange_or_not = exchange_or_not
+
+        if self.win_or_not:
+            self.binary_output = 1
+        if self.exchange_or_not:
+            self.binary_output = 3
+
         self.filename_updated = ''
         self.filename_weights_updated = ''
         
@@ -72,6 +114,10 @@ class M_learning(object):
         self.session_id = session_id
         self.name = "deep_neural_network"
     
+    # Function to find optimizer with 'Adam' in its name
+    def find_in_list(self, optimizers, keyword="Adam"):
+        return next((opt for opt in optimizers if keyword in opt.__name__), None)
+    
     def pre_processing(self):        
         self.df.loc[self.df['Exchange'] == '[\'t\']', 'Exchange'] = True
         self.df.loc[self.df['Exchange'] == '[\'n\']', 'Exchange'] = False
@@ -79,25 +125,27 @@ class M_learning(object):
         self.df.loc[self.df['Win'] == True, 'Win'] = 1
         self.df.loc[self.df['Win'] == False, 'Win'] = 0
         
-        # fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-        # axs[0].hist(self.df.where(self.df['Player ID'] == 'Nick')['Win'])
-        # axs[0].set_title('Distribution of wins for Nick')
-        # axs[1].hist(self.df.where(self.df['Player ID'] == 'Adam')['Win'])
-        # axs[1].set_title('Distribution of wins for Adam')
+        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+        axs[0].hist(self.df.where(self.df['Player ID'] == 'Nick')['Win'])
+        axs[0].set_title('Distribution of wins for Nick')
+        axs[1].hist(self.df.where(self.df['Player ID'] == 'Adam')['Win'])
+        axs[1].set_title('Distribution of wins for Adam')
+        plt.savefig(f'plots/distribution_of_wins_{self.session_id}.png')
         # plt.show()
         
-        # fig, axs = plt.subplots(3, 2, figsize=(17, 5))
-        # axs[0,0].hist(self.df['Cards Before 1'], bins='auto', label='Cards Before 1')
-        # axs[0,0].set_title('Card Before 1 distribution')
-        # axs[0,1].hist(self.df['Cards Before 2'], bins='auto', label='Cards Before 2')
-        # axs[0,1].set_title('Card Before 2 distribution')
-        # axs[1,0].hist(self.df['Cards Before 3'], bins='auto', label='Cards Before 3')
-        # axs[1,0].set_title('Card Before 3 distribution')
-        # axs[1,1].hist(self.df['Cards Before 4'], bins='auto', label='Cards Before 4')
-        # axs[1,1].set_title('Card Before 4 distribution')
-        # axs[2,0].hist(self.df['Cards Before 5'], bins='auto', label='Cards Before 5')
-        # axs[2,0].set_title('Card Before 5 distribution')
-        # axs[2,1].axis('off')
+        fig, axs = plt.subplots(3, 2, figsize=(17, 5))
+        axs[0,0].hist(self.df['Cards Before 1'], bins='auto', label='Cards Before 1')
+        axs[0,0].set_title('Card Before 1 distribution')
+        axs[0,1].hist(self.df['Cards Before 2'], bins='auto', label='Cards Before 2')
+        axs[0,1].set_title('Card Before 2 distribution')
+        axs[1,0].hist(self.df['Cards Before 3'], bins='auto', label='Cards Before 3')
+        axs[1,0].set_title('Card Before 3 distribution')
+        axs[1,1].hist(self.df['Cards Before 4'], bins='auto', label='Cards Before 4')
+        axs[1,1].set_title('Card Before 4 distribution')
+        axs[2,0].hist(self.df['Cards Before 5'], bins='auto', label='Cards Before 5')
+        axs[2,0].set_title('Card Before 5 distribution')
+        axs[2,1].axis('off')
+        plt.savefig(f'plots/distribution_of_each_card_{self.session_id}.png')
         # plt.show()
         
         # self.df.drop(columns=['Card Before 1', 'Card Before 2'], 
@@ -226,11 +274,11 @@ class M_learning(object):
         model=Sequential(
                 [
                     Input(shape=[len(X_train.columns)], name = 'input_layer'),
-                    Dense(units=256, activation='relu', name='layer1'),
+                    Dense(units=self.layer1, activation=self.activation, name='layer1'),
                     tf.keras.layers.Dropout(0.5),               
-                    Dense(units=512, activation='relu', name='layer2'),
+                    Dense(units=self.layer2, activation=self.activation, name='layer2'),
                     tf.keras.layers.Dropout(0.5),               
-                    Dense(units=64, activation='relu', name='layer3'),
+                    Dense(units=self.layer3, activation=self.activation, name='layer3'),
                 ]
             )
         # model = Sequential(
@@ -245,19 +293,19 @@ class M_learning(object):
         #     ]
         # )
         if self.win_or_not == True:
-            model.add(Dense(units=1, activation='sigmoid', name='binary_output'))
+            model.add(Dense(units=self.binary_output, activation=self.activation_output, name='binary_output'))
             
         if self.exchange_or_not == True:
-            model.add(Dense(units=3, activation='sigmoid', name='binary_output'))
+            model.add(Dense(units=self.binary_output, activation=self.activation_output, name='binary_output'))
 
-        model.compile(optimizer=optimizer(learning_rate=learning_rate),
-                    loss=["binary_focal_crossentropy",],                
+        model.compile(optimizer=self.optimizer(learning_rate=self.learning_rate),
+                    loss=[self.loss,],                
                     metrics=["accuracy"])
         
         model.summary()
 
         # callbacks = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50)
-        history = model.fit(X_train, y_train, batch_size=256, epochs = self.n_epochs, callbacks=[RealTimePrint(self.session_id, self.n_epochs)], validation_split = 0.2, verbose=0)
+        history = model.fit(X_train, y_train, batch_size=self.batch_size, epochs = self.n_epochs, callbacks=[RealTimePrint(self.session_id, self.n_epochs)], validation_split = 0.2, verbose=0)
         
         task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].set()
 
@@ -283,8 +331,8 @@ class M_learning(object):
         
         optimizer = tf.keras.optimizers.Adam
         
-        opt = 'Adam'
-        l_r = '0001'
+        optimizer = 'Adam'
+        learning_rate = '0001'
         
         idx = 2
         # Loop through the different optimizers
@@ -300,11 +348,11 @@ class M_learning(object):
             
             date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
             if self.win_or_not == True:
-                model.save('models_prediction/model_base_WIN' + '_' + opt + '_' + l_r + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.keras')
-                model.save_weights('models_prediction/weights_model_base_WIN' + '_' + opt + '_' + l_r + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.weights.h5')
+                model.save('models_prediction/model_base_WIN' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.keras')
+                model.save_weights('models_prediction/weights_model_base_WIN' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.weights.h5')
             if self.exchange_or_not == True:
-                model.save('models_prediction/model_base_EX_AMOUNT' + '_' + opt + '_' + l_r + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.keras')
-                model.save_weights('models_prediction/weights_model_base_EX_AMOUNT' + '_' + opt + '_' + l_r + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.weights.h5')
+                model.save('models_prediction/model_base_EX_AMOUNT' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.keras')
+                model.save_weights('models_prediction/weights_model_base_EX_AMOUNT' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.weights.h5')
 
             idx += 1
 
@@ -320,7 +368,7 @@ class M_learning(object):
                                         columns=['Ground_Truth (Win)', 'Model_prediction (Win)'])
 
             date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-            df_predictions.to_excel("models_prediction/preds_win_or_not_" + date_now + '.xlsx')
+            df_predictions.to_excel("models_prediction/preds_win_or_not_" + date_now + '_' + self.session_id + '.xlsx')
             
         # --------------------------------------- EXCHANGE AMOUNT PREDICTION ---------------------------------------     
         if self.exchange_or_not == True:     
@@ -346,7 +394,7 @@ class M_learning(object):
                                                     'Model_prediction (3)'])
             
             date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-            df_predictions.to_excel("models_prediction/preds_ex_amount_" + date_now + '.xlsx')
+            df_predictions.to_excel("models_prediction/preds_ex_amount_" + date_now + '_' + self.session_id + '.xlsx')
 
         # ----------------------------------------------------------------------------------------------------------
             
@@ -371,7 +419,7 @@ class M_learning(object):
         model.summary()
         
         model.compile(optimizer=tf.keras.optimizers.Adam
-                      (learning_rate=0.0001), 
+                      (learning_rate=self.learning_rate), 
                       loss=["binary_focal_crossentropy",],                
                       metrics=["accuracy"])
        
@@ -389,7 +437,7 @@ class M_learning(object):
         date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         
         if self.win_or_not == True:
-            self.filename_updated = 'models_prediction/model_updated_WIN' + '_' + self.opt + '_' + self.l_r + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.hdf5'
+            self.filename_updated = 'models_prediction/model_updated_WIN' + '_' + self.optimizer + '_' + self.learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.hdf5'
             self.filename_weights_updated = 'models_prediction/weights_model_updated_WIN_' + date_now + '.weights.h5'
             
             with open('models_prediction/path_to_model_WIN.txt', 'w') as outfile:
@@ -401,7 +449,7 @@ class M_learning(object):
             model.save_weights(self.filename_weights_updated)
             
         if self.exchange_or_not == True:
-            self.filename_updated = 'models_prediction/model_updated_EX_AMOUNT' + '_' + self.opt + '_' + self.l_r + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.hdf5'
+            self.filename_updated = 'models_prediction/model_updated_EX_AMOUNT' + '_' + self.optimizer + '_' + self.learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '.hdf5'
             self.filename_weights_updated = 'models_prediction/weights_model_updated_EX_AMOUNT_' + date_now + '.weights.h5'
 
             with open('models_prediction/path_to_model_EX_AMOUNT.txt', 'w') as outfile:
@@ -475,6 +523,7 @@ class M_learning(object):
         ax2.set_xlabel('Epoch')
         ax2.set_ylabel('Accuracy')
         ax2.legend()
+        plt.savefig(f'plots/loss_accuracy_{self.session_id}.png')
         # plt.show()
         
     def visualize_model(self, history, y_min = None, y_max = None):
@@ -486,4 +535,5 @@ class M_learning(object):
         plt.ylabel('Loss')
         plt.ylim([y_min, y_max])
         plt.legend(['loss plot'], loc='upper right')
+        plt.savefig(f'plots/loss_plot_{self.session_id}.png')
         # plt.show()

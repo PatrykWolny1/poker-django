@@ -3,7 +3,7 @@ import json
 import uuid
 import time
 from django.shortcuts import render
-from django.http import JsonResponse, FileResponse, Http404
+from django.http import JsonResponse, FileResponse, Http404, HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_one_pair_game
 from home.MyThread import MyThread
@@ -665,6 +665,53 @@ def exchange(request):
     print("Session ID in Exchange: ", session_id)
     redis_buffer_instance.redis_1.set(f'choice_2_{unique_session_id}', '2')
     return JsonResponse({'status': 'Exchange Amount is ON'})
+
+def serve_plot_view(request, plot_name):
+    # Path to the image created by the create_plot function
+    session_key = request.session.session_key
+    unique_session_id = redis_buffer_instance.redis_1.get(session_key).decode('utf-8')
+    image_path = f'plots/{plot_name}_{unique_session_id}.png'
+    image_data = open(image_path, 'rb').read()
+    return HttpResponse(image_data, content_type='image/png')
+
+def apply_form_view(request):
+    if request.method == 'POST':
+        try:
+            # Parse the JSON body of the request
+            unique_session_id = redis_buffer_instance.redis_1.get(request.session.session_key).decode('utf-8')
+            redis_buffer_instance.redis_1.set(f'form_data_{unique_session_id}', request.body)
+            data = json.loads(request.body)
+            
+            # Extract values from the data
+            learning_rate = data.get('learningRate')
+            batch_size = data.get('batchSize')
+            optimizer = data.get('optimizer')
+            activation = data.get('activation')
+            activation_output = data.get('activationOutput')
+            loss = data.get('loss')
+            layer1 = data.get('layer1')
+            layer2 = data.get('layer2')
+            layer3 = data.get('layer3')
+            binary_output = data.get('binaryOutput')
+            
+            print("Received form data:")
+            print(f"Learning Rate: {learning_rate}")
+            print(f"Batch Size: {batch_size}")
+            print(f"Optimizer: {optimizer}")
+            print(f"Activation: {activation}")
+            print(f"Activation Output: {activation_output}")
+            print(f"Loss: {loss}")
+            print(f"Layer 1: {layer1}, Layer 2: {layer2}, Layer 3: {layer3}")
+            print(f"Binary Output: {binary_output}")
+            
+            # Return a JSON response indicating success.
+            return JsonResponse({'status': 'success', 'message': 'Form data processed successfully.'})
+        except Exception as e:
+            # Return an error response if something went wrong
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+    
+    # If the request method is not POST, return a 405 Method Not Allowed response.
+    return HttpResponseBadRequest("Only POST requests are allowed.")
 
 # Utility function to toggle Redis values
 def _toggle_redis_value(request, key, value, status_message):

@@ -1,5 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from home.redis_buffer_singleton import redis_buffer_instance, redis_buffer_instance_stop
+from home.redis_buffer_singleton import redis_buffer_instance
 from home.ThreadVarManagerSingleton import task_manager
 import json
 import asyncio
@@ -15,6 +15,28 @@ class DeepNeuralNetworkConsumer(AsyncWebsocketConsumer):
         self.session_id = None
         self.name = "deep_neural_network"
         self.stop_event_var = False
+        self.outgoing_message_queue = asyncio.Queue()  # Initialize the message queue
+        self.send_task = None  # Background task for send_from_queue
+
+    async def queue_message(self, data):
+        """Add a message to the outgoing queue."""
+        await self.outgoing_message_queue.put(data)
+
+    async def send_from_queue(self):
+        """Send messages from the outgoing queue."""
+        try:
+            while True:
+                data = await self.outgoing_message_queue.get()
+                try:
+                    await self.send(text_data=json.dumps(data))
+                    print("Sent message:", data)
+                except Exception as e:
+                    print("Error sending message:", e)
+        except asyncio.CancelledError:
+            print("send_from_queue task cancelled")
+            raise  # Propagate the cancellation to allow proper cleanup
+        finally:
+            print("send_from_queue task exiting")
 
     async def connect(self):
         DeepNeuralNetworkConsumer.iteration += 1
@@ -54,7 +76,38 @@ class DeepNeuralNetworkConsumer(AsyncWebsocketConsumer):
 
         redis_buffer_instance.redis_1.set(f'connection_accepted_{self.session_id}', 'yes')
         
-        await self._send_updates_dnn()
+        redis_buffer_instance.redis_1.set(f'fit_output_{self.session_id}', '-1')
+        redis_buffer_instance.redis_1.set(f'epoch_percent_{self.session_id}', '-1')
+        
+        self.queue = asyncio.Queue()
+
+        self.send_task = asyncio.create_task(self.send_from_queue())
+        
+        while True:
+            result = redis_buffer_instance.redis_1.blpop(f"dnn_queue_{self.session_id}", timeout=1)  # Returns None if no message
+            if result is None:
+                # No message in the queue within the timeout
+                await asyncio.sleep(0.1)  # Yield control to the event loop
+                continue
+            
+            # Unpack the result (result is not None here)
+            _, message_data = result
+            # print("Raw message:", message_data)
+
+            # Decode and process the message
+            message_data = message_data.decode('utf-8')
+            data = json.loads(message_data)
+
+            if "progress_output" in data and data["progress_output"] == "data_ready":
+                await self._send_data_script()
+
+                await self._send_updates_dnn()
+
+            if self._should_stop():
+                await asyncio.sleep(0.2)
+                break
+
+            await asyncio.sleep(0.001)  # Adjust interval as needed
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
@@ -84,31 +137,40 @@ class DeepNeuralNetworkConsumer(AsyncWebsocketConsumer):
             if reason == 'on_refresh':
                 DeepNeuralNetworkConsumer.iteration = 0
                 print(DeepNeuralNetworkConsumer.iteration)
-       
+    
+    async def _send_data_script(self):
+        """Retrieve and send the data script if updated."""
+        data_script = redis_buffer_instance.redis_1.get(f'fit_output_{self.session_id}').decode('utf-8')
+        # temp_data_script = redis_buffer_instance.redis_1.get(f'fit_output_{self.session_id}').decode('utf-8')
+
+        if data_script != '-1':
+            # await self.send(text_data=json.dumps({f'fit_output_{self.session_id}': data_script}))
+            await self.queue_message({
+                f'fit_output_{self.session_id}': data_script
+            })
+        
+
     async def _send_updates_dnn(self):     
         task_manager.session_threads[self.session_id][self.name].event["stop_event_progress"].clear()   
-        redis_buffer_instance.redis_1.set(f'epoch_percent_{self.session_id}', '-1')
         self.stop_event_var = False
 
-        while True:
-            progress = int(float(redis_buffer_instance.redis_1.get(f'epoch_percent_{self.session_id}').decode('utf-8')))
-            
-            if progress is not None:
-                if progress >= 100:
-                    progress = 100
-                if progress >= 0:
-                    progress_data = {f'epoch_percent_{self.session_id}': str(progress)}
-                    print(f"Progress data to send: {progress_data}")
-                    progress_to_send = f'epoch_percent_{self.session_id}'
-                    await self.send(text_data=json.dumps({str(progress_to_send) : str(progress)}))
-            
-            print("In _send_updates_dnn...")
+        progress = int(float(redis_buffer_instance.redis_1.get(f'epoch_percent_{self.session_id}').decode('utf-8')))
+        
+        if progress is not None:
+            if progress >= 100:
+                progress = 100
+            if progress >= 0:
+                progress_data = {f'epoch_percent_{self.session_id}': str(progress)}
+                print(f"Progress data to send: {progress_data}")
+                progress_to_send = f'epoch_percent_{self.session_id}'
+                # await self.send(text_data=json.dumps({str(progress_to_send) : str(progress)}))
+                await self.queue_message({
+                    progress_to_send: str(progress)
+                })
+        
+        print("In _send_updates_dnn...")
 
-            if self._should_stop():
-                await asyncio.sleep(0.2)
-                break
 
-            await asyncio.sleep(0.2)  # Adjust interval as needed
 
     def _should_stop(self):
         """Check if stop event or completion conditions are met."""

@@ -31,11 +31,107 @@
                 <button class="download-button" type="button" id="downloadButton" disabled>Pobierz wygenerowany model</button>
                 <button class="wins-button" type="button" id="winsButton">Wygrane/Przegrane</button>
                 <button class="exchange-button" type="button" id="exchangeButton">Ilosc wymienianych kart</button>
+                <button class="plot-button" type="button" id="plotButton">Wykresy</button>
             </div>
+            <div class="menu-container desktop-only">
+                <div class="menu-column">
+                    <label>Learning Rate</label>
+                    <input type="text" placeholder="0.0001"/>
+                </div>
+                <div class="menu-column">
+                    <label>Batch Size</label>
+                    <input type="text" placeholder="32"/>
+                </div>
+                <div class="menu-column">
+                    <label>Optimizer</label>
+                    <select name="optimizer">
+                        <option value="Adam" selected>Adam</option>
+                        <option value="SGD">SGD</option>
+                        <option value="RMSprop">RMSprop</option>
+                        <option value="Adadelta">Adadelta</option>
+                        <option value="AdamW">AdamW</option>
+                        <option value="Adamax">Adamax</option>
+                        <option value="Adafactor">Adafactor</option>
+                        <option value="Adagrad">Adagrad</option>
+                        <option value="Ftrl">Ftrl</option>
+                        <option value="Lion">Lion</option>
+                        <option value="LossScaleOptimizer">LossScaleOptimizer</option>
+                        <option value="Optimizer">Optimizer</option>
+                    </select>
+                </div>
+                <div class="menu-column">
+                    <label>Activation</label>
+                    <select name="activation">
+                        <option value="relu" selected>relu</option>
+                        <option value="sigmoid">sigmoid</option>
+                        <option value="softmax">softmax</option>
+                        <option value="tanh">tanh</option>
+                        <option value="leaky_relu">leaky_relu</option>
+                        <option value="relu6">relu6</option>
+                        <option value="log_softmax">log_softmax</option>
+                        <option value="elu">elu</option>
+                        <option value="exponential">exponential</option>
+                        <option value="selu">selu</option>
+                    </select>
+                </div>
+                <div class="menu-column">
+                    <label>Activation Output</label>
+                    <select name="activationOutput">
+                        <option value="sigmoid">sigmoid</option>
+                    </select>
+                </div>
+                <div class="menu-column">
+                    <label>Loss</label>
+                    <select name="loss">
+                        <option value="BinaryCrossentropy" selected>BinaryCrossentropy</option>
+                        <option value="BinaryFocalCrossentropy">BinaryFocalCrossentropy</option>
+                        <option value="CTC">CTC</option>
+                        <option value="CategoricalCrossentropy">CategoricalCrossentropy</option>
+                        <option value="CategoricalFocalCrossentropy">CategoricalFocalCrossentropy</option>
+                        <option value="CategoricalHinge">CategoricalHinge</option>
+                        <option value="CosineSimilarity">CosineSimilarity</option>
+                        <option value="Dice">Dice</option>
+                        <option value="Hinge">Hinge</option>
+                        <option value="Huber">Huber</option>
+                        <option value="KLDivergence">KLDivergence</option>
+                        <option value="LogCosh">LogCosh</option>
+                        <option value="MeanAbsoluteError">MeanAbsoluteError</option>
+                        <option value="MeanAbsolutePercentageError">MeanAbsolutePercentageError</option>
+                        <option value="MeanSquaredLogarithmicError">MeanSquaredLogarithmicError</option>
+                        <option value="Poisson">Poisson</option>
+                        <option value="Reduction">Reduction</option>
+                        <option value="SparseCategoricalCrossentropy">SparseCategoricalCrossentropy</option>
+                        <option value="SquaredHinge">SquaredHinge</option>
+                        <option value="Tversky">Tversky</option>
+                        <option value="Loss">Loss</option>
+                    </select>
+                </div>
+                <div class="menu-column">
+                    <label>Layer 1</label>
+                    <input type="text" placeholder="256"/>
+                </div>
+                <div class="menu-column">
+                    <label>Layer 2</label>
+                    <input type="text" placeholder="512"/>
+                </div>
+                <div class="menu-column">
+                    <label>Layer 3</label>
+                    <input type="text" placeholder="64"/>
+                </div>
+                <div class="menu-column">
+                    <label>Binary Output</label>
+                    <select name="binaryOutput">
+                        <option value="1 - Wygrana/Przegrana" selected>1 - Wygrana/Przegrana</option>
+                        <option value="3 - Ilosc wymienianych kart">3 - Ilosc wymienianych kart</option>
+                    </select>
+                </div>
+            </div>
+            <button class="apply-button" type="button" id="applyButton">Zastosuj</button>
             <div class="data-script-container desktop-only">
                 <div class="data-script" id="dataScript"></div>
             </div>
         </div>
+     
     <!-- Mobile Only Section -->
         <div class="mobile-only">
             <div class="container-perms-combs">
@@ -51,6 +147,7 @@
                     <button class="download-button" type="button" id="mobileDownloadButton" disabled>Pobierz wygenerowany model</button>
                     <button class="wins-button" type="button" id="mobileWinsButton" disabled>Wygrane/Przegrane</button>
                     <button class="exchange-button" type="button" id="mobileExchangeButton" disabled>Ilosc wymienianych kart</button>
+                    <button class="plot-button" type="button" id="mobilePlotButton" disabled>Wykresy</button>
                 </div>
                 <div class="data-script-container">
                     <div class="data-script" id="mobileDataScript"></div>

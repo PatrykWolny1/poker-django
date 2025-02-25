@@ -19,11 +19,22 @@ class DeepNeuralNetwork {
             downloadButton: document.getElementById(this.isMobile ? "mobileDownloadButton" : "downloadButton"),
             winsButton: document.getElementById(this.isMobile ? "mobileWinsButton" : "winsButton"),
             exchangeButton: document.getElementById(this.isMobile ? "mobileExchangeButton" : "exchangeButton"),
+            plotButton: document.getElementById(this.isMobile ? "mobilePlotButton" : "plotButton"),
+            dataScriptDiv: document.getElementById(this.isMobile ? "mobileDataScript" : "dataScript"),
+            applyButton: document.getElementById(this.isMobile ? "mobileApplyButton" : "applyButton"),
+           
         };
-
+        
         this.taskButtons = {
             winsButton: "/wins_view/",
             exchangeButton: "/exchange_view/",
+        }
+
+        this.plotsViews = {
+            "Loss/Accuracy": "/plot/loss_accuracy",
+            "Loss": "/plot/loss_plot",
+            "Distributions of wins": "/plot/distribution_of_wins",
+            "Distributions of each card": "/plot/distribution_of_each_card",
         }
 
         this.boundHandleBeforeUnload = this.handleBeforeUnload.bind(this);
@@ -47,6 +58,7 @@ class DeepNeuralNetwork {
         this.elements.downloadButton.disabled = true;
         this.elements.winsButton.disabled = true;
         this.elements.exchangeButton.disabled = false;
+        this.elements.plotButton.disabled = true;
         this.lastClickedChoice = this.elements.winsButton;
 
         this.resetProgressBar();
@@ -61,8 +73,9 @@ class DeepNeuralNetwork {
             }
         });
 
+        this.elements.plotButton.addEventListener("click", () => this.showPlots());
         this.elements.startTaskButton.addEventListener("click", () => this.showNumberPopup());
-        
+        this.elements.applyButton.addEventListener('click', () => this.applyForm());
         this.elements.downloadButton.addEventListener("click", () => this.confirmDownload());
         
         window.addEventListener("beforeunload", this.boundHandleBeforeUnload);
@@ -136,6 +149,56 @@ class DeepNeuralNetwork {
         this.setupEventListeners();
         this.connectWebSocket();
     }
+    
+    gatherFormData() {
+        let binaryOutputValue;
+
+        if (this.elements.winsButton.disabled) {
+            document.querySelector('select[name="binaryOutput"]').value = "1 - Wygrana/Przegrana";
+            binaryOutputValue = "1 - Wygrana/Przegrana";
+        } else if (this.elements.exchangeButton.disabled) {
+            document.querySelector('select[name="binaryOutput"]').value = "3 - Ilosc wymienianych kart";
+            binaryOutputValue = "3 - Ilosc wymienianych kart";
+        }
+
+        const formData = {
+            learningRate: document.querySelector('.menu-column input[placeholder="0.0001"]')?.value || "0.0001",
+            batchSize: document.querySelector('.menu-column input[placeholder="32"]')?.value || "32",
+            optimizer: document.querySelector('select[name="optimizer"]')?.value || "Adam",
+            activation: document.querySelector('select[name="activation"]')?.value || "relu",
+            activationOutput: document.querySelector('select[name="activationOutput"]')?.value || "sigmoid",
+            loss: document.querySelector('select[name="loss"]')?.value || "BinaryCrossentropy",
+            layer1: document.querySelector('.menu-column input[placeholder="256"]')?.value || "256",
+            layer2: document.querySelector('.menu-column input[placeholder="512"]')?.value || "512",
+            layer3: document.querySelector('.menu-column input[placeholder="64"]')?.value || "64",
+            binaryOutput: binaryOutputValue
+
+          
+        };
+        return formData;
+    }
+
+    applyForm() {
+        const formData = this.gatherFormData();
+    
+        fetch('/apply_form/', {  
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.getCSRFToken(),
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => console.log('Success:', data))
+        .catch((error) => console.error('Error:', error));
+    }
+
+    showPlots() {
+        Object.entries(this.plotsViews).forEach(([buttonKey, url]) => {
+            window.open(url, buttonKey, 'height=600,width=800');
+        });
+    }
 
     async fetchSessionId() {
         try {
@@ -188,14 +251,19 @@ class DeepNeuralNetwork {
         const data = JSON.parse(event.data);
         // Update progress
         const key_progress = `epoch_percent_${this.sessionId}`;
+        const key_datascript = `fit_output_${this.sessionId}`;
+        
+        if (key_datascript in data) {
+            this.updateDataScript(data, key_datascript);
+        }
 
         if (key_progress in data) {
             this.updateProgress(data, key_progress);
         }
     }
     
-    updateDataScript(dataScript) {
-        this.lastDataScript = dataScript;
+    updateDataScript(data, key_datascript) {
+        this.lastDataScript = data[key_datascript];
 
         if (this.elements.dataScriptDiv.style.display === "none") {
             this.elements.dataScriptDiv.style.display = "block";
@@ -218,12 +286,14 @@ class DeepNeuralNetwork {
             this.elements.startTaskButton.disabled = true;
             this.elements.exchangeButton.disabled = true;
             this.elements.winsButton.disabled = true;
+            this.elements.plotButton.disabled = true;
         }
         
         this.elements.progressBar.style.width = this.progress + '%';
         this.elements.progressBar.innerHTML = this.progress + '%';
 
         if (this.progress == 100) {
+            this.elements.plotButton.disabled = false;
             if (key_progress == `epoch_percent_${this.sessionId}`) {
                 this.elements.downloadButton.disabled = false;
                 this.elements.startTaskButton.disabled = false;

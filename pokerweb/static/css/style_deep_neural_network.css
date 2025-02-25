@@ -157,6 +157,41 @@ h1 {
   border-radius: 10px;
   overflow: hidden;
 }
+.menu-container {
+  display: flex;
+  justify-content: center; /* Centers the menu in the container */
+  align-items: flex-start;
+  padding: 10px;
+  gap: 10px; /* Space between columns */
+  max-width: 100%;
+  flex-wrap: wrap; /* Ensures responsiveness */
+}
+
+.menu-column {
+  flex: 1 1 10%; /* Each column takes up roughly 10% of the container width */
+  min-width: 120px; /* Minimum width of each column to ensure content visibility */
+  text-align: center; /* Centers text in each column */
+}
+
+.menu-column label {
+  display: block; /* Makes the label take the full width */
+  margin-bottom: 5px; /* Space between the label and the input/select */
+  color: #9be1ff;
+}
+
+.menu-column input,
+.menu-column select {
+  width: 140px; /* Makes input and select elements fill their containers */
+  padding: 8px; /* Padding for better touch interaction */
+  line-height: 1.5; /* Improves readability */
+  border: 1px solid #ccc; /* Subtle border for inputs and selects */
+  box-sizing: border-box; /* Includes padding and border in the element's total width/height */
+}
+
+.menu-column input:focus,
+.menu-column select:focus {
+  border-color: #0066cc; /* Highlight focus with a different border color */
+}
 
 @keyframes flashShadow {
   0%, 100% {
@@ -236,7 +271,7 @@ button:disabled {
   z-index: 0;
 }
 
-.start-button, .download-button, .wins-button, .exchange-button {
+.start-button, .download-button, .wins-button, .exchange-button, .plot-button, .apply-button {
   /* background-color: #00426e; Blue background */
   background: linear-gradient(to bottom, #00435f, rgb(0, 48, 73));
   color: #e8f8ff; /* White text color */
@@ -252,7 +287,7 @@ button:disabled {
   
 }
 
-.start-button:hover, .download-button:hover, .wins-button:hover, .exchange-button:hover {
+.start-button:hover, .download-button:hover, .wins-button:hover, .exchange-button:hover, .plot-button:hover, .apply-button:hover {
   background: linear-gradient(to top, #31c1ff, #5cceff);
   color: #00101e;
 }

@@ -21,3 +21,6 @@ time.txt
 poker_game_out.xlsx
 poker_game_out.csv
 permutations_data/*
+ml_data/*
+plots/*
+models_prediction/*

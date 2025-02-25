@@ -61,8 +61,8 @@ urlpatterns = [
     path('stop_task_deep_neural_network/', views.stop_task_deep_neural_network, name='stop_task_deep_neural_network'),
     path('wins_view/', views.wins, name='wins'),
     path('exchange_view/', views.exchange, name='exchange'),
-
-    
+    path('plot/<str:plot_name>', views.serve_plot_view, name='serve_plot_view'),
+    path('apply_form/', views.apply_form_view, name='apply_form_view'),
 ]
 
 if settings.DEBUG:

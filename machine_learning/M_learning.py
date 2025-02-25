@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+import zipfile
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Input, LSTM
@@ -70,6 +70,8 @@ class M_learning(object):
         self.y_train = None 
         self.y_test = None
         self.y_preds = None
+        self.test_acc = None
+        self.test_loss = None
         
         self.n_epochs = n_epochs
         self.batch_size = batch_size
@@ -110,7 +112,7 @@ class M_learning(object):
         
         self.win_or_not = win_or_not
         self.exchange_or_not = exchange_or_not
-
+        self.date_now = None
         self.session_id = session_id
         self.name = "deep_neural_network"
     
@@ -321,40 +323,26 @@ class M_learning(object):
         accuracies = []
         losses = []
         
-        optimizers = [tf.keras.optimizers.Adam, 
-                    tf.keras.optimizers.RMSprop, 
-                    tf.keras.optimizers.SGD, 
-                    tf.keras.optimizers.Adadelta]
-        
-        # Try out different learning rates
-        learning_rates = [0.0001]
-        
-        optimizer = tf.keras.optimizers.Adam
-        
-        optimizer = 'Adam'
-        learning_rate = '0001'
-        
         idx = 2
         # Loop through the different optimizers
-        for rate in learning_rates:
-            model, history, test_acc, test_loss = self.train_with_optimizer(
-                self.X_train, self.y_train, optimizer, rate)
-            
-            # Append the accuracy to the list
-            accuracies.append(test_acc)
-            losses.append(test_loss)
-            self.visualize_model(history)
-            self.plot_loss_accuracy(history)
-            
-            date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-            if self.win_or_not == True:
-                model.save('models_prediction/model_base_WIN' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.keras')
-                model.save_weights('models_prediction/weights_model_base_WIN' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.weights.h5')
-            if self.exchange_or_not == True:
-                model.save('models_prediction/model_base_EX_AMOUNT' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.keras')
-                model.save_weights('models_prediction/weights_model_base_EX_AMOUNT' + '_' + optimizer + '_' + learning_rate + '_test_acc=' + str("{:.3f}".format(test_acc)) + '_test_loss=' + str("{:.3f}".format(test_loss)) + '_' + date_now + '_' + self.session_id + '.weights.h5')
+        model, history, self.test_acc, self.test_loss = self.train_with_optimizer(
+            self.X_train, self.y_train, self.optimizer, self.learning_rate)
+        
+        # Append the accuracy to the list
+        accuracies.append(self.test_acc)
+        losses.append(self.test_loss)
+        self.visualize_model(history)
+        self.plot_loss_accuracy(history)
+        
+        self.date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        if self.win_or_not == True:
+            model.save('models_prediction/model_base_WIN' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.keras')
+            model.save_weights('models_prediction/weights_model_base_WIN' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.weights.h5')
+        if self.exchange_or_not == True:
+            model.save('models_prediction/model_base_EX_AMOUNT' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.keras')
+            model.save_weights('models_prediction/weights_model_base_EX_AMOUNT' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.weights.h5')
 
-            idx += 1
+        idx += 1
 
         print(accuracies)
         print(losses)
@@ -367,9 +355,11 @@ class M_learning(object):
             df_predictions = pd.DataFrame({'Ground_Truth (Win)': self.y_test, 'Model_prediction (Win)': self.y_preds}, 
                                         columns=['Ground_Truth (Win)', 'Model_prediction (Win)'])
 
-            date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-            df_predictions.to_excel("models_prediction/preds_win_or_not_" + date_now + '_' + self.session_id + '.xlsx')
+            #self.date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+            df_predictions.to_excel("models_prediction/preds_win_or_not_" + self.date_now + '_' + self.session_id + '.xlsx')
             
+            self.zip_directory(False)
+
         # --------------------------------------- EXCHANGE AMOUNT PREDICTION ---------------------------------------     
         if self.exchange_or_not == True:     
             self.y_preds = model.predict(self.X_test)
@@ -393,13 +383,45 @@ class M_learning(object):
                                                     'Model_prediction (0)', 'Model_prediction (2)',
                                                     'Model_prediction (3)'])
             
-            date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-            df_predictions.to_excel("models_prediction/preds_ex_amount_" + date_now + '_' + self.session_id + '.xlsx')
+            # self.date_now = str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+            df_predictions.to_excel("models_prediction/preds_ex_amount_" + self.date_now + '_' + self.session_id + '.xlsx')
+
+            self.zip_directory(True)
 
         # ----------------------------------------------------------------------------------------------------------
             
         print(df_predictions) 
     
+    def zip_directory(self, wins_exch):
+        files_dir1 = ["preds_win_or_not_" + self.date_now + '_' + self.session_id + '.xlsx',
+                        'model_base_WIN' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.keras',
+                        'weights_model_base_WIN' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.weights.h5']
+        files_dir2 = ["preds_ex_amount_" + self.date_now + '_' + self.session_id + '.xlsx',
+                        'model_base_EX_AMOUNT' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.keras',
+                        'weights_model_base_EX_AMOUNT' + '_' + str(self.optimizer) + '_' + str(self.learning_rate) + '_test_acc=' + str("{:.3f}".format(self.test_acc)) + '_test_loss=' + str("{:.3f}".format(self.test_loss)) + '_' + self.date_now + '_' + self.session_id + '.weights.h5']
+        
+        files_dir = [f'distribution_of_wins_{self.session_id}.png', f'distribution_of_each_card_{self.session_id}.png',
+                    f'loss_accuracy_{self.session_id}.png', f'loss_plot_{self.session_id}.png']
+
+        files = files_dir2 if wins_exch else files_dir1
+
+        with zipfile.ZipFile(f'ml_data/models_plots_predictions_{self.session_id}.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for filename in files:
+                print(filename)
+                file_path = os.path.join('models_prediction/', filename)
+                if os.path.isfile(file_path):
+                    arcname = os.path.join('models_prediction/', filename)
+                    zipf.write(file_path, arcname)
+                else:
+                    print(f"File not found: {file_path}")
+            for filename in files_dir:
+                file_path = os.path.join('plots/', filename)
+                if os.path.isfile(file_path):
+                    arcname = os.path.join('plots/', filename)
+                    zipf.write(file_path, arcname)
+                else:
+                    print(f"File not found: {file_path}")
+                    
     def update_model(self, base_model_path, weights_model_path):
         
         if os.path.exists(base_model_path):
@@ -459,6 +481,7 @@ class M_learning(object):
             
             model.save(self.filename_updated)
             model.save_weights(self.filename_weights_updated)
+
             
         # --------------------------------------- WIN OR NOT PREDICTION ---------------------------------------     
         if self.win_or_not == True:

@@ -339,15 +339,20 @@ def download_saved_file(request):
         file_path = f'permutations_data/data_perms_combs_ID_{unique_session_id}.txt'
     elif thread_name == 'gathering_games':
         file_path = f'ml_data/poker_game_one_pair_combs_all_to_update_duplicates_{unique_session_id}.csv'
+    elif thread_name == 'deep_neural_network':
+        file_path = f'ml_data/models_plots_predictions_{unique_session_id}.zip'
 
     if not os.path.exists(file_path):
         raise Http404("File not found")
     
     response = FileResponse(open(file_path, 'rb'), as_attachment=True)
+
     if thread_name == 'perms_combs':
         response['Content-Disposition'] = f'attachment; filename="collected_data_perms_combs_{unique_session_id}.txt"'
     elif thread_name == 'gathering_games':
-        response['Content-Disposition'] = f'attachment; filename="gathered_games{unique_session_id}.csv"'
+        response['Content-Disposition'] = f'attachment; filename="gathered_games_{unique_session_id}.csv"'
+    elif thread_name == 'deep_neural_network':
+        response['Content-Disposition'] = f'attachment; filename="deep_neural_network_{unique_session_id}.zip"'
 
     return response
 
@@ -487,6 +492,30 @@ def _initialize_redis_values_deep_neural_network(session_id):
     redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', '1098240')
     redis_buffer_instance.redis_1.set(f'shared_progress_{session_id}', '0')
     redis_buffer_instance.redis_1.set(f'connection_accepted_{session_id}', 'no')
+    
+    wins_exch = redis_buffer_instance.redis_1.get(f'choice_2_{session_id}').decode('utf-8')
+
+    if wins_exch == '1':
+        binaryOutputValue = "1 - Wygrana/Przegrana"
+    else:
+        binaryOutputValue = "3 - Ilosc wymienianych kart"
+
+    formData = {
+            "learningRate": "0.0001",
+            "batchSize": "32",
+            "optimizer": "Adam",
+            "activation": "relu",
+            "activationOutput": "sigmoid",
+            "loss": "BinaryCrossentropy",
+            "layer1": "256",
+            "layer2": "512",
+            "layer3": "64",
+            "binaryOutput": binaryOutputValue 
+    }
+
+    json_data = json.dumps(formData)
+
+    redis_buffer_instance.redis_1.set(f'form_data_{session_id}', json_data)
 
 def generate_unique_session_id(session_id):
     """Generate a unique identifier by combining session ID and UUID."""

@@ -154,29 +154,30 @@ class Game(object):
         if choice == '5':
             n_epochs = int(redis_buffer_instance.redis_1.get(f"number_{self.session_id}").decode('utf-8'))
 
-            data = json.loads(redis_buffer_instance.redis_1.get(f'form_data_{self.session_id}'))
-            
-            # Extract values from the data
-            learning_rate = float(data.get('learningRate'))
-            batch_size = int(data.get('batchSize'))
-            optimizer = data.get('optimizer')
-            activation = data.get('activation')
-            activation_output = data.get('activationOutput')
-            loss = data.get('loss')
-            layer1 = int(data.get('layer1'))
-            layer2 = int(data.get('layer2'))
-            layer3 = int(data.get('layer3'))
-            binary_output = [1 if data.get('binaryOutput')=="1 - Wygrana/Przegrana" else 3]
-            
-            print("Received form data:")
-            print(f"Learning Rate: {learning_rate}")
-            print(f"Batch Size: {batch_size}")
-            print(f"Optimizer: {optimizer}")
-            print(f"Activation: {activation}")
-            print(f"Activation Output: {activation_output}")
-            print(f"Loss: {loss}")
-            print(f"Layer 1: {layer1}, Layer 2: {layer2}, Layer 3: {layer3}")
-            print(f"Binary Output: {binary_output}")
+            if redis_buffer_instance.redis_1.get(f'form_data_{self.session_id}') is not None:
+                data = json.loads(redis_buffer_instance.redis_1.get(f'form_data_{self.session_id}'))
+                
+                # Extract values from the data
+                learning_rate = float(data.get('learningRate'))
+                batch_size = int(data.get('batchSize'))
+                optimizer = data.get('optimizer')
+                activation = data.get('activation')
+                activation_output = data.get('activationOutput')
+                loss = data.get('loss')
+                layer1 = int(data.get('layer1'))
+                layer2 = int(data.get('layer2'))
+                layer3 = int(data.get('layer3'))
+                binary_output = [1 if data.get('binaryOutput')=="1 - Wygrana/Przegrana" else 3]
+                
+                print("Received form data:")
+                print(f"Learning Rate: {learning_rate}")
+                print(f"Batch Size: {batch_size}")
+                print(f"Optimizer: {optimizer}")
+                print(f"Activation: {activation}")
+                print(f"Activation Output: {activation_output}")
+                print(f"Loss: {loss}")
+                print(f"Layer 1: {layer1}, Layer 2: {layer2}, Layer 3: {layer3}")
+                print(f"Binary Output: {binary_output}")
             
             if choice_2 == '1':
                 model_ml = M_learning(win_or_not=True, exchange_or_not=False, file_path_csv='ml_data/poker_game_one_pair_combs_all.csv',

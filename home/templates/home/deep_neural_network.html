@@ -16,7 +16,11 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Uczenie Deep Neural Network</title>
 </head>
-<body data-page-type="initial">
+<body>
+    <div class="loader-container" id="loaderContainer">
+        <div class="loader"></div>
+    </div>
+    <div class="content" id="content">
     <div id="perms_combsPage">
         <div class="container-perms-combs desktop-only">
             <h1><a href="{% url 'home.index' %}">Poker Simulation</a></h1>
@@ -55,7 +59,7 @@
                         <option value="Adagrad">Adagrad</option>
                         <option value="Ftrl">Ftrl</option>
                         <option value="Lion">Lion</option>
-                        <option value="LossScaleOptimizer">LossScaleOptimizer</option>
+                        <!-- <option value="LossScaleOptimizer">LossScaleOptimizer</option> -->
                         <option value="Optimizer">Optimizer</option>
                     </select>
                 </div>
@@ -130,8 +134,7 @@
             <div class="data-script-container desktop-only">
                 <div class="data-script" id="dataScript"></div>
             </div>
-        </div>
-     
+        </div>     
     <!-- Mobile Only Section -->
         <div class="mobile-only">
             <div class="container-perms-combs">
@@ -154,6 +157,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </body>
 </html>

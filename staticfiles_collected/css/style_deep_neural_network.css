@@ -1,19 +1,44 @@
-.bg-index {
-    background: url("img/background.jpg") no-repeat fixed;
-    background-position: center 50%;
-    background-size: cover;
-    height: 400px;
-  }
+body {
+  font-family: 'Cambria Math', sans-serif;
+  background: radial-gradient(circle, #001d37, #00101e);
+  overflow-y: auto;
+}
 
-.bg-index::after {
-  content: '';
-  position: absolute;
+.loader-container {
+  position: fixed;
   top: 0;
   left: 0;
-  height: 400px;
   width: 100%;
-  background: linear-gradient(to bottom, #00162800, #001d37);
-  pointer-events: none;
+  height: 100%;
+  background: radial-gradient(circle, #001d37, #00101e);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001; /* Make sure it covers all other content */
+}
+
+.loader {
+  width: 80px;
+  height: 80px;
+  border: 8px solid rgba(0, 0, 0, 0.1);
+  border-top: 8px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1.2s linear infinite;
+}
+.visible {
+  display: none;
+}
+@keyframes spin {
+  from {
+      transform: rotate(0deg);
+  }
+  to {
+      transform: rotate(360deg);
+  }
+}
+
+.content {
+  visibility: visible; /* Hide content until loading is complete */
 }
 
 p {

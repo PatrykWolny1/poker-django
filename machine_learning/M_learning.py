@@ -78,7 +78,7 @@ class M_learning(object):
 
         self.optimizers = [tf.keras.optimizers.Adam, tf.keras.optimizers.SGD, tf.keras.optimizers.RMSprop, tf.keras.optimizers.Adadelta,
                       tf.keras.optimizers.AdamW, tf.keras.optimizers.Adamax, tf.keras.optimizers.Adafactor, tf.keras.optimizers.Adagrad,
-                      tf.keras.optimizers.Ftrl, tf.keras.optimizers.Lion, tf.keras.optimizers.LossScaleOptimizer, tf.keras.optimizers.Optimizer]
+                      tf.keras.optimizers.Ftrl, tf.keras.optimizers.Lion, tf.keras.optimizers.Optimizer]
 
         self.optimizer = self.find_in_list(optimizers=self.optimizers, keyword=optimizer)
         

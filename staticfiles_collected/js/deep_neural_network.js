@@ -1,5 +1,7 @@
 class DeepNeuralNetwork {
     static iteration = 0;
+    static ifApply = 0;
+    static onFirst = true;
     constructor() {
         this.progress = 0;
         this.lastProgress = 0; // Last recorded progress for comparison
@@ -11,6 +13,7 @@ class DeepNeuralNetwork {
         this.sessionId = null;
         this.enteredValue = null;
         this.lastClickedChoice = null;
+        this.formData = null;
 
         // UI Elements
         this.elements = {
@@ -22,7 +25,7 @@ class DeepNeuralNetwork {
             plotButton: document.getElementById(this.isMobile ? "mobilePlotButton" : "plotButton"),
             dataScriptDiv: document.getElementById(this.isMobile ? "mobileDataScript" : "dataScript"),
             applyButton: document.getElementById(this.isMobile ? "mobileApplyButton" : "applyButton"),
-           
+
         };
         
         this.taskButtons = {
@@ -105,7 +108,6 @@ class DeepNeuralNetwork {
     handleTaskSelection(selectedButton, url) {
         // Toggle between `winsButtton` and `exchangeButton` clicks
         if (selectedButton === this.elements.winsButton || selectedButton === this.elements.exchangeButton) {
-            // Disable the last clicked arrangement button if it exists
             if (this.lastClickedChoice !== selectedButton) {
                 this.lastClickedChoice.disabled = false;
                 this.lastClickedChoice = selectedButton;
@@ -151,17 +153,21 @@ class DeepNeuralNetwork {
     }
     
     gatherFormData() {
-        let binaryOutputValue;
+        let binaryOutputObject = { binaryOutputValue: "defaultBinaryOutput" };
 
         if (this.elements.winsButton.disabled) {
-            document.querySelector('select[name="binaryOutput"]').value = "1 - Wygrana/Przegrana";
-            binaryOutputValue = "1 - Wygrana/Przegrana";
+            // document.querySelector('select[name="binaryOutput"]').value = "1 - Wygrana/Przegrana";
+            binaryOutputObject = {
+                binaryOutput: document.querySelector('select[name="binaryOutput"]')?.value || "1 - Wygrana/Przegrana"
+            };
         } else if (this.elements.exchangeButton.disabled) {
-            document.querySelector('select[name="binaryOutput"]').value = "3 - Ilosc wymienianych kart";
-            binaryOutputValue = "3 - Ilosc wymienianych kart";
+            // document.querySelector('select[name="binaryOutput"]').value = "3 - Ilosc wymienianych kart";
+            binaryOutputObject = {
+                binaryOutput: document.querySelector('select[name="binaryOutput"]')?.value || "3 - Ilosc wymienianych kart"
+            };
         }
 
-        const formData = {
+        this.formData = {
             learningRate: document.querySelector('.menu-column input[placeholder="0.0001"]')?.value || "0.0001",
             batchSize: document.querySelector('.menu-column input[placeholder="32"]')?.value || "32",
             optimizer: document.querySelector('select[name="optimizer"]')?.value || "Adam",
@@ -171,23 +177,34 @@ class DeepNeuralNetwork {
             layer1: document.querySelector('.menu-column input[placeholder="256"]')?.value || "256",
             layer2: document.querySelector('.menu-column input[placeholder="512"]')?.value || "512",
             layer3: document.querySelector('.menu-column input[placeholder="64"]')?.value || "64",
-            binaryOutput: binaryOutputValue
-
-          
+            binaryOutput: binaryOutputObject.binaryOutput,
         };
-        return formData;
+
+        if (this.formData.binaryOutput === "1 - Wygrana/Przegrana") {
+            this.elements.winsButton.disabled = true;
+            this.elements.exchangeButton.disabled = false;
+        } else if (this.formData.binaryOutput === "3 - Ilosc wymienianych kart") {
+            this.elements.exchangeButton.disabled = true;
+            this.elements.winsButton.disabled = false;
+        }
     }
 
-    applyForm() {
-        const formData = this.gatherFormData();
-    
+    applyForm() {        
+        if (!DeepNeuralNetwork.onFirst && DeepNeuralNetwork.ifApply > 0)   
+            this.gatherFormData();
+
+        DeepNeuralNetwork.ifApply += 1;
+
+        if (DeepNeuralNetwork.onFirst)
+            this.gatherFormData();
+
         fetch('/apply_form/', {  
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': this.getCSRFToken(),
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify(this.formData)
         })
         .then(response => response.json())
         .then(data => console.log('Success:', data))
@@ -300,11 +317,9 @@ class DeepNeuralNetwork {
                 if (this.lastClickedChoice === this.elements.winsButton) {
                     this.elements.winsButton.disabled = true;
                     this.elements.exchangeButton.disabled = false;
-                    this.lastClickedChoice = this.elements.exchangeButton;
                 } else {
                     this.elements.winsButton.disabled = false;
                     this.elements.exchangeButton.disabled = true;
-                    this.lastClickedChoice = this.elements.winsButton;
                 }
             }
         }
@@ -342,12 +357,31 @@ class DeepNeuralNetwork {
         const confirmButton = document.createElement("button");
         confirmButton.innerText = "OK";
         confirmButton.className = "popup-button";
+
         if (DeepNeuralNetwork.iteration > 0) {
+            // Show the loader before execution starts
             await this.stopTask();
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 this.socket.close();
             }
             await this.connectWebSocket();
+
+            Object.entries(this.taskButtons).forEach(([buttonKey, url]) => {
+                const buttonElement = this.elements[buttonKey];
+                if (buttonElement && buttonElement.disabled) {
+                    this.initiateTask(url);
+                }
+            });
+
+            this.setupEventListeners();
+            
+            if (DeepNeuralNetwork.ifApply > 0) {
+                this.formData = this.gatherFormData();
+                DeepNeuralNetwork.ifApply += 1;
+            }
+
+            this.applyForm();
+
             this.elements.dataScriptDiv.innerHTML = "";
         }
         confirmButton.onclick = async () => {  // Make this function async
@@ -356,6 +390,11 @@ class DeepNeuralNetwork {
             
             if (this.enteredValue && !isNaN(this.enteredValue) && this.enteredValue > 0 && this.enteredValue <= this.maxAllowedValue) {
                 try {
+                    const loaderContainer = document.getElementById('loaderContainer')
+                    const content = document.getElementById('content')
+                    if (loaderContainer) loaderContainer.style.display = 'flex';
+                    if (content) content.style.visibility = 'hidden';
+
                     const response = await fetch('/submit_number/', {
                         method: 'POST',
                         headers: {
@@ -377,7 +416,9 @@ class DeepNeuralNetwork {
                     DeepNeuralNetwork.iteration += 1;  
 
                     document.body.removeChild(overlay);  // Remove the popup after successful processing
-        
+                    if (loaderContainer) loaderContainer.style.display = 'none';
+                    if (content) content.style.visibility = 'visible';
+
                 } catch (error) {
                     console.error("Error sending number:", error);
                     alert("Failed to send data. Please try again.");  // Inform the user about the error
@@ -385,6 +426,7 @@ class DeepNeuralNetwork {
             } else {
                 alert(`Wpisz właściwą wartość lub mniejszą od: ${this.maxAllowedValue}.`);
             }
+            confirmButton.disabled = false;
         };
         
         popup.appendChild(confirmButton);
@@ -456,6 +498,8 @@ class DeepNeuralNetwork {
 
     async startTask() {
         try {
+            DeepNeuralNetwork.ifApply = 0;
+            DeepNeuralNetwork.onFirst = false;
             const startResponse = await fetch('/start_task_deep_neural_network/', { 
                 method: 'POST',
                 headers: {

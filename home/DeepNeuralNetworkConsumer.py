@@ -39,8 +39,6 @@ class DeepNeuralNetworkConsumer(AsyncWebsocketConsumer):
             print("send_from_queue task exiting")
 
     async def connect(self):
-        DeepNeuralNetworkConsumer.iteration += 1
-
         """Handle WebSocket connection."""
         # Generate a session if it doesn't exist
         session = self.scope["session"]

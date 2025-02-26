@@ -321,8 +321,7 @@ class DeepNeuralNetwork {
         return token ? token.split('=')[1] : '';
     }
 
-    showNumberPopup() {  
-        DeepNeuralNetwork.iteration += 1;  
+    async showNumberPopup() {  
         // Create the overlay
         const overlay = document.createElement("div");
         overlay.className = "popup-overlay";
@@ -343,36 +342,51 @@ class DeepNeuralNetwork {
         const confirmButton = document.createElement("button");
         confirmButton.innerText = "OK";
         confirmButton.className = "popup-button";
-        confirmButton.onclick = () => {
+        if (DeepNeuralNetwork.iteration > 0) {
+            await this.stopTask();
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.close();
+            }
+            await this.connectWebSocket();
+            this.elements.dataScriptDiv.innerHTML = "";
+        }
+        confirmButton.onclick = async () => {  // Make this function async
+            confirmButton.disabled = true;
             this.enteredValue = parseInt(inputField.value, 10);
+            
             if (this.enteredValue && !isNaN(this.enteredValue) && this.enteredValue > 0 && this.enteredValue <= this.maxAllowedValue) {
-                fetch('/submit_number/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': this.getCSRFToken(),  // Ensure this method correctly retrieves the token
-                    },
-                    body: JSON.stringify({ value: this.enteredValue })
-                })
-                .then(response => {
-                    if (!response.ok) {  // Check if the response status code is not in the success range (200-299)
+                try {
+                    const response = await fetch('/submit_number/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken(),  // Ensure this method correctly retrieves the token
+                        },
+                        body: JSON.stringify({ value: this.enteredValue })
+                    });
+        
+                    if (!response.ok) {  // Check if response status is not 200-299
                         throw new Error('Network response was not ok: ' + response.statusText);
                     }
-                    return response.json();  // Parse JSON data from the response
-                })
-                .then(data => {
+        
+                    const data = await response.json();  // Await the parsed JSON data
                     console.log("Response from server:", data);
-                    this.startTask();
-                    document.body.removeChild(overlay);  // Remove the popup once data is successfully sent and processed
-                })
-                .catch(error => {
+        
+                    await this.startTask();
+               
+                    DeepNeuralNetwork.iteration += 1;  
+
+                    document.body.removeChild(overlay);  // Remove the popup after successful processing
+        
+                } catch (error) {
                     console.error("Error sending number:", error);
                     alert("Failed to send data. Please try again.");  // Inform the user about the error
-                });
+                }
             } else {
                 alert(`Wpisz właściwą wartość lub mniejszą od: ${this.maxAllowedValue}.`);
             }
         };
+        
         popup.appendChild(confirmButton);
     
         const cancelButton = document.createElement("button");

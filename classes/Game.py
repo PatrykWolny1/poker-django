@@ -152,6 +152,7 @@ class Game(object):
             #         break   
 
         if choice == '5':
+            print(self.session_id)
             n_epochs = int(redis_buffer_instance.redis_1.get(f"number_{self.session_id}").decode('utf-8'))
 
             if redis_buffer_instance.redis_1.get(f'form_data_{self.session_id}') is not None:

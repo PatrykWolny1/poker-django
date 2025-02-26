@@ -128,7 +128,6 @@ class OnePairGame {
             
             this.socketHandler.sessionId = this.sessionId;
 
-            // Check and close the old WebSocket
             if (this.socketHandler.socket) {
                 if (this.socketHandler.socket.readyState === WebSocket.OPEN) {
                     this.socketHandler.socket.send(
@@ -142,15 +141,10 @@ class OnePairGame {
                 } else {
                     console.warn("Closing WebSocket in state:", this.socketHandler.socket.readyState);
                 }
-                // this.socketHandler.socket.close();
-                console.log("Old WebSocket connection closed.");
             }
             console.log("New WebSocket connection initialized.");
     
-        
-            
-
-            await this.socketHandler.setupSocketHandlers();
+            this.socketHandler.setupSocketHandlers();
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

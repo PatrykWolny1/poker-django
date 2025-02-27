@@ -551,7 +551,7 @@ class Croupier(object):
 
                     saved_model = tf.keras.models.load_model(directory + '/' + matching_file[0])
 
-                    saved_model.load_weights('models_prediction/weights_model_base_WIN_Adam_0001_test_acc=0.667_test_loss=0.155_2024-08-14_08-52-13.weights.h5')
+                    # saved_model.load_weights('models_prediction/weights_model_base_WIN_Adam_0001_test_acc=0.667_test_loss=0.155_2024-08-14_08-52-13.weights.h5')
                                     
                 cards_player_sorted = sorted(self.player.cards) 
 

@@ -1,0 +1,1 @@
+poker-django/models_prediction/model_base_WIN_Adam_0001_test_acc=0.667_test_loss=0.155_2024-08-14_08-52-13.keras

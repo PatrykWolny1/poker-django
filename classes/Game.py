@@ -68,7 +68,8 @@ class Game(object):
         #         "- Aktualizacja modelu ML" +
         #         "- Uczenie maszynowe")
         # choice_1 = '2'
-        choice_2 = redis_buffer_instance.redis_1.get(f'choice_2_{self.session_id}').decode('utf-8')
+        if redis_buffer_instance.redis_1.get(f'choice_2_{self.session_id}') is not None:
+            choice_2 = redis_buffer_instance.redis_1.get(f'choice_2_{self.session_id}').decode('utf-8')
         
         # if choice_1 == '1':
         #     # Line used when gather data or play game with AI; Better performance in case of games gathering; OnePair so far

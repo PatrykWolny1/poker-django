@@ -1,6 +1,11 @@
 import threading
 
 class SessionThreads:
+    """
+    A class to manage threads, events, and locks for a session.
+
+    This class allows associating multiple threads, events, and locks within a session.
+    """
     def __init__(self, my_thread = None):
         self.thread = {}
         self.event = {}
@@ -16,6 +21,12 @@ class SessionThreads:
         self.lock[lock_name] = threading.Lock()
 
 class ThreadVarManagerSingleton:
+    """
+    A singleton class to manage session-based thread storage.
+
+    This class ensures that only one instance of `ThreadVarManagerSingleton` exists
+    and maintains a global storage (`session_threads`) for thread-related data.
+    """
     session_threads = {}
 
     _instance = None
@@ -26,10 +37,17 @@ class ThreadVarManagerSingleton:
         return cls._instance
 
     def add_session(self, unique_session_id, session_name):
-        if unique_session_id not in self.session_threads:
-            self.session_threads[unique_session_id] = {}
+        """
+        Add a new session with an associated thread manager.
 
+        :param unique_session_id: Unique identifier for the session.
+        :param session_name: Name of the session.
+        """
+        if unique_session_id not in self.session_threads:
+            self.session_threads[unique_session_id] = {}    # Initialize session dictionary
+        
+        # Assign a new `SessionThreads` instance for the session
         self.session_threads[unique_session_id][session_name] = SessionThreads()
 
-# Expose an instance of TaskManagerSingleton (only one instance)
+# Expose a global instance of `ThreadVarManagerSingleton` (singleton instance)
 task_manager = ThreadVarManagerSingleton()

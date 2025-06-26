@@ -551,39 +551,25 @@ class CardsPermutations {
     }
 
     startTask() {
-        fetch('/start_task_combs_perms/', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json', // Ensure it's JSON
-                'X-CSRFToken': this.getCSRFToken(),  // Include CSRF token
-            },
-            body: JSON.stringify({ /* add any request data here */ })
-        })
-        .then(response => response.json())
-        .then(async () => {
-            this.elements.startTaskButton.disabled = true;
-            this.elements.downloadButton.disabled = true;
-            
-            // Maintain perms/combs button state as per previous functionality
-            if (this.elements.combsButton.disabled) {
-                this.elements.permsButton.disabled = true;
-                this.lastClickedPermsCombs = true;
-            } else if (this.elements.permsButton.disabled) {
-                this.elements.combsButton.disabled = true;
-                this.lastClickedPermsCombs = false;
-            }
+        this.elements.startTaskButton.disabled = true;
+        this.elements.downloadButton.disabled = true;
+        
+        // Maintain perms/combs button state as per previous functionality
+        if (this.elements.combsButton.disabled) {
+            this.elements.permsButton.disabled = true;
+            this.lastClickedPermsCombs = true;
+        } else if (this.elements.permsButton.disabled) {
+            this.elements.combsButton.disabled = true;
+            this.lastClickedPermsCombs = false;
+        }
 
-            // Disable all task buttons when starting
-            Object.keys(this.taskButtons).forEach(buttonKey => {
-                this.elements[buttonKey].disabled = true;
-            });
-            this.enableStartTask = true;
-            this.connectWebSocket();
-            this.resetProgressBar();
-
-
-        })
-        .catch(error => console.error('Error starting task:', error));
+        // Disable all task buttons when starting
+        Object.keys(this.taskButtons).forEach(buttonKey => {
+            this.elements[buttonKey].disabled = true;
+        });
+        this.enableStartTask = true;
+        this.connectWebSocket();
+        this.resetProgressBar();
     }
 
     stopTask() { 

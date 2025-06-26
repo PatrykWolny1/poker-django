@@ -80,15 +80,12 @@ def get_session_id(request):
     
     redis_buffer_instance.redis_1.set('session_key', session_key)
 
-    unique_session_id = generate_unique_session_id(session_key)
-    
-    print("Session ID in get_session_id: ", unique_session_id)
-    redis_buffer_instance.redis_1.set(f'{session_key}', unique_session_id)
-    redis_buffer_instance.redis_1.set(f'{unique_session_id}', session_key)
-
     which_app = redis_buffer_instance.redis_1.get(f'{session_key}_which_app').decode('utf-8')
     print(which_app, session_key)
     if which_app == "cards_permutations":
+        unique_session_id = redis_buffer_instance.redis_1.get(session_key).decode('utf-8')
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}', session_key)
+
         _initialize_redis_values_perms_combs(request, unique_session_id)
 
         _add_id_to_redis(request, f'perms_combs', unique_session_id)
@@ -97,13 +94,23 @@ def get_session_id(request):
         if redis_buffer_instance.redis_1.get(f'arrangement_{unique_session_id}').decode('utf-8') == '1':
             _add_id_to_redis(request, f'straight_royal_flush', unique_session_id) 
 
-    elif which_app == "one_pair_game":
+    if which_app == "one_pair_game":
+        unique_session_id = generate_unique_session_id(session_key)
+        redis_buffer_instance.redis_1.set(f'{session_key}', unique_session_id)
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}', session_key)
         _initialize_redis_values_gra_jedna_para(unique_session_id)
     elif which_app == "gathering_games":
+        unique_session_id = generate_unique_session_id(session_key)
+        redis_buffer_instance.redis_1.set(f'{session_key}', unique_session_id)
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}', session_key)
         _initialize_redis_values_gathering_games(unique_session_id)
     elif which_app == "deep_neural_network":
+        unique_session_id = generate_unique_session_id(session_key)
+        redis_buffer_instance.redis_1.set(f'{session_key}', unique_session_id)
+        redis_buffer_instance.redis_1.set(f'{unique_session_id}', session_key)
         _initialize_redis_values_deep_neural_network(unique_session_id)
 
+    print("Session ID in get_session_id: ", unique_session_id)
 
     choice = redis_buffer_instance.redis_1.get(f'choice_{unique_session_id}').decode('utf-8')
 
@@ -119,6 +126,7 @@ def get_session_id(request):
         task_manager.session_threads[unique_session_id][name].event["stop_event_progress"].clear()
         task_manager.session_threads[unique_session_id][name].event["stop_event_immediately"].clear()
         redis_buffer_instance.redis_1.set(f'{unique_session_id}_thread_name', name)
+        redis_buffer_instance.redis_1.set(f'when_first_{unique_session_id}', 0)
 
         print(task_manager.session_threads)
         print(task_manager.session_threads[unique_session_id][name].event)
@@ -335,7 +343,7 @@ def download_saved_file(request):
     print(unique_session_id)
     thread_name = redis_buffer_instance.redis_1.get(f'{unique_session_id}_thread_name').decode('utf-8')
 
-    if thread_name == 'perms_combs':
+    if thread_name == 'thread_perms_combs':
         file_path = f'permutations_data/data_perms_combs_ID_{unique_session_id}.txt'
     elif thread_name == 'gathering_games':
         file_path = f'ml_data/poker_game_one_pair_combs_all_to_update_duplicates_{unique_session_id}.csv'
@@ -397,10 +405,24 @@ def submit_number(request):
     if request.method == "POST":
         data = json.loads(request.body)
         number = data.get("value")
-        print(request.session.session_key)
-        unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
-        print(unique_session_id, number)
-        redis_buffer_instance.redis_1.set(f"number_{unique_session_id}", str(number))
+        
+        which_app = redis_buffer_instance.redis_1.get(f'{request.session.session_key}_which_app').decode('utf-8')
+
+        if which_app == "cards_permutations":
+            unique_session_id = generate_unique_session_id(request.session.session_key)
+            redis_buffer_instance.redis_1.set(f'{request.session.session_key}', unique_session_id)
+            redis_buffer_instance.redis_1.set(f'{unique_session_id}', request.session.session_key)
+            
+            unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
+            
+            redis_buffer_instance.redis_1.set(f"number_{unique_session_id}", number)
+            redis_buffer_instance.redis_1.set(f'entered_value_{unique_session_id}', number)
+            print(unique_session_id, request.session.session_key)
+        else:
+            unique_session_id = redis_buffer_instance.redis_1.get(f'{request.session.session_key}').decode('utf-8')
+            redis_buffer_instance.redis_1.set(f"number_{unique_session_id}", number)
+        print("Session ID in submit_number: ", unique_session_id)
+
         return JsonResponse({"message": "Number received successfully", "value": number})
     return JsonResponse({"error": "Invalid request"}, status=400)
 
@@ -461,8 +483,9 @@ def _initialize_redis_values_gra_jedna_para(session_id):
 def _initialize_redis_values_perms_combs(request, session_id):
     redis_buffer_instance.redis_1.set(f'choice_1_{session_id}', '2')
     redis_buffer_instance.redis_1.set(f'choice_{session_id}', '1')
-    number = redis_buffer_instance.redis_1.get(f'number_{request.session.session_key}').decode('utf-8')
-    redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', number)
+    # number = redis_buffer_instance.redis_1.get(f'number_{request.session.session_key}').decode('utf-8')
+    # redis_buffer_instance.redis_1.set(f'entered_value_{session_id}', number)
+    redis_buffer_instance.redis_1.set(f'when_one_pair_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'prog_when_fast_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'min_{session_id}', '-1')
     redis_buffer_instance.redis_1.set(f'max_{session_id}', '-1')

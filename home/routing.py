@@ -5,6 +5,7 @@ from home.GatheringGamesConsumer import GatheringGamesConsumer
 from home.DeepNeuralNetworkConsumer import DeepNeuralNetworkConsumer
 
 websocket_urlpatterns = [
+    # WebSocket routes for consumers
     re_path(r'ws/perms_combs/', CardsPermutationsConsumer.as_asgi()),
     re_path(r'ws/op_game/', GameOnePairConsumer.as_asgi()),
     re_path(r'ws/gathering_games/', GatheringGamesConsumer.as_asgi()),

@@ -1,7 +1,6 @@
 from classes.Game import Game
 from classes.Player import Player
 from home.redis_buffer_singleton import redis_buffer_instance
-from home.std_out_redirector import StdoutRedirector
 from home.MyThread import MyThread
 from threading import Event
 from home.ThreadVarManagerSingleton import task_manager

@@ -600,7 +600,7 @@ class OnePairGame {
     }
 
     logStrategyKey(key, value) {
-        const strategyKeys = [`yes_no_${this.sessionId}`, `strategy_one_${this.sessionId}`, `strategy_two_${this.sessionId}`];
+        const strategyKeys = [`yes_no_${this.sessionId}`, `strategy_0_${this.sessionId}`, `strategy_1_${this.sessionId}`];
         if (strategyKeys.includes(key)) {
             console.log(`Received ${key}: ${value}`);
         }
@@ -976,8 +976,9 @@ class WebSocketHandler {
 
         }
 
-        if (`strategy_one_${this.sessionId}` in data || `strategy_two_${this.sessionId}` in data) {
-            console.log(data)
+        if ((`strategy_0_${this.sessionId}` in data) || (`strategy_1_${this.sessionId}` in data)) {
+            console.log(data);
+            console.log("STRATEGY!")
             if (this.gameInstance.hasRequiredKeys(data)) {
                 this.gameInstance.processStrategyData(data);
             }

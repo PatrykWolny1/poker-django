@@ -173,7 +173,7 @@ class DeepNeuralNetwork {
             optimizer: document.querySelector('select[name="optimizer"]')?.value || "Adam",
             activation: document.querySelector('select[name="activation"]')?.value || "relu",
             activationOutput: document.querySelector('select[name="activationOutput"]')?.value || "sigmoid",
-            loss: document.querySelector('select[name="loss"]')?.value || "BinaryCrossentropy",
+            loss: document.querySelector('select[name="loss"]')?.value || "BinaryFocalCrossentropy",
             layer1: document.querySelector('.menu-column input[placeholder="256"]')?.value || "256",
             layer2: document.querySelector('.menu-column input[placeholder="512"]')?.value || "512",
             layer3: document.querySelector('.menu-column input[placeholder="64"]')?.value || "64",

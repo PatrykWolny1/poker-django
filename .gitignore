@@ -24,3 +24,4 @@ permutations_data/*
 ml_data/*
 plots/*
 models_prediction/*
+db.sqlite3

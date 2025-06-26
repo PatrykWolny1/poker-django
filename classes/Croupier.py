@@ -596,8 +596,10 @@ class Croupier(object):
                     if self.exchange == 't':
                         # time.sleep(0.2)
                         # Store data in Redis
-                        redis_client.set(f'chance_{self.player.index}_{self.session_id}', round(y_preds[0] * 100, 2))
-
+                        redis_client.set(
+                            f'chance_{self.player.index}_{self.session_id}',
+                            f"{y_preds[0] * 100:.2f}"
+                        )
                         # Add the event to a Redis list
                         event = {
                             "player_index": self.player.index,
